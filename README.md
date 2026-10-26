@@ -1,10 +1,12 @@
-# Little Harbour — Playtest 06
+# Little Harbour — Playtest 07
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
 
-Open `Little-Harbour-Playtest-06.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
+
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-07.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -20,6 +22,15 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 10. In Contracts, accept and complete a three-shipment commitment.
 11. Complete a different contract and establish the harbour charter.
 12. Continue in open play, with both specialist plots permitted and improved trade rewards.
+
+## New in Playtest 07
+
+- The mill, bakery and fishing jetty can each be refitted after the first business is built. Choose **25% shorter batch times** or **two extra queue slots** per workshop. The extra slots combine with the storehouse upgrade.
+- Refits cost ordinary coins, timber and stone. Ingredient costs and output quantities remain unchanged, so the decision competes with expansion funds without introducing a second currency.
+- Workshops must be idle before a refit. Replacing a setup is explicitly confirmed, costs the new setup price, and does not refund the previous setup. Active jobs and waiting ingredients cannot be lost to a capacity reduction.
+- Build contains the comparison cards; individual production panels link straight to their workshop's choices.
+- Version 1–4 towns migrate to version 5 with existing inventories, jobs, businesses and contracts retained and no refits installed.
+- Map pins retain descriptive accessibility labels in compact whole-harbour mode.
 
 ## New in Playtest 06
 
@@ -97,9 +108,9 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-43 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. The guide is exercised through both first-business paths using only suggested actions, actual production and earned funds. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+48 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. The guide is exercised through both first-business paths using only suggested actions, actual production and earned funds. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
-Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, and the private hosted game required an interactive sign-in in the preview browser. Do not treat successful model tests as browser validation.
+The live Playtest 06 opened successfully with an existing Chapter 02 town in the in-app browser. Desktop and 390 × 844 layouts, the whole-harbour toggle and phone production navigation were visually checked. Physical iPhone Safari performance and touch comfort remain unverified. Automated tests are not a substitute for device playtesting.
 
 ## Limits
 

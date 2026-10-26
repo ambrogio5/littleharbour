@@ -16,7 +16,7 @@ export function routePoint(points,t){
  return {x:points[0][0],y:points[0][1],angle:0};
 }
 export function constructionStage(left,duration=8){return left>duration*2/3?'foundation':left>duration/3?'frame':'finishing';}
-export function createHarbourScene(canvas,getState,isPaused){
+export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
  const ctx=canvas.getContext('2d');if(!ctx)return {emit(){},reset(){}};
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  let clock=getState().seconds,lastFrame=performance.now(),lastPaint=0,frameId,trips=[],flashes=[],width=0,height=0;
@@ -90,7 +90,7 @@ export function createHarbourScene(canvas,getState,isPaused){
   // Small residents continue their routes independently of the production queue.
   for(let i=0;i<2;i++){const phase=reduced.matches?.25:((clock/(30+i*9)+i*.43)%1);const p=routePoint(HARBOUR_PATHS.village,phase<.5?phase*2:2-phase*2);person(p,clock+i,false,i?'#aaa48a':'#c2c2ad',.9);}
   smoke(s);
-  const fishing=s.jobs.find(j=>j.key==='fishing');if(fishing)boat(routePoint(HARBOUR_PATHS.fishing,1-fishing.left/14),clock,false);
+  const fishing=s.jobs.find(j=>j.key==='fishing');if(fishing)boat(routePoint(HARBOUR_PATHS.fishing,1-fishing.left/getDuration(s,'fishing')),clock,false);
   if(s.jobs.some(j=>j.key==='mill')){
    ctx.save();ctx.translate(428,346);ctx.scale(.69,1);ctx.rotate(reduced.matches?0:clock*.8);ctx.strokeStyle='#a6906c75';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,35,0,Math.PI*2);for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*35,Math.sin(a)*35);}ctx.stroke();ctx.restore();
   }
