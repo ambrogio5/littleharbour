@@ -1,10 +1,10 @@
-# Little Harbour — Playtest 02
+# Little Harbour — Playtest 03
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
 
-Open `Little-Harbour-Playtest-02.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Open `Little-Harbour-Playtest-03.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -17,7 +17,16 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 7. Extend the quay.
 8. Choose trade routes, maintain stock targets, build your second business and improve workshop queues.
 
-## New in this version
+## New in Playtest 03
+
+- Businesses take eight simulation seconds to construct. Foundations, scaffolding and finishing stages appear on their sites before the finished structure is revealed.
+- New businesses cannot begin production until construction is complete. Completed businesses in version 1 and 2 saves are preserved as completed.
+- A canvas activity layer draws small residents, workers carrying goods along authored routes, mill-wheel movement and bakery smoke while production runs.
+- Fishing boats follow the active fishing trip. Cargo boats depart after successful shipments, with a wake and visible cargo. Trading rewards still arrive on dispatch; travel is visual feedback, not a second economic timer.
+- Activity uses the same simulation speed and pause state as the game; hidden tabs and open dialogs stop it. Reduced-motion preferences simplify movement.
+- Construction state is saved and restored. In-progress construction cannot charge twice or start production early.
+
+## Features from Playtest 02
 
 - First-run onboarding and context-sensitive guidance to missing ingredients.
 - Both businesses can eventually operate in the same town.
@@ -48,7 +57,7 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-17 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+23 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
 Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, the publishing repository was unreachable, and the browser policy disallowed local-file navigation. Do not treat successful model tests as browser validation.
 
