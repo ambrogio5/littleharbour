@@ -4,9 +4,9 @@ const HARBOUR_PATHS={
  bakery:[[835,451],[940,454],[1045,493],[1180,520]],
  olives:[[1160,300],[1040,360],[860,420],[670,490],[450,560],[335,585]],
  press:[[340,585],[490,535],[675,478],[850,448],[1035,490],[1180,520]],
- fish:[[1165,570],[1210,530],[1280,499]],
+ fish:[[700,655],[675,595],[720,525],[850,478],[1035,490],[1180,520]],
  cargo:[[1195,594],[1120,650],[1020,742],[865,860],[685,1045]],
- fishing:[[1110,600],[1020,665],[900,790],[990,855],[1080,740],[1110,600]],
+ fishing:[[800,735],[965,810],[1160,890],[1080,960],[890,870],[800,735]],
  village:[[760,240],[700,315],[610,370],[680,415],[830,450]]
 };
 export function routePoint(points,t){
@@ -23,7 +23,8 @@ export function createHarbourScene(canvas,getState,isPaused){
  function resize(){const box=canvas.parentElement.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
  const observer=new ResizeObserver(resize);observer.observe(canvas.parentElement);resize();
  function emit(type,detail){
-  if(type==='shipment'){trips.push({kind:'cargo',start:clock,duration:18,detail});flashes.push({text:'Shipment departing',x:1190,y:580,start:clock});}
+  if(type==='milestone'){flashes.push({text:detail==='delivery'?'First trade complete':detail==='pier'?'New routes open':'Business open',x:detail==='olive'?360:detail==='fishing'?720:1190,y:detail==='olive'?565:detail==='fishing'?650:500,start:clock});}
+  else if(type==='shipment'){trips.push({kind:'cargo',start:clock,duration:18,detail});flashes.push({text:'Shipment departing',x:1190,y:580,start:clock});}
   else if(type==='harvest'){trips.push({kind:'harvest',start:clock,duration:8});flashes.push({text:'+6 wheat',x:270,y:230,start:clock});}
   else if(type==='produced'){
    const kind=({flour:'mill',bread:'bakery',olives:'olives',oil:'press',fish:'fish',wheat:'harvest',planks:'mill',boatparts:'fish',grapes:'olives',wine:'press'})[detail];
@@ -55,7 +56,7 @@ export function createHarbourScene(canvas,getState,isPaused){
   ctx.restore();
  }
  function scaffold(project){
-  const positions={olive:[350,590],fishing:[1110,610],pier:[1300,610],storehouse:[1300,460],boatyard:[1300,470],estate:[1130,260],charter:[770,220]};
+  const positions={olive:[350,565],fishing:[700,650],pier:[1340,625],storehouse:[1300,460],boatyard:[1300,470],estate:[1130,260],charter:[770,220]};
   const [x,y]=positions[project.type],stage=constructionStage(project.left),progress=1-project.left/8;
   ctx.save();ctx.translate(x,y);ctx.fillStyle='#343c2a35';ctx.beginPath();ctx.ellipse(0,10,65,17,-.2,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#bdb49c';ctx.beginPath();ctx.moveTo(-55,0);ctx.lineTo(0,-24);ctx.lineTo(59,-3);ctx.lineTo(0,22);ctx.closePath();ctx.fill();
@@ -73,16 +74,25 @@ export function createHarbourScene(canvas,getState,isPaused){
  function smoke(s){
   const baking=s.jobs.some(j=>j.key==='bakery');if(!baking)return;
   const phase=reduced.matches?0:clock;
-  for(let i=0;i<4;i++){const p=((phase*.22+i*.25)%1);ctx.fillStyle=`rgba(231,232,214,${.26*(1-p)})`;ctx.beginPath();ctx.ellipse(836+Math.sin(p*5)*7,308-p*70,5+p*15,7+p*12,0,0,Math.PI*2);ctx.fill();}
+  for(let i=0;i<4;i++){const p=((phase*.22+i*.25)%1);ctx.fillStyle=`rgba(231,232,214,${.26*(1-p)})`;ctx.beginPath();ctx.ellipse(895+Math.sin(p*5)*7,276-p*70,5+p*15,7+p*12,0,0,Math.PI*2);ctx.fill();}
+ }
+ function water(){
+  if(reduced.matches)return;
+  ctx.save();ctx.beginPath();
+  const edge=[[1536,735],[1440,728],[1350,695],[1335,650],[1400,600],[1270,587],[1040,575],[1030,505],[950,515],[845,570],[770,630],[742,690],[765,740],[708,820],[780,875],[840,980],[855,1024],[1536,1024]];
+  edge.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+  for(let i=0;i<40;i++){const x=760+(i*127%800),y=540+(i*83%500),phase=clock*.45+i*.63,drift=Math.sin(phase)*10;ctx.strokeStyle=`rgba(218,237,221,${.025+.055*(.5+.5*Math.sin(phase))})`;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+drift,y);ctx.quadraticCurveTo(x+17+drift,y-3,x+36+drift,y+1);ctx.stroke();}
+  ctx.restore();
  }
  function paint(){
   const s=getState();ctx.setTransform(canvas.width/1536,0,0,canvas.height/1024,0,0);ctx.clearRect(0,0,1536,1024);
+  water();
   // Small residents continue their routes independently of the production queue.
   for(let i=0;i<2;i++){const phase=reduced.matches?.25:((clock/(30+i*9)+i*.43)%1);const p=routePoint(HARBOUR_PATHS.village,phase<.5?phase*2:2-phase*2);person(p,clock+i,false,i?'#aaa48a':'#c2c2ad',.9);}
   smoke(s);
   const fishing=s.jobs.find(j=>j.key==='fishing');if(fishing)boat(routePoint(HARBOUR_PATHS.fishing,1-fishing.left/14),clock,false);
   if(s.jobs.some(j=>j.key==='mill')){
-   ctx.save();ctx.translate(410,365);ctx.rotate(reduced.matches?0:clock*.8);ctx.strokeStyle='#6f604a8a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,17,0,Math.PI*2);for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);}ctx.stroke();ctx.restore();
+   ctx.save();ctx.translate(428,346);ctx.scale(.69,1);ctx.rotate(reduced.matches?0:clock*.8);ctx.strokeStyle='#a6906c75';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,35,0,Math.PI*2);for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*35,Math.sin(a)*35);}ctx.stroke();ctx.restore();
   }
   for(const trip of trips){const phase=(clock-trip.start)/trip.duration;if(phase<0||phase>1)continue;const point=routePoint(HARBOUR_PATHS[trip.kind],reduced.matches?.3:phase);ctx.save();ctx.globalAlpha=Math.min(1,phase*8,(1-phase)*8);if(trip.kind==='cargo')boat(point,clock,true);else person(point,clock,true,trip.kind==='bakery'?'#d9d4bd':'#b4bda6',1.1);ctx.restore();}
   for(const project of s.construction)scaffold(project);

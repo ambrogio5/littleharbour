@@ -138,3 +138,29 @@ export function chapterTwo(s){
  if(s.contract)return {step:3+s.contractsDone.length,title:CONTRACTS[s.contract.id].name,description:'Shipment '+(s.contract.shipped+1)+' of '+CONTRACTS[s.contract.id].shipments+'. Fulfil the chosen contract, while keeping everyday trade available for materials.',target:'contracts'};
  return {step:s.contractsDone.length?4:2,title:s.contractsDone.length?'Build a second partnership':'Choose your first contract',description:s.contractsDone.length?'Complete a different contract to qualify for the harbour charter.':'Compare the two contracts. Accept the one that fits your production plans.',target:'contracts'};
 }
+// Opening guidance is derived from stock and queues, never a second economy.
+export function openingGuide(s){
+ const view=(title,description,label,tab='produce',station='overview')=>({title,description,label,action:'view',tab,station});
+ if(s.pier){if(underConstruction(s,'pier'))return view('The quay is taking shape','Keep the workshops running while the crew finishes.','Watch the quay','map','pier');const c=chapterTwo(s);return view(c.title,c.description,'Continue chapter two',c.target);}
+ if(s.deliveries&&!s.expansion)return view('Your first trade paid for a new livelihood','Fishing gives you a direct supply of fish. Olive oil adds a harvest-and-press chain. Both can be built later.','Compare the two businesses','build');
+ if(s.expansion&&underConstruction(s,s.expansion))return view('Your new business is being built','You can prepare bread while the crew works. Production opens when construction finishes.','Check production');
+ if(s.deliveries>=2&&canAfford(s,PIER_COST))return {title:'Open the harbour to more trade',description:'The quay unlocks three routes, stock targets and the second business. Cost: 140 coins, 10 timber and 8 stone.',label:'Extend the quay',action:'upgrade'};
+ const o=order(s);
+ if(!o.locked&&canAfford(s,o.cost))return {title:s.deliveries?'Your next shipment is ready':'Your first shipment is ready',description:'Deliver to '+o.name+' for '+o.coins+' coins, '+o.wood+' timber and '+o.stone+' stone.',label:'Dispatch to '+o.name,action:'dispatch'};
+ const title=s.deliveries?'Supply your new coastal route':'From wheat to your first shipment';
+ const next=(key,n)=>{const amount=Math.min(n,maxBatches(s,key));return amount?{title,description:RECIPES[key].name+'. '+(s.deliveries?'Keep bread and your new goods moving together.':'Four bread will fund your first expansion. Buildings work in parallel.'),label:RECIPES[key].name+' · '+amount+' batch'+(amount===1?'':'es'),action:'batch',key,count:amount}:null;};
+ const bread=Math.max(0,(o.cost.bread||0)-s.stock.bread-incoming(s,'bread'));
+ if(bread){
+  const bake=next('bakery',Math.ceil(bread/2));if(bake)return bake;
+  const flour=Math.max(0,Math.ceil(bread/2)*2-s.stock.flour-incoming(s,'flour'));
+  if(flour){const mill=next('mill',Math.ceil(flour/2));if(mill)return mill;
+   if(s.ripe)return {title,description:'Collect six wheat and plant the next crop. Your mill will turn the harvest into flour.',label:'Harvest & replant',action:'harvest-replant'};
+   if(!s.jobs.some(j=>j.key==='field'))return {title,description:'Plant wheat to supply the mill. Crops stay ready until you collect them.',label:'Plant wheat',action:'start',key:'field'};
+  }
+ }
+ const fish=Math.max(0,(o.cost.fish||0)-s.stock.fish-incoming(s,'fish'));
+ if(fish){const a=next('fishing',Math.ceil(fish/2));if(a)return a;}
+ const oil=Math.max(0,(o.cost.oil||0)-s.stock.oil-incoming(s,'oil'));
+ if(oil){const press=next('press',Math.ceil(oil/2));if(press)return press;const olives=Math.max(0,Math.ceil(oil/2)*2-s.stock.olives-incoming(s,'olives'));if(olives){const a=next('olives',Math.ceil(olives/4));if(a)return a;}}
+ return view('Your workshops are making the next shipment',s.speed===0?'The town is paused. Resume when you want production to continue.':'Goods in production are already counted. Check the queues or keep exploring; nothing expires.',s.speed===0?'Resume at 1×':'View the workshops',s.speed===0?'resume':'produce');
+}

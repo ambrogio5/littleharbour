@@ -21,5 +21,6 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   assert(!html.includes('src="app.js"'));
   assert(!html.includes('href="style.css"'));
   assert(!html.includes('@import'));
+  assert(!/url\('assets\//.test(html));
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

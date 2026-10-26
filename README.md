@@ -1,10 +1,10 @@
-# Little Harbour — Playtest 05
+# Little Harbour — Playtest 06
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
 
-Open `Little-Harbour-Playtest-05.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Open `Little-Harbour-Playtest-06.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -20,6 +20,17 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 10. In Contracts, accept and complete a three-shipment commitment.
 11. Complete a different contract and establish the harbour charter.
 12. Continue in open play, with both specialist plots permitted and improved trade rewards.
+
+## New in Playtest 06
+
+- Matching photographic cutouts replace the simple olive workshop, fishing jetty and extended-quay overlays. Cargo supplies appear after the first trade. Sprite construction and completed states use the same authored sites.
+- The wheat field clears to cultivated earth after harvest, then gradually returns to wheat according to the actual crop timer. Pausing stops its progress.
+- Subtle water highlights, a better-aligned mill wheel, bakery chimney smoke, and updated fishing routes give the opening district more consistent feedback. Reduced-motion settings suppress water movement and simplify other animation.
+- Whole harbour fits the full district on screen. Explore close up restores horizontal panning. Labels can be hidden independently, and view controls remain outside the fitted map's touch targets.
+- The guide immediately beneath the map now performs the next useful action: harvesting, queueing required batches, dispatching, or opening the investment choice. It accounts for incoming production and never awards resources or starts work without a tap.
+- Shipment requirements remain visible under the guide. Passive, dismissible journal notices mark the first trade, finished businesses and completed quay; loading an existing town does not replay its old notices.
+- Production cards show photographic location thumbnails. The compact phone overview groups workshops into two columns.
+- The same version 4 save format and accelerated production timers are retained. This is an opening-experience polish pass; it is not a claim of a calibrated 20-minute tutorial or a complete 2–3-hour campaign.
 
 ## New in Playtest 05
 
@@ -86,7 +97,7 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-38 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+43 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. The guide is exercised through both first-business paths using only suggested actions, actual production and earned funds. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
 Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, and the private hosted game required an interactive sign-in in the preview browser. Do not treat successful model tests as browser validation.
 
