@@ -1,10 +1,10 @@
-# Little Harbour — Playtest 03
+# Little Harbour — Playtest 04
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
 
-Open `Little-Harbour-Playtest-03.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Open `Little-Harbour-Playtest-04.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -15,9 +15,28 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 5. Build a fishing jetty or olive workshop.
 6. Produce the new goods and send a second shipment.
 7. Extend the quay.
-8. Choose trade routes, maintain stock targets, build your second business and improve workshop queues.
+8. Choose trade routes and maintain stock targets to fund further growth.
+9. In Build, select your town direction and invest in its specialist workshop.
+10. In Contracts, accept and complete a three-shipment commitment.
+11. Complete a different contract and establish the harbour charter.
+12. Continue in open play, with both specialist plots permitted and improved trade rewards.
 
-## New in Playtest 03
+## New in Playtest 04
+
+After extending the quay, Chapter 02 introduces a town direction and contracts:
+
+- **Working waterfront:** build a boatyard. Two timber become four planks; four planks become two boat fittings. Contracts demand fittings alongside fish and, in one case, bread.
+- **Coastal estate:** build a vineyard and cellar. Harvest four grapes, then produce two wine. Contracts demand wine alongside oil and, in one case, bread.
+- One specialist plot operates before the charter. Choose a direction, fund its investment with ordinary trade, and finish its building before production opens. The matching base business (fishing or olive oil) is required.
+- Each path offers two distinct contracts. A contract commits to three shipments, pays per shipment, and pays a completion bonus. There are no deadlines. Previously delivered goods are not refunded if a contract is released.
+- Two different completed contracts earn eligibility for the **harbour charter**. It costs 400 coins, 20 timber and 12 stone. The charter permits both owned specialist plots to produce in parallel and increases ordinary trade coin rewards by 20%.
+- Existing investments and goods are retained when directions change. Active contracts must be finished or released first. Before the charter, in-progress specialist jobs must finish before switching.
+- Contracts keep progress across save/reload. Replaying a completed contract earns coins but cannot duplicate a partnership.
+- Versions 1–3 saves migrate to version 4, with the original town, stock, queues and construction retained. New goods begin at zero.
+
+This is a bounded test of specialisation, multi-shipment commitments and a longer-term project. Seasonal economies, freely placed districts and a full-length campaign remain future work.
+
+## Activity added in Playtest 03
 
 - Businesses take eight simulation seconds to construct. Foundations, scaffolding and finishing stages appear on their sites before the finished structure is revealed.
 - New businesses cannot begin production until construction is complete. Completed businesses in version 1 and 2 saves are preserved as completed.
@@ -57,7 +76,7 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-23 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+32 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
 Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, the publishing repository was unreachable, and the browser policy disallowed local-file navigation. Do not treat successful model tests as browser validation.
 

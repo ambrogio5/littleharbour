@@ -26,7 +26,7 @@ export function createHarbourScene(canvas,getState,isPaused){
   if(type==='shipment'){trips.push({kind:'cargo',start:clock,duration:18,detail});flashes.push({text:'Shipment departing',x:1190,y:580,start:clock});}
   else if(type==='harvest'){trips.push({kind:'harvest',start:clock,duration:8});flashes.push({text:'+6 wheat',x:270,y:230,start:clock});}
   else if(type==='produced'){
-   const kind=({flour:'mill',bread:'bakery',olives:'olives',oil:'press',fish:'fish',wheat:'harvest'})[detail];
+   const kind=({flour:'mill',bread:'bakery',olives:'olives',oil:'press',fish:'fish',wheat:'harvest',planks:'mill',boatparts:'fish',grapes:'olives',wine:'press'})[detail];
    if(kind&&trips.filter(t=>t.kind===kind).length<3)trips.push({kind,start:clock,duration:kind==='press'||kind==='olives'?12:8});
    const point=kind?HARBOUR_PATHS[kind][0]:[840,460];if(kind)flashes.push({text:'Goods ready',x:point[0],y:point[1]-25,start:clock});
   }
@@ -55,7 +55,7 @@ export function createHarbourScene(canvas,getState,isPaused){
   ctx.restore();
  }
  function scaffold(project){
-  const positions={olive:[350,590],fishing:[1110,610],pier:[1300,610],storehouse:[1300,460]};
+  const positions={olive:[350,590],fishing:[1110,610],pier:[1300,610],storehouse:[1300,460],boatyard:[1300,470],estate:[1130,260],charter:[770,220]};
   const [x,y]=positions[project.type],stage=constructionStage(project.left),progress=1-project.left/8;
   ctx.save();ctx.translate(x,y);ctx.fillStyle='#343c2a35';ctx.beginPath();ctx.ellipse(0,10,65,17,-.2,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#bdb49c';ctx.beginPath();ctx.moveTo(-55,0);ctx.lineTo(0,-24);ctx.lineTo(59,-3);ctx.lineTo(0,22);ctx.closePath();ctx.fill();
