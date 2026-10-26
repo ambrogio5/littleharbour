@@ -123,7 +123,7 @@ function help(){showDialog('<div class="panel-eyebrow">WELCOME TO PORTO LUME</di
 function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)return;
  if(b.dataset.speed!==undefined){state.speed=Number(b.dataset.speed);render();return;}
  if(b.dataset.tab){choose(b.dataset.tab,b.dataset.tab==='produce'?'overview':null,true);return;}
- if(b.dataset.station){choose('produce',b.dataset.station,true);return;}
+ if(b.dataset.station){if($('#dialog').open)$('#dialog').close();choose('produce',b.dataset.station,true);return;}
  if(b.dataset.select){const s=b.dataset.select;choose(s==='trade'?'trade':s==='build'?'build':'produce',!['trade','build'].includes(s)?s:null,true);return;}
  const a=b.dataset.action;let success=false;
  if(a==='begin'){state.onboarded=true;$('#dialog').close();choose('produce','field',true);return;}
