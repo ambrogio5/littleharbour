@@ -1,10 +1,10 @@
-# Little Harbour — Playtest 04
+# Little Harbour — Playtest 05
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
 
-Open `Little-Harbour-Playtest-04.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Open `Little-Harbour-Playtest-05.html` from the delivery folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -20,6 +20,16 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 10. In Contracts, accept and complete a three-shipment commitment.
 11. Complete a different contract and establish the harbour charter.
 12. Continue in open play, with both specialist plots permitted and improved trade rewards.
+
+## New in Playtest 05
+
+- Production opens to an overview of every active workshop, with stock, incoming goods, queue occupancy and remaining time. Start work directly or open the workshop for detailed controls.
+- Harvest & replant collects six wheat and starts the next crop in one tap. Existing crop behavior and farmhand targets remain compatible.
+- Fill queue starts as many batches as current ingredients and free slots permit. Ingredients are spent immediately; waiting batches can still be cancelled for a refund.
+- At a glance actions beneath the map offer harvesting, the selected trade route, and the active contract. Dispatch remains an explicit tap and pays only once per shipment.
+- Resource counters and each missing shipment ingredient link to its production source. Incoming output is visible beside the requirement. Unavailable specialist sources lead to Build.
+- Phone navigation stays at the bottom, with safe-area spacing, and speed controls are also available in the management panel. Touch targets are at least 44px for the main controls.
+- Existing version 4 saves load unchanged; no new save format or currency is introduced.
 
 ## New in Playtest 04
 
@@ -76,13 +86,13 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-32 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+38 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
-Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, the publishing repository was unreachable, and the browser policy disallowed local-file navigation. Do not treat successful model tests as browser validation.
+Browser rendering, touch behavior and actual Safari/Chrome playthroughs have NOT been verified in this environment: local server binding was blocked, and the private hosted game required an interactive sign-in in the preview browser. Do not treat successful model tests as browser validation.
 
 ## Limits
 
-This is a functional economy prototype with a generated static map image, clickable locations and construction overlays. It is not a free-camera 3D town builder. Buildings occupy authored locations; free placement, road routing, animated citizens, multiplayer, cloud saves and native iPhone/iPad packaging remain future work. No freemium purchases or payments are implemented. One ordinary earned coin balance funds construction.
+This is a functional economy prototype with a generated static map image, clickable locations and construction overlays. It is not a free-camera 3D town builder. Buildings occupy authored locations; free placement, road routing, autonomous citizen simulation, multiplayer, cloud saves and native iPhone/iPad packaging remain future work. No freemium purchases or payments are implemented. One ordinary earned coin balance funds construction.
 
 ## Development
 

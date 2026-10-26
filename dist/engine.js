@@ -24,6 +24,25 @@ export function underConstruction(s,type){return s.construction.find(p=>p.type==
 export function unlocked(s,key){if(!Object.hasOwn(RECIPES,key))return false;const station=RECIPES[key].station;if(['boatyard','estate'].includes(station))return s.specialists.includes(station)&&!underConstruction(s,station)&&(s.charter||PATHS[s.specialisation]?.station===station);return key==='fishing'?has(s,'fishing')&&!underConstruction(s,'fishing'):['olives','press'].includes(key)?has(s,'olive')&&!underConstruction(s,'olive'):true;}
 export function harvest(s){if(!s.ripe)return false;s.ripe=false;s.stock.wheat+=6;s.harvests++;note(s,'Harvest collected · +6 wheat');return true;}
 export function start(s,key,quiet=false){if(!unlocked(s,key))return false;const r=RECIPES[key];if(key==='field'&&s.ripe)return false;if(s.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(s,r.station)||!canAfford(s,r.cost))return false;spend(s,r.cost);s.jobs.push({key,left:r.duration});if(!quiet)note(s,r.name+' queued');return true;}
+// Bulk controls spend only available ingredients and respect shared station queues.
+export function maxBatches(s,key){
+ if(!unlocked(s,key)||(key==='field'&&s.ripe))return 0;
+ const r=RECIPES[key],slots=capacity(s,r.station)-s.jobs.filter(j=>RECIPES[j.key].station===r.station).length;
+ return Math.max(0,Math.min(slots,...Object.entries(r.cost).map(([item,n])=>Math.floor(s.stock[item]/n))));
+}
+export function queueBatch(s,key,count){
+ if(!Number.isSafeInteger(count)||count<1)return 0;
+ const amount=Math.min(count,maxBatches(s,key));
+ for(let i=0;i<amount;i++)start(s,key,true);
+ if(amount)note(s,RECIPES[key].name+' · '+amount+' batch'+(amount===1?'':'es')+' queued');
+ return amount;
+}
+export function harvestReplant(s){
+ if(!harvest(s))return false;
+ start(s,'field',true);
+ return true;
+}
+export function incoming(s,item){return s.jobs.reduce((sum,j)=>sum+(RECIPES[j.key].output[item]||0),0);}
 export function canCancel(s,index){const j=s.jobs[index];return !!j&&s.jobs.slice(0,index).some(x=>RECIPES[x.key].station===RECIPES[j.key].station);}
 export function cancel(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const [j]=s.jobs.splice(index,1);add(s,RECIPES[j.key].cost);note(s,'Queued batch cancelled · ingredients returned');return true;}
 export function prioritize(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const station=RECIPES[s.jobs[index].key].station,first=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(index===first+1)return false;const [j]=s.jobs.splice(index,1);s.jobs.splice(first+1,0,j);note(s,'Batch moved to the front of its waiting queue');return true;}
