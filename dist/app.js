@@ -1,0 +1,114 @@
+import {ITEMS,RECIPES,fresh,parseSave,has,canAfford,harvest,start,tick,orders,order,selectOrder,dispatch,build,buildCost,upgrade,upgradeWorkshops,milestone,canCancel,cancel,prioritize,capacity,setTarget,PIER_COST,WORKSHOP_COST} from './engine.js';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const KEY='little-harbour-v1';let state=fresh(),storageOK=true,saveWarning='';
+try{const saved=localStorage.getItem(KEY);if(saved){try{state=parseSave(saved);}catch{saveWarning='The previous save could not be loaded. A new town has been opened.';}}}catch{storageOK=false;}
+let tab='produce',station='field',toastTimer,pendingImport=null;
+const glyph={wheat:'♧',flour:'◈',bread:'◒',olives:'❧',oil:'♙',fish:'≋',wood:'▱',stone:'◇'};
+const stationNames={field:'Field',mill:'Mill',bakery:'Bakery',fishing:'Fishing',olive:'Olives'};
+const goals=[
+ ['Start with the wheat field','Harvest six wheat. Your first field is already ripe.'],
+ ['Turn wheat into flour','Select the stone mill. Two wheat make two flour.'],
+ ['Fire up the bakery','Use two flour to bake two loaves. The mill can work alongside it.'],
+ ['Make your first delivery','Supply four bread to Cala Verde. Keep the mill and bakery working.'],
+ ['Choose your next livelihood','Your first delivery funds a fishing jetty or an olive workshop.'],
+ ['Extend the working quay','Trade your new goods. Save 140 coins, 10 timber and 8 stone to extend the quay.'],
+ ['A working harbour','Chapter complete. Choose trade routes, set stock targets, and build your second business.']
+];
+function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;}catch{storageOK=false;}$('#saveStatus').textContent=storageOK?'Saved on this device':'Use Export to keep your town';$('#autosaveWarning').hidden=storageOK;}
+function toast(t){$('#toast').textContent=t;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3300);}
+function costs(c){return Object.entries(c).map(([k,v])=>`${v} ${k==='coins'?'coins':ITEMS[k].toLowerCase()}`).join(' · ');}
+function ingredients(c){return Object.entries(c).map(([k,v])=>`<div class="ingredient-row"><span>${ITEMS[k]}</span><strong class="${state.stock[k]>=v?'enough':''}">${state.stock[k]} / ${v} needed</strong></div>`).join('');}
+function recipeButton(key,text){const r=RECIPES[key],full=state.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(state,r.station),lacks=!canAfford(state,r.cost),fieldBlocked=key==='field'&&state.ripe;return `<button class="button" data-action="start" data-key="${key}" ${full||lacks||fieldBlocked?'disabled':''}>${full?'Queue full':text}</button>${lacks?`<p class="hint">Needs ${costs(r.cost)}. <button class="text-button" data-action="ingredient" data-key="${Object.keys(r.cost)[0]}">Go to source →</button></p>`:''}`;}
+function autoControl(key){if(!state.pier)return '';const value=state.targets[key]||0,item=Object.keys(RECIPES[key].output)[0];return `<div class="auto-control"><div><strong>${key==='field'?'Farmhand':key==='press'?'Oil target':key==='olives'?'Olive target':'Stock target'}</strong><small>${value?'Maintain '+value+' '+ITEMS[item].toLowerCase():'Manual production'}</small></div><div class="segmented" aria-label="${RECIPES[key].name} stock target">${[0,6,12].map(v=>`<button data-action="target" data-key="${key}" data-value="${v}" aria-pressed="${value===v}" class="${value===v?'active':''}">${v||'Off'}</button>`).join('')}</div></div>`;}
+function jobList(){return `<div class="queue"><div class="section-label">PRODUCTION QUEUE <span>${state.workshopUpgrade?4:2} SLOTS / WORKSHOP</span></div>${state.jobs.length?state.jobs.map((j,i)=>`<div class="job"><div class="job-name"><span>${RECIPES[j.key].name}</span><small data-jobtime="${i}"></small></div><div class="progress"><i data-jobbar="${i}"></i></div>${canCancel(state,i)?`<div class="job-actions"><button data-action="prioritize" data-index="${i}">Move next</button><button data-action="cancel" data-index="${i}">Cancel & refund</button></div>`:''}</div>`).join(''):'<div class="empty-queue">No work in progress. Start a batch to keep the harbour moving.</div>'}</div>`;}
+function recipeCard(input,output,left,right,duration){return `<div class="recipe-card"><div class="chain"><div class="object"><b>${glyph[input]||input}</b><small>${left}</small></div><span class="arrow">→</span><div class="object"><b>${glyph[output]||output}</b><small>${right}</small></div></div><div class="recipe-meta"><span>Local production</span><span>${duration} simulation seconds</span></div></div>`;}
+function production(){
+ const available=['field','mill','bakery',...state.businesses];
+ let html=`<div class="station-selector">${available.map(k=>`<button data-station="${k}" aria-pressed="${station===k}" class="${station===k?'active':''}">${stationNames[k]}</button>`).join('')}</div><div class="panel-eyebrow">LOCAL PRODUCTION</div>`;
+ if(station==='field')html+=`<h2>Wheat field</h2><p class="description">Harvest and replant. A steady supply of wheat keeps your mill working.</p>${recipeCard('wheat','wheat','One field','6 wheat',12)}${state.ripe?'<button class="button" data-action="harvest">Harvest 6 wheat</button>':recipeButton('field','Plant wheat')}${autoControl('field')}<p class="hint">Crops stay ready until collected. Nothing spoils while you’re away.</p>`;
+ else if(station==='fishing')html+=`<h2>Fishing jetty</h2><p class="description">Send your boat out for fresh fish. Every trip brings back two crates.</p>${recipeCard('⚓','fish','Fishing boat','2 fish',14)}${recipeButton('fishing','Send boat · catch 2 fish')}${autoControl('fishing')}`;
+ else if(station==='olive')html+=`<h2>Olive workshop</h2><p class="description">Harvest the grove, then press your olives into oil. Both jobs share this workshop’s queue.</p>${recipeCard('olives','oil','2 olives','2 olive oil',12)}${recipeButton('olives','Harvest 4 olives')}${ingredients({olives:2})}${recipeButton('press','Press 2 olive oil')}${autoControl('olives')}${autoControl('press')}`;
+ else {const mill=station==='mill',input=mill?'wheat':'flour',output=mill?'flour':'bread',r=RECIPES[station];html+=`<h2>${mill?'Stone mill':'Bakery'}</h2><p class="description">${mill?'Turn the harvest into flour. Keep a batch ready for the bakery.':'Bake bread for the village and the boats that trade along the coast.'}</p>${recipeCard(input,output,'2 '+ITEMS[input].toLowerCase(),'2 '+ITEMS[output].toLowerCase(),r.duration)}${ingredients(r.cost)}${recipeButton(station,mill?'Mill 2 flour':'Bake 2 bread')}${autoControl(station)}<p class="hint">Finished goods move straight into storage. Buildings work in parallel.</p>`;}
+ return html+(state.speed===0?'<div class="paused-note">Simulation paused. Select 1× or 3× to resume.</div>':'')+jobList();
+}
+function tradePanel(){const o=order(state),routes=orders(state);return `<div class="panel-eyebrow">COASTAL TRADE</div><h2>The harbour</h2><p class="description">Choose what to ship and what your town needs in return.</p>${routes.length>1?`<div class="route-options">${routes.map(r=>`<button data-action="route" data-key="${r.id}" class="${r.id===o.id?'active':''}" aria-pressed="${r.id===o.id}"><span>${r.name}</span><small>${r.id==='materials'?'Building materials':r.id==='specialist'?'Specialist cargo':'Market supplies'}</small></button>`).join('')}</div>`:''}<div class="order-destination"><span>⚓</span><div><strong>${o.name}</strong><small>${state.pier?'Extended quay':'Local supply route'}</small></div></div><p class="description">${o.description}</p>${o.locked?'<button class="button" data-action="go-build">Choose an expansion</button>':`${ingredients(o.cost)}<div class="reward"><span>Earnings</span><strong>${o.coins} coins</strong></div><div class="reward"><span>Materials</span><strong>${o.wood} timber · ${o.stone} stone</strong></div><button class="button" data-action="dispatch" ${canAfford(state,o.cost)?'':'disabled'}>Load & dispatch</button><p class="hint">${canAfford(state,o.cost)?'All goods are ready. Earnings arrive immediately on dispatch.':'Produce the missing goods. There are no delivery deadlines.'}</p>${!canAfford(state,o.cost)?'<button class="button secondary" data-action="missing">Find missing goods</button>':''}`}<div class="ingredient-row"><span>Completed deliveries</span><strong>${state.deliveries}</strong></div><div class="queue"><div class="section-label">STOREHOUSE</div><div class="full-inventory">${Object.entries(ITEMS).map(([k,n])=>`<span>${n}<b>${state.stock[k]}</b></span>`).join('')}</div></div>`;}
+function buildPanel(){
+ let html='<div class="panel-eyebrow">TOWN DEVELOPMENT</div><h2>Room to grow.</h2><p class="description">New businesses create new goods. Better infrastructure gives you more ways to manage them.</p>';
+ for(const type of ['fishing','olive']){const owned=has(state,type),unlocked=state.deliveries>0&&(!state.expansion||state.pier),cost=buildCost(state);html+=`<article class="build-card"><h3>${type==='fishing'?'Fishing jetty':'Olive workshop'}</h3><p>${type==='fishing'?'A direct supply chain: boat → fish → coastal market.':'A two-step supply chain: olives → oil → coastal market.'}</p>${owned?`<button class="text-button" data-station="${type}">Operating · Manage production →</button>`:`<div class="cost">${costs(cost)}</div><button class="button" data-action="build" data-key="${type}" ${unlocked&&canAfford(state,cost)?'':'disabled'}>Build ${type==='fishing'?'fishing jetty':'olive workshop'}</button><p class="hint">${!state.deliveries?'Complete your first bread delivery.':state.expansion&&!state.pier?'Extend the quay to unlock your second business.':!canAfford(state,cost)?'Trade for the remaining funds and materials.':'Ready to build.'}</p>`}</article>`;}
+ html+=`<article class="build-card"><h3>Extend the quay</h3><p>Choose between three trade routes. Unlock stock targets and your second business.</p>${state.pier?'<span class="success-tag">Quay extension complete</span>':`<div class="cost">${costs(PIER_COST)}</div><button class="button" data-action="upgrade" ${state.deliveries>=2&&state.expansion&&canAfford(state,PIER_COST)?'':'disabled'}>Extend quay</button><p class="hint">${state.deliveries<2?'Complete a shipment from your first business.':!canAfford(state,PIER_COST)?'Complete another delivery for the remaining resources.':'Materials and funds are ready.'}</p>`}</article>`;
+ html+=`<article class="build-card"><h3>Organise the storehouse</h3><p>Four queue slots at every workshop. Plan longer production runs.</p>${state.workshopUpgrade?'<span class="success-tag">Four queue slots available</span>':`<div class="cost">${costs(WORKSHOP_COST)}</div><button class="button" data-action="workshops" ${state.pier&&canAfford(state,WORKSHOP_COST)?'':'disabled'}>Improve workshops</button>${!state.pier?'<p class="hint">Requires the extended quay.</p>':''}`}</article>`;
+ return html;
+}
+function render(){
+ const focus=document.activeElement,focusKey=focus?.dataset?.focusKey;
+ $('#coins').textContent=state.coins;
+ const visible=['wheat','flour','bread','wood','stone',...(has(state,'fishing')?['fish']:[]),...(has(state,'olive')?['oil']:[])];
+ $('#resources').innerHTML=visible.map(k=>`<div class="resource" title="${ITEMS[k]}"><span class="resource-icon" aria-hidden="true">${glyph[k]}</span><em>${ITEMS[k]}</em><strong>${state.stock[k]}</strong></div>`).join('');
+ $$('.tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.tab===tab);b.setAttribute('aria-pressed',String(b.dataset.tab===tab));});
+ $$('.map-pin').forEach(b=>b.classList.toggle('selected',b.dataset.select===(tab==='trade'?'trade':tab==='build'?'build':station)));
+ $('#panel').innerHTML=tab==='produce'?production():tab==='trade'?tradePanel():buildPanel();
+ $$('#panel button').forEach((b,i)=>b.dataset.focusKey=[tab,station,b.dataset.action,b.dataset.key,b.dataset.index,b.dataset.value,i].join('|'));
+ if(focusKey){const restored=$$('#panel button').find(b=>b.dataset.focusKey===focusKey);if(restored&&!restored.disabled)restored.focus({preventScroll:true});}
+ $('#log').innerHTML=state.log.map(t=>`<li>${esc(t)}</li>`).join('');
+ const m=milestone(state);$('#goalTitle').textContent=goals[m][0];$('#goalDescription').textContent=goals[m][1];$('#chapterCount').textContent=m+' / 6';$('#journeyTrack').innerHTML=Array.from({length:6},(_,i)=>`<span class="${i<m?'complete':''}"></span>`).join('');$('#goalAction').textContent=m===6?'Explore town upgrades →':'Show next step →';
+ $('#fieldLabel').textContent=state.ripe?'Ready to harvest':state.jobs.some(j=>j.key==='field')?'Growing':'Ready to plant';$('.ready-dot').hidden=!state.ripe;
+ $('#millLabel').textContent=state.jobs.some(j=>j.key==='mill')?'Milling flour…':'Wheat → flour';$('#bakeryLabel').textContent=state.jobs.some(j=>j.key==='bakery')?'Baking bread…':'Flour → bread';
+ $('#expName').innerHTML=has(state,'olive')?'Olive workshop<small>Open production</small>':'Olive workshop<small>Available to build</small>';
+ $('#expIcon').textContent=has(state,'olive')?'❧':'＋';$('.expansion-pin').dataset.select=has(state,'olive')?'olive':'build';$('.expansion-pin').classList.toggle('empty',!has(state,'olive'));$('#newBuilding').hidden=!has(state,'olive');
+ $('#fishingName').innerHTML=has(state,'fishing')?'Fishing jetty<small>Open production</small>':'Fishing jetty<small>Available to build</small>';
+ $('.fishing-pin').dataset.select=has(state,'fishing')?'fishing':'build';$('.fishing-pin').classList.toggle('empty',!has(state,'fishing'));$('#newJetty').hidden=!has(state,'fishing');$('#pierOverlay').hidden=!state.pier;
+ $('#harbourLabel').textContent=state.pier?'3 routes available':!state.deliveries?'First delivery':'Coastal trade';
+ $$('[data-speed]').forEach(b=>{b.classList.toggle('active',Number(b.dataset.speed)===state.speed);b.setAttribute('aria-pressed',String(Number(b.dataset.speed)===state.speed));});
+ $('#mapState').textContent=state.speed===0?'Paused':state.jobs.length?state.jobs.length+' active / queued':'Tap a building · Swipe to explore';
+ $('#autosaveWarning').hidden=storageOK;
+ updateProgress();save();
+}
+function updateProgress(){const seen=new Set();state.jobs.forEach((j,i)=>{const r=RECIPES[j.key],queued=seen.has(r.station);seen.add(r.station);const label=$(`[data-jobtime="${i}"]`),bar=$(`[data-jobbar="${i}"]`);if(label)label.textContent=queued?'Queued':Math.ceil(j.left)+'s'+(state.speed===0?' · paused':'');if(bar)bar.style.width=Math.max(0,(1-j.left/r.duration)*100)+'%';});}
+function choose(t,s,scroll=false){tab=t;if(s)station=s;render();if(scroll&&matchMedia('(max-width:740px)').matches)$('.management').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}
+function goIngredient(item){if(item==='bread'){if(state.stock.flour>=2||state.jobs.some(j=>j.key==='bakery'))choose('produce','bakery',true);else goIngredient('flour');}else if(item==='flour'){if(state.stock.wheat>=2||state.jobs.some(j=>j.key==='mill'))choose('produce','mill',true);else choose('produce','field',true);}else choose('produce',({wheat:'field',olives:'olive',oil:'olive',fish:'fishing'})[item]||'field',true);}
+function nextStep(){const m=milestone(state);if(m===0)choose('produce','field',true);else if(m===1)goIngredient('flour');else if(m===2)goIngredient('bread');else if(m===4||m===6)choose('build',null,true);else if(m===5&&state.deliveries>=2&&canAfford(state,PIER_COST))choose('build',null,true);else{const o=order(state),missing=Object.entries(o.cost).find(([k,v])=>state.stock[k]<v);if(missing)goIngredient(missing[0]);else choose('trade',null,true);}}
+function showDialog(html){$('#dialogContent').innerHTML=html;if(!$('#dialog').open)$('#dialog').showModal();}
+function downloadSave(){const a=document.createElement('a'),blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);a.href=url;a.download='Little-Harbour-Save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Save exported. Keep it to continue in a later version.');}
+function settings(){showDialog(`<div class="panel-eyebrow">PLAYTEST 02</div><h2>Your harbour</h2><p>${storageOK?'Progress saves automatically in this browser.':'Browser storage is unavailable. Export your save before closing.'} Export a copy to move your town between devices or prototype versions.</p><div class="save-actions"><button class="button" data-action="export">Export town save</button><button class="button secondary" data-action="import">Import town save</button></div><p class="hint">The game pauses while this panel is open. Closing or hiding the page also pauses it.</p><button class="text-button reset-link" data-action="confirm-reset">Start a new town</button>`);}
+function help(){showDialog('<div class="panel-eyebrow">WELCOME TO PORTO LUME</div><h2>A working harbour.</h2><p>Build a small coastal economy. Your first goal is a shipment of four bread.</p><ol class="onboarding-steps"><li><strong>Harvest</strong><span>Collect wheat from the field.</span></li><li><strong>Produce</strong><span>Mill wheat into flour, then bake bread. Buildings work in parallel.</span></li><li><strong>Trade</strong><span>Deliver goods for coins and building materials.</span></li><li><strong>Expand</strong><span>Add fishing or olive oil. Extend the quay to unlock both and automate production.</span></li></ol><p>Use pause, 1× or 3×. Nothing spoils and no delivery expires.</p><button class="button" data-action="begin">Start at the wheat field</button><p class="hint">Solo browser prototype. Shared multiplayer and a native iPhone app are not included in this build.</p>');}
+function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)return;
+ if(b.dataset.speed!==undefined){state.speed=Number(b.dataset.speed);render();return;}
+ if(b.dataset.tab){choose(b.dataset.tab);return;}
+ if(b.dataset.station){choose('produce',b.dataset.station);return;}
+ if(b.dataset.select){const s=b.dataset.select;choose(s==='trade'?'trade':s==='build'?'build':'produce',!['trade','build'].includes(s)?s:null,true);return;}
+ const a=b.dataset.action;let success=false;
+ if(a==='begin'){state.onboarded=true;$('#dialog').close();choose('produce','field',true);return;}
+ if(a==='next'){nextStep();return;}
+ if(a==='map'){$('#map').scrollIntoView({behavior:'smooth',block:'center'});return;}
+ if(a==='ingredient'){goIngredient(b.dataset.key);return;}
+ if(a==='missing'){const item=Object.entries(order(state).cost).find(([k,v])=>state.stock[k]<v);if(item)goIngredient(item[0]);return;}
+ if(a==='harvest'){success=harvest(state);if(success)toast('Harvest collected · +6 wheat');}
+ if(a==='start'){success=start(state,b.dataset.key);if(success)toast(RECIPES[b.dataset.key].name+' queued');}
+ if(a==='cancel'){success=cancel(state,Number(b.dataset.index));if(success)toast('Queued batch cancelled. Ingredients returned.');}
+ if(a==='prioritize'){success=prioritize(state,Number(b.dataset.index));if(!success)toast('That batch is already next for its workshop.');}
+ if(a==='target'){success=setTarget(state,b.dataset.key,Number(b.dataset.value));if(success)toast(Number(b.dataset.value)?'Production will maintain the selected stock.':'Automatic production stopped. Existing batches remain queued.');}
+ if(a==='route'){success=selectOrder(state,b.dataset.key);}
+ if(a==='dispatch'){success=dispatch(state);if(success){toast(state.deliveries===1?'First delivery complete. Choose your expansion.':'Shipment delivered. Funds and materials received.');$('#map').classList.remove('dispatching');requestAnimationFrame(()=>$('#map').classList.add('dispatching'));}}
+ if(a==='go-build'){choose('build',null,true);return;}
+ if(a==='build'){success=build(state,b.dataset.key);if(success){toast('Construction complete. Your new business is ready.');station=b.dataset.key;tab='produce';}}
+ if(a==='upgrade'){success=upgrade(state);if(success)toast('Quay extended. New routes and stock targets unlocked.');}
+ if(a==='workshops'){success=upgradeWorkshops(state);if(success)toast('Four production slots are now available at each workshop.');}
+ if(a==='export'){downloadSave();return;}
+ if(a==='import'){$('#importSave').click();return;}
+ if(a==='apply-import'&&pendingImport){state=pendingImport;pendingImport=null;tab='produce';station='field';$('#dialog').close();success=true;toast('Town imported successfully.');}
+ if(a==='reset'){state=fresh();state.onboarded=true;tab='produce';station='field';$('#dialog').close();success=true;toast('A new harbour is ready.');}
+ if(a==='confirm-reset'){showDialog('<div class="panel-eyebrow">START AGAIN</div><h2>Start a new town?</h2><p>This replaces the saved town in this browser. Export your current town first if you want to keep it.</p><button class="button secondary" data-action="export">Export current town</button><button class="button" data-action="reset">Start a new town</button>');return;}
+ if(success)render();else if(a&&!['prioritize'].includes(a))toast('That action is not available yet.');
+}
+function init(){
+ document.addEventListener('click',handleClick);$('#help').onclick=help;$('#settings').onclick=settings;
+ $('#closeDialog').onclick=()=>{state.onboarded=true;pendingImport=null;$('#dialog').close();save();};
+ $('#dialog').addEventListener('cancel',()=>{state.onboarded=true;pendingImport=null;save();});
+ $('#importSave').addEventListener('change',async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>100000)throw Error('Choose a Little Harbour JSON save under 100 KB.');pendingImport=parseSave(await file.text());showDialog(`<div class="panel-eyebrow">IMPORT TOWN</div><h2>Replace this town?</h2><p>The imported town has ${pendingImport.deliveries} deliveries, ${pendingImport.coins} coins and ${pendingImport.businesses.length} new businesses.</p><p>It will replace the current town in this browser.</p><button class="button secondary" data-action="export">Export current town first</button><button class="button" data-action="apply-import">Import this town</button>`);}catch(error){pendingImport=null;toast(error.message||'That save could not be imported.');}});
+ let last=performance.now(),saveClock=0;
+ setInterval(()=>{const now=performance.now(),dt=Math.min((now-last)/1000,.5);last=now;if(document.hidden||$('#dialog').open)return;const before=state.jobs.length,stock=JSON.stringify(state.stock),completed=tick(state,dt);if(completed||before!==state.jobs.length||stock!==JSON.stringify(state.stock))render();else updateProgress();saveClock+=dt;if(saveClock>3){save();saveClock=0;}},200);
+ document.addEventListener('visibilitychange',()=>{last=performance.now();save();});window.addEventListener('pagehide',save);
+ render();if(saveWarning)toast(saveWarning);if(!state.onboarded)help();
+}
+init();
