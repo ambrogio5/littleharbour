@@ -33,7 +33,7 @@ This release completes the planning milestone and the following inland-chain mil
 - **Inland terraces:** supply either market shop three times to unlock the path. Choose fruit orchard or kitchen garden independently on two fixed terraces. Their resource costs, harvest sizes and processing speeds differ. Crop choices are permanent for this prototype.
 - **Pottery and preserving:** gather clay, fire jars or tiles using timber, package either harvest as preserves, and export to Valle Serena for coins and building materials. Jars and tiles compete for the same kiln queue.
 - **Market courtyard:** after the first preserves shipment, invest twelve tiles plus funds and stone in paving. Completed paving raises local-order earnings by 25% (75 coins for fish, 113 for provisions).
-- **Visual expansion:** a third photographic map district, independent kiln and preserving-room overlays, crop overlays tied to production, construction markers, workers and kiln smoke. Crop overlays are still illustrative prototype assets.
+- **Visual expansion:** a third photographic map district, independent kiln and preserving-room overlays, crop overlays tied to production, construction markers, workers and kiln smoke. Matching photographic orchard and vegetable layers follow each terrace choice.
 - **Sample town:** [explore the hillside immediately](https://little-harbour-prototype.ambrogiocremona.chatgpt.site/demo.html). It has an explicitly separate browser save and does not touch the main town.
 - Saves migrate to version 8. Both specialist paths have earned-resource progression tests through inland trade and courtyard completion. Timers remain accelerated; this does not claim a balanced full-length campaign or physical-device validation.
 

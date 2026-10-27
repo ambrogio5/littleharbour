@@ -4,13 +4,17 @@
 export const INLAND_SIZE={width:1536,height:1024};
 export const INLAND_BASE_IMAGE='assets/inland-base.png';
 export const INLAND_BUILT_IMAGE='assets/inland-built.png';
+export const INLAND_ORCHARDS_IMAGE='assets/inland-orchards.png';
+export const INLAND_GARDENS_IMAGE='assets/inland-gardens.png';
 export const INLAND_PLOTS=[
  {id:0,name:'West terrace',station:'terrace0',x:27,y:34,width:38,height:21,
+  cropClip:'polygon(6% 34%,18% 21%,25% 18%,45% 24%,50% 31%,47% 44%,39% 48%,22% 44%,6% 39%)',
   polygon:'145,348 320,244 501,248 690,292 742,323 687,416 578,453 373,423 166,370',
   clip:'polygon(9.4% 34%,20.8% 23.8%,32.6% 24.2%,44.9% 28.5%,48.3% 31.5%,44.7% 40.6%,37.6% 44.2%,24.3% 41.3%,10.8% 36.1%)',
   cropRows:[[280,310,580,343],[235,343,625,386],[273,382,576,416]],
   roadPoint:{x:750,y:464},construction:{x:418,y:357}},
  {id:1,name:'East terrace',station:'terrace1',x:75,y:33,width:37,height:20,
+  cropClip:'polygon(55% 29%,66% 23%,75% 19%,86% 23%,94% 30%,97% 36%,93% 41%,77% 45%,63% 45%,56% 39%)',
   polygon:'879,299 1020,256 1250,247 1375,284 1468,349 1398,388 1193,420 988,427 897,389',
   clip:'polygon(57.2% 29.2%,66.4% 25%,81.4% 24.1%,89.5% 27.7%,95.6% 34.1%,91% 37.9%,77.7% 41%,64.3% 41.7%,58.4% 38%)',
   cropRows:[[1000,294,1290,289],[962,332,1374,328],[1010,377,1330,375]],

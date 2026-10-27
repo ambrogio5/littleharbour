@@ -21,6 +21,6 @@ export function parseTargetPresets(raw){
 export function applyTargetPreset(s,preset){
  if(!s.pier||!preset||typeof preset!=='object'||Array.isArray(preset)||Object.entries(preset).some(([k,v])=>!Object.hasOwn(RECIPES,k)||![0,6,12].includes(v)))return false;
  // Replaces targets on currently unlocked workshops; never cancels paid batches.
- for(const key of Object.keys(RECIPES))if(unlocked(s,key))setTarget(s,key,preset[key]||0);
+ for(const key of Object.keys(RECIPES))if(unlocked(s,key)&&(s.targets[key]||0)!==(preset[key]||0))setTarget(s,key,preset[key]||0);
  return true;
 }
