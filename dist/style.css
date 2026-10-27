@@ -45,8 +45,8 @@
 
 /* The project reveals only the authored section completed by the player. */
 .waterfront-layer{position:absolute;inset:0;background:url('assets/harbour-waterfront.png') center/100% 100% no-repeat;filter:saturate(.88) contrast(.97);pointer-events:none}
-.waterfront-wall{clip-path:polygon(40% 40.5%,68% 41%,68% 46.5%,50% 48%,40% 46%)}
-.waterfront-landing{clip-path:polygon(41% 45%,64% 45%,67% 55%,53% 59%,42% 54%)}
+.waterfront-wall{clip-path:polygon(48% 43%,74% 38%,74% 43%,67% 46%,50% 48%,48% 46%)}
+.waterfront-landing{clip-path:polygon(41% 45%,67% 42%,68% 48%,67% 55%,53% 59%,42% 54%)}
 .waterfront-arcade{clip-path:polygon(79% 36%,100% 36%,100% 57%,79% 57%)}
 .waterfront-pin{left:57%;top:54%}
 .waterfront-eyebrow{margin-top:24px}

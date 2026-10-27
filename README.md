@@ -123,6 +123,8 @@ Progress is stored in the current browser when local storage is available. File-
 
 The live Playtests 06 and 07 opened successfully with an existing Chapter 02 town in the in-app browser. Desktop and 390 × 844 layouts, whole-harbour and label toggles, phone production navigation, and the mill refit comparison dialog were visually checked. No refit purchase was made in the existing town during browser QA. Phone screenshots are in `docs/playtest-07-harbour.png` and `docs/playtest-07-upgrades.png`. Physical iPhone Safari performance and touch comfort remain unverified. Automated tests are not a substitute for device playtesting.
 
+Playtest 08 was checked live at desktop width and 390 × 844. The existing charter town migrated successfully, the chapter guide opened the restoration plan, and all stage costs and delivery requirements were visible. No project funds or goods were spent in the existing town during browser QA. Screenshots: `docs/playtest-08-restoration.png` and `docs/playtest-08-funding.png`. Completed-stage economy and save behavior were verified in simulation; completed map reveals still need hands-on device playtesting.
+
 ## Limits
 
 This is a functional economy prototype with a generated static map image, clickable locations and construction overlays. It is not a free-camera 3D town builder. Buildings occupy authored locations; free placement, road routing, autonomous citizen simulation, multiplayer, cloud saves and native iPhone/iPad packaging remain future work. No freemium purchases or payments are implemented. One ordinary earned coin balance funds construction.
