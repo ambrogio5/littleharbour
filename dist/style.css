@@ -64,3 +64,10 @@
 .funding-stock{font-size:12px;line-height:1.5;color:#687362;margin:8px 0}.restoration-plan{margin:24px 0;border-top:1px solid #d7dacb;padding-top:16px}.restoration-plan summary{cursor:pointer;min-height:44px;font-size:13px;font-weight:600}
 .waterfront-entry{background:#e7eddf;border-color:#bbc8b1}
 @media(max-width:740px){.restoration-card{padding:18px}.restoration-stages{gap:6px}.restoration-stages li{display:block}.restoration-stages li>span{margin-bottom:7px}}
+
+/* Resources remain identifiable without interpreting a symbol or its colour. */
+.goods-icon{width:28px;height:30px;display:inline-block;vertical-align:middle;flex-shrink:0}
+.resource-strip{gap:7px}.resource{min-height:48px;gap:8px;padding:7px 10px}.resource em{display:inline!important;color:var(--ink);font-size:12px}.resource strong{font-size:14px}.resource-icon{display:flex;align-items:center}.resource .goods-icon{width:25px;height:28px}
+.object b .goods-icon{width:50px;height:54px}.object small{font-size:12px;color:var(--ink)}
+.ingredient-name{display:flex;align-items:center;gap:9px;color:var(--ink)!important}.ingredient-name .goods-icon{width:23px;height:26px}.workshop-good{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.workshop-good .goods-icon{width:23px;height:26px}.full-inventory .inventory-good{display:flex;gap:7px;align-items:center}.full-inventory .inventory-good>span{padding:0;background:none;flex:1;font-size:11px}.inventory-good .goods-icon{width:23px;height:26px}.inventory-good b{float:none}
+@media(max-width:740px){.resource-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.resource{display:grid;grid-template-columns:25px minmax(0,1fr);gap:2px 5px;padding:7px;min-width:0;text-align:left}.resource-icon{grid-row:1/3}.resource em{font-size:10px;line-height:1.25;overflow-wrap:normal}.resource strong{font-size:14px}.resource .goods-icon{width:24px;height:28px}}

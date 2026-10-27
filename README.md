@@ -24,6 +24,10 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
 
+## Resource readability update
+
+Resource counters and production recipes now use distinct illustrated SVG icons: wheat, flour sack, bread, olives, oil bottle, fish, logs, stone, planks, boat fittings, grapes and wine. Names remain visible at every screen width. The phone resource strip uses three labelled columns, and the same icons appear in workshop cards, delivery requirements and storage. Saved towns and the economy are unchanged.
+
 ## New in Playtest 08
 
 - Chapter 03 opens after the harbour charter is built. Restore the sea wall, public landing and trading arcade in order. Each stage needs a one-time funding payment and two supply deliveries; the crew then takes 12 simulation seconds to finish.
