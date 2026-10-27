@@ -133,6 +133,10 @@ Playtest 08 was checked live at desktop width and 390 × 844. The existing chart
 
 This is a functional economy prototype with a generated static map image, clickable locations and construction overlays. It is not a free-camera 3D town builder. Buildings occupy authored locations; free placement, road routing, autonomous citizen simulation, multiplayer, cloud saves and native iPhone/iPad packaging remain future work. No freemium purchases or payments are implemented. One ordinary earned coin balance funds construction.
 
+## Future gameplay direction
+
+See [the long-term gameplay and visual expansion plan](docs/LONG-TERM-GAMEPLAY-PLAN.md) for the proposed campaign, district growth, production and fleet systems, premium pacing, and implementation milestones. This is a design roadmap; its future features and playtime targets are not implemented or validated yet.
+
 ## Development
 
 Requires Node.js 20+ for tests and packaging. No application dependencies are required.
