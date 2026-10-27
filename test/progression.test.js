@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fresh,RECIPES,PATHS,CONTRACTS,CHARTER_COST,has,harvest,start,tick,order,dispatch,build,upgrade,selectOrder,canAfford,specialise,invest,acceptContract,dispatchContract,abandonContract,establishCharter,parseSave,unlocked,chapterTwo,pathBlocker,WATERFRONT_STAGES,fundWaterfront,supplyWaterfront,waterfrontSupplies,orders,openingGuide} from '../dist/engine.js';
+import {fresh,RECIPES,PATHS,CONTRACTS,CHARTER_COST,has,harvest,start,tick,order,dispatch,build,upgrade,selectOrder,canAfford,specialise,invest,acceptContract,dispatchContract,abandonContract,establishCharter,parseSave,unlocked,chapterTwo,pathBlocker,WATERFRONT_STAGES,fundWaterfront,supplyWaterfront,waterfrontSupplies,orders,openingGuide,MARKET_ACCESS_COST,MARKET_BUSINESSES,marketAccess,marketReady,marketBusiness,buildMarketBusiness,dispatchMarket,setMarketAuto} from '../dist/engine.js';
 const run=(s,n)=>{for(let i=0;i<n;i++)tick(s,1);};
-const source={flour:'mill',bread:'bakery',fish:'fishing',olives:'olives',oil:'press',planks:'saw',boatparts:'fittings',grapes:'grapes',wine:'wine'};
+const source={flour:'mill',bread:'bakery',fish:'fishing',olives:'olives',oil:'press',planks:'saw',boatparts:'fittings',grapes:'grapes',wine:'wine',provisions:'provisions'};
 function ensure(s,item,n){let steps=0;while(s.stock[item]<n){assert(++steps<100,'Supply loop cannot stall');if(item==='wheat'){if(s.ripe)harvest(s);else {if(!s.jobs.some(j=>j.key==='field'))assert(start(s,'field'));run(s,12);}continue;}if(['wood','stone'].includes(item)){fund(s,{[item]:n});continue;}const key=source[item],r=RECIPES[key];assert(r,'Known source for '+item);for(const[k,v]of Object.entries(r.cost))ensure(s,k,v);assert(start(s,key),'Can produce '+key);run(s,r.duration);}}
 function trade(s){selectOrder(s,'materials');const o=order(s);for(const[k,v]of Object.entries(o.cost))ensure(s,k,v);assert(dispatch(s));}
 function fund(s,cost){let trips=0;while(!canAfford(s,cost)){assert(++trips<30);trade(s);}}
@@ -15,7 +15,7 @@ test('Replaying a contract earns goods rewards but cannot duplicate a partnershi
 test('Specialist plot prevents parallel paths until charter; old investments survive switching',()=>{const s=town('fishing');prepare(s,'maritime');ensure(s,'wood',2);assert(start(s,'saw'));assert(!specialise(s,'estate'));run(s,12);assert(specialise(s,'estate'));assert(s.specialists.includes('boatyard'));assert(!unlocked(s,'saw'));assert(specialise(s,'maritime'));assert(unlocked(s,'saw'));assert(acceptContract(s,'fleet'));assert(!specialise(s,'estate'));assert(pathBlocker(s,'estate').includes('contract'));assert(abandonContract(s));assert(specialise(s,'estate'));});
 test('Players can cross from their first business to the other town direction',()=>{const s=town('fishing');prepare(s,'estate');assert(has(s,'olive'));assert(s.specialists.includes('estate'));assert(unlocked(s,'wine'));assert(!acceptContract(s,'fleet'));assert(acceptContract(s,'merchants'));});
 test('Saved contracts preserve shipment progress and reject fabricated states',()=>{const s=town('olive');prepare(s,'estate');assert(acceptContract(s,'restaurants'));for(const[k,v]of Object.entries(CONTRACTS.restaurants.cost))ensure(s,k,v);assert(dispatchContract(s));const resumed=parseSave(JSON.stringify(s));assert.equal(resumed.contract.shipped,1);assert.deepEqual(resumed.stock,s.stock);for(const mutation of [x=>x.contract.shipped=3,x=>x.contract.id='not-a-contract',x=>x.contractsDone=['restaurants','restaurants'],x=>x.specialists=['boatyard'],x=>x.charter=true]){const bad=structuredClone(s);mutation(bad);assert.throws(()=>parseSave(JSON.stringify(bad)));}});
-test('Version 3 saves preserve old goods and jobs while gaining new zero stocks',()=>{const s=town('fishing');s.version=3;for(const k of ['specialisation','specialists','contract','contractsDone','contractDeliveries','charter'])delete s[k];for(const k of ['planks','boatparts','grapes','wine'])delete s.stock[k];s.stock.wheat=4;assert(start(s,'mill'));run(s,2);const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.version,6);assert.equal(loaded.stock.wheat,s.stock.wheat);assert.equal(loaded.jobs[0].left,6);assert.equal(loaded.stock.wine,0);assert.equal(loaded.specialisation,null);});
+test('Version 3 saves preserve old goods and jobs while gaining new zero stocks',()=>{const s=town('fishing');s.version=3;for(const k of ['specialisation','specialists','contract','contractsDone','contractDeliveries','charter'])delete s[k];for(const k of ['planks','boatparts','grapes','wine'])delete s.stock[k];s.stock.wheat=4;assert(start(s,'mill'));run(s,2);const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.version,7);assert.equal(loaded.stock.wheat,s.stock.wheat);assert.equal(loaded.jobs[0].left,6);assert.equal(loaded.stock.wine,0);assert.equal(loaded.specialisation,null);});
 
 for(const path of ['maritime','estate'])test(path+' restores the waterfront with earned funds and real supply chains',()=>{
  let s=town(path==='maritime'?'fishing':'olive');prepare(s,path);
@@ -43,4 +43,16 @@ for(const path of ['maritime','estate'])test(path+' restores the waterfront with
  assert(selectOrder(s,'waterfront'));const before={coins:s.coins,wood:s.stock.wood,stone:s.stock.stone};assert(dispatch(s));
  assert.equal(s.coins,before.coins+384);assert.equal(s.stock.wood,before.wood+22);assert.equal(s.stock.stone,before.stone+12);
  assert.deepEqual(parseSave(JSON.stringify(s)),s);assert(Object.values(s.stock).every(n=>n>=0));
+ // Continue into the market with the same earned town: no injected funds or goods.
+ assert.equal(openingGuide(s).tab,'market');fund(s,MARKET_ACCESS_COST);assert(marketAccess(s));assert(!marketAccess(s));assert(!marketReady(s));
+ s=parseSave(JSON.stringify(s));run(s,12);assert(marketReady(s));
+ for(const [type,definition]of Object.entries(MARKET_BUSINESSES)){
+  if(!has(s,definition.requires)){fund(s,{coins:110,wood:10,stone:4});assert(build(s,definition.requires));run(s,8);}
+  fund(s,definition.cost);assert(buildMarketBusiness(s,type,definition.plot));assert(!dispatchMarket(s,type));s=parseSave(JSON.stringify(s));run(s,8);
+  for(const [item,n]of Object.entries(definition.order))ensure(s,item,n);
+  const coins=s.coins;assert(dispatchMarket(s,type));assert.equal(s.coins,coins+definition.coins);assert.equal(marketBusiness(s,type).auto,false);
+  s=parseSave(JSON.stringify(s));assert.equal(marketBusiness(s,type).deliveries,1);
+ }
+ // Ordinary trade remains a source of construction materials after both stalls open.
+ trade(s);assert.equal(s.specialisation,path);assert.deepEqual(parseSave(JSON.stringify(s)),s);
 });

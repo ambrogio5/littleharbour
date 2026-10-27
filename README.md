@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 08
+# Little Harbour — Playtest 09
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-08.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-09.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -23,6 +23,14 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 11. Complete a different contract and establish the harbour charter.
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
+
+## New in Playtest 09
+
+- A separate content catalogue and district metadata support further expansion. Version 7 saves migrate existing towns without losing inventory or paid projects.
+- Chapter 04 opens after waterfront restoration. Fund the road to the market quarter, then build a fishmonger and harbour kitchen on their authored plots. The kitchen turns bread and oil into provisions. Local demand replenishes in simulation time; optional automatic supply competes with exports for goods.
+- The market has matching photographic empty and built states, construction crews, delivery activity and kitchen smoke. Swipe between districts or use the district buttons. The courtyard is reserved for a future release.
+- Pin an order's requirements, reserve available goods against it, follow ingredient shortcuts and return to the original order. Reservations protect goods from unrelated recipes and shipments and can be released at any time.
+- This is one additional playable chapter, not the full planned campaign. Physical iPhone/iPad testing and long-session balance testing remain outstanding.
 
 ## Resource readability update
 

@@ -104,3 +104,27 @@ export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
  frameId=requestAnimationFrame(frame);
  return {emit,reset,destroy(){cancelAnimationFrame(frameId);observer.disconnect();}};
 }
+
+
+// District-local activity follows actual construction, cooking and deliveries.
+export function createMarketScene(canvas,getState,isPaused,plots){
+ const ctx=canvas.getContext('2d');if(!ctx)return {emit(){},reset(){}};
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)');let frameId,lastPaint=0,trips=[],seen={};
+ const anchors=Object.fromEntries(plots.filter(p=>p.business).map(p=>[p.business,p.roadPoint]));
+ function resize(){const box=canvas.parentElement.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(box.width*dpr));canvas.height=Math.max(1,Math.round(box.height*dpr));}
+ const observer=new ResizeObserver(resize);observer.observe(canvas.parentElement);resize();
+ function reset(){trips=[];seen=Object.fromEntries(Object.entries(getState().market.businesses).map(([key,b])=>[key,b.deliveries]));}
+ function emit(type){if(!anchors[type])return;seen[type]=getState().market.businesses[type]?.deliveries||0;trips.push({type,start:getState().seconds});trips=trips.slice(-6);}
+ function worker(x,y,time,carrying=false){ctx.save();ctx.translate(x,y);ctx.fillStyle='#334b3f35';ctx.beginPath();ctx.ellipse(3,5,10,4,0,0,Math.PI*2);ctx.fill();const stride=reduced.matches?0:Math.sin(time*6)*3;ctx.strokeStyle='#4e5145';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-3,-1);ctx.lineTo(-4+stride,7);ctx.moveTo(3,-1);ctx.lineTo(4-stride,7);ctx.stroke();ctx.fillStyle='#b7b19b';ctx.fillRect(-5,-16,10,17);ctx.fillStyle='#ac896b';ctx.beginPath();ctx.arc(0,-21,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8e805c';ctx.fillRect(-6,-26,12,3);if(carrying){ctx.fillStyle='#a98e60';ctx.fillRect(5,-12,13,11);ctx.strokeStyle='#716344';ctx.lineWidth=1;ctx.strokeRect(5,-12,13,11);}ctx.restore();}
+ function paint(){const s=getState(),time=s.seconds;ctx.setTransform(canvas.width/1536,0,0,canvas.height/1024,0,0);ctx.clearRect(0,0,1536,1024);if(!s.market.access)return;
+  if(s.market.left>0){worker(245,520,time,true);worker(300,535,time+1);ctx.fillStyle='#aa926d';for(let i=0;i<4;i++)ctx.fillRect(250+i*13,550-i*3,12,7);}
+  for(const p of plots){if(!p.business)continue;const b=s.market.businesses[p.business];if(!b)continue;if(b.left){worker(p.construction.x-25,p.construction.y+25,time,true);worker(p.construction.x+30,p.construction.y+15,time+1);}
+   if(b.deliveries>(seen[p.business]||0))emit(p.business);seen[p.business]=b.deliveries;
+  }
+  for(const trip of trips){const age=time-trip.start;if(age<0||age>8)continue;const a=anchors[trip.type],t=reduced.matches?.5:age/8;worker(786+(a.x-786)*t,413+(a.y-413)*t,time,true);}
+  trips=trips.filter(t=>time-t.start<8);
+  if(s.jobs.some(j=>j.key==='provisions'))for(let i=0;i<3;i++){const t=reduced.matches?.4:(time*.18+i/3)%1;ctx.fillStyle=`rgba(238,236,217,${.28*(1-t)})`;ctx.beginPath();ctx.ellipse(1237+Math.sin(t*4)*7,214-t*55,5+t*9,5+t*11,0,0,Math.PI*2);ctx.fill();}
+ }
+ function frame(now){if(!document.hidden&&now-lastPaint>(reduced.matches?200:40)){if(!isPaused())paint();lastPaint=now;}frameId=requestAnimationFrame(frame);}
+ reset();frameId=requestAnimationFrame(frame);return {emit,reset,destroy(){cancelAnimationFrame(frameId);observer.disconnect();}};
+}
