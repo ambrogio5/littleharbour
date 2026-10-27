@@ -55,9 +55,9 @@ export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
   if(loaded){ctx.beginPath();ctx.moveTo(-13,-6);ctx.lineTo(-13,5);ctx.stroke();}
   ctx.restore();
  }
- function scaffold(project){
+ function scaffold(project,point,duration=8){
   const positions={olive:[350,565],fishing:[700,650],pier:[1340,625],storehouse:[1300,460],boatyard:[1300,470],estate:[1130,260],charter:[770,220]};
-  const [x,y]=positions[project.type],stage=constructionStage(project.left),progress=1-project.left/8;
+  const [x,y]=point||positions[project.type],stage=constructionStage(project.left,duration),progress=1-project.left/duration;
   ctx.save();ctx.translate(x,y);ctx.fillStyle='#343c2a35';ctx.beginPath();ctx.ellipse(0,10,65,17,-.2,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#bdb49c';ctx.beginPath();ctx.moveTo(-55,0);ctx.lineTo(0,-24);ctx.lineTo(59,-3);ctx.lineTo(0,22);ctx.closePath();ctx.fill();
   ctx.strokeStyle='#8b7757';ctx.lineWidth=3;
@@ -76,17 +76,17 @@ export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
   const phase=reduced.matches?0:clock;
   for(let i=0;i<4;i++){const p=((phase*.22+i*.25)%1);ctx.fillStyle=`rgba(231,232,214,${.26*(1-p)})`;ctx.beginPath();ctx.ellipse(895+Math.sin(p*5)*7,276-p*70,5+p*15,7+p*12,0,0,Math.PI*2);ctx.fill();}
  }
- function water(){
+ function water(s){
   if(reduced.matches)return;
   ctx.save();ctx.beginPath();
   const edge=[[1536,735],[1440,728],[1350,695],[1335,650],[1400,600],[1270,587],[1040,575],[1030,505],[950,515],[845,570],[770,630],[742,690],[765,740],[708,820],[780,875],[840,980],[855,1024],[1536,1024]];
   edge.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
-  for(let i=0;i<40;i++){const x=760+(i*127%800),y=540+(i*83%500),phase=clock*.45+i*.63,drift=Math.sin(phase)*10;ctx.strokeStyle=`rgba(218,237,221,${.025+.055*(.5+.5*Math.sin(phase))})`;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+drift,y);ctx.quadraticCurveTo(x+17+drift,y-3,x+36+drift,y+1);ctx.stroke();}
+  for(let i=0;i<40;i++){const x=760+(i*127%800),y=540+(i*83%500),phase=clock*.45+i*.63,drift=Math.sin(phase)*10;if(s.waterfront?.stage>=2&&x<1050&&y<600)continue;ctx.strokeStyle=`rgba(218,237,221,${.025+.055*(.5+.5*Math.sin(phase))})`;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x+drift,y);ctx.quadraticCurveTo(x+17+drift,y-3,x+36+drift,y+1);ctx.stroke();}
   ctx.restore();
  }
  function paint(){
   const s=getState();ctx.setTransform(canvas.width/1536,0,0,canvas.height/1024,0,0);ctx.clearRect(0,0,1536,1024);
-  water();
+  water(s);
   // Small residents continue their routes independently of the production queue.
   for(let i=0;i<2;i++){const phase=reduced.matches?.25:((clock/(30+i*9)+i*.43)%1);const p=routePoint(HARBOUR_PATHS.village,phase<.5?phase*2:2-phase*2);person(p,clock+i,false,i?'#aaa48a':'#c2c2ad',.9);}
   smoke(s);
@@ -96,6 +96,7 @@ export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
   }
   for(const trip of trips){const phase=(clock-trip.start)/trip.duration;if(phase<0||phase>1)continue;const point=routePoint(HARBOUR_PATHS[trip.kind],reduced.matches?.3:phase);ctx.save();ctx.globalAlpha=Math.min(1,phase*8,(1-phase)*8);if(trip.kind==='cargo')boat(point,clock,true);else person(point,clock,true,trip.kind==='bakery'?'#d9d4bd':'#b4bda6',1.1);ctx.restore();}
   for(const project of s.construction)scaffold(project);
+  if(s.waterfront?.left>0)scaffold({left:s.waterfront.left},[[900,450],[850,520],[1370,480]][s.waterfront.stage],12);
   if(!reduced.matches)for(const flash of flashes){const age=clock-flash.start;if(age<0||age>3)continue;ctx.save();ctx.globalAlpha=Math.min(1,3-age);ctx.font='500 15px system-ui';ctx.textAlign='center';const w=ctx.measureText(flash.text).width+20;ctx.fillStyle='#f6f4e8ed';ctx.fillRect(flash.x-w/2,flash.y-20-age*8,w,27);ctx.fillStyle='#3d5e50';ctx.fillText(flash.text,flash.x,flash.y-age*8);ctx.restore();}
   trips=trips.filter(t=>clock-t.start<t.duration);flashes=flashes.filter(f=>clock-f.start<3);
  }

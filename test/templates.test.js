@@ -8,7 +8,7 @@ import * as engine from '../dist/engine.js';
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
 const context=vm.createContext({...engine,localStorage:{getItem(){return null;}}});
-vm.runInContext(source+'\nfunction snapshot(s,selected){state=s;station=selected;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions()};}',context);
+vm.runInContext(source+'\nfunction snapshot(s,selected){state=s;station=selected;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel()};}',context);
 function snapshots(s,station){return context.snapshot(s,station);}
 function mature(){const s=engine.fresh();s.deliveries=2;s.pier=true;s.expansion='fishing';s.businesses=['fishing','olive'];return s;}
 test('Opening and upgraded-town panels render all supported branches',()=>{
@@ -47,4 +47,14 @@ test('Missing goods show incoming production and each source shortcut',()=>{
  const late=snapshots(matureTown,'overview');assert(late.production.includes('Cellar'));
  for(const key of ['oil','wine','bread'])assert(late.contracts.includes('data-key="'+key+'"'));
  assert(late.quick.includes('View current contract'));
+});
+
+test('Restoration panels explain funding, deliveries, construction and the unlocked route',()=>{
+ const s=mature();Object.assign(s,{charter:true,specialisation:'estate',specialists:['estate'],contractsDone:['restaurants','merchants'],coins:1000});s.stock.wood=100;s.stock.stone=100;
+ let html=snapshots(s,'overview').waterfront;assert(html.includes('Fund sea wall'));assert(html.includes('Restoration plan · finished waterfront'));assert(html.includes('4 bread · 2 olive oil per delivery'));
+ assert(engine.fundWaterfront(s,0));html=snapshots(s,'overview').waterfront;assert(html.includes('SUPPLY DELIVERY 1 OF 2'));
+ for(let delivery=0;delivery<2;delivery++){s.stock.bread=4;s.stock.oil=2;engine.supplyWaterfront(s,0,delivery);}
+ html=snapshots(s,'overview').waterfront;assert(html.includes('data-waterfronttime'));assert(!html.includes('data-action="waterfront-fund"'));
+ engine.tick(s,12);html=snapshots(s,'overview').waterfront;assert(html.includes('Fund public landing'));
+ s.waterfront={path:'estate',stage:3,funded:false,delivered:0,left:0};html=snapshots(s,'overview').waterfront;assert(html.includes('Porto Grande is open'));assert(html.includes('384 coins'));assert(html.includes('waterfront-trade'));
 });

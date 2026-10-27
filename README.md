@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 07
+# Little Harbour — Playtest 08
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-07.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-08.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -21,7 +21,18 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 9. In Build, select your town direction and invest in its specialist workshop.
 10. In Contracts, accept and complete a three-shipment commitment.
 11. Complete a different contract and establish the harbour charter.
-12. Continue in open play, with both specialist plots permitted and improved trade rewards.
+12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
+13. Continue developing both specialist plots in open play.
+
+## New in Playtest 08
+
+- Chapter 03 opens after the harbour charter is built. Restore the sea wall, public landing and trading arcade in order. Each stage needs a one-time funding payment and two supply deliveries; the crew then takes 12 simulation seconds to finish.
+- The first funding payment fixes the project's supply plan to your chosen boatyard or estate. Switching town direction later preserves paid progress and supply requirements. Ordinary trade and contracts remain available throughout.
+- Total funding is 900 coins, 52 timber and 48 stone. Supply goods are additional and shown before investing. The boatyard's landing supplies intentionally require both planks and fittings, so consuming one to make the other needs planning.
+- Each finished stage reveals its own part of the matching photographic waterfront. Construction crews mark the active site; progress, remaining time and missing-goods shortcuts are available from the map, chapter guide and Build.
+- Completing the arcade unlocks Porto Grande. Bulk shipments return 384 coins (including charter bonus), 22 timber and 12 stone. There is no free recurring reward or new currency.
+- Saves migrate from versions 1–5 to version 6. Current inventory, queues and refits are retained. Project funding, deliveries and construction resume without repeat charges; invalid project phases and premature route access are rejected.
+- This adds a bounded post-charter project. A balanced full-length campaign and physical-device testing remain future work.
 
 ## New in Playtest 07
 
@@ -108,7 +119,7 @@ Progress is stored in the current browser when local storage is available. File-
 
 ## Verification
 
-48 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter on each specialist path using actual production and earned resources. The guide is exercised through both first-business paths using only suggested actions, actual production and earned funds. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
+54 automated tests cover both opening paths, extended progression, queue ordering and refunds, parallel production, time controls, automation stock bounds, save migration and rejection of malformed imports. A deterministic 3,000-action simulation checks resource invariants and repeated save round trips. End-to-end tests reach the charter and complete every restoration stage on each specialist path using actual production and earned resources. They also verify bulk-route rewards, partial deliveries, stale actions, save migration and pause/speed behavior. The guide is exercised through both first-business paths using only suggested actions, actual production and earned funds. Template tests cover opening, construction, contract and completed-charter panels; they do not validate browser layout. A regression test verifies standalone packaging preserves JavaScript syntax and embedded assets. The inline application also passes HTML structure checks.
 
 The live Playtests 06 and 07 opened successfully with an existing Chapter 02 town in the in-app browser. Desktop and 390 × 844 layouts, whole-harbour and label toggles, phone production navigation, and the mill refit comparison dialog were visually checked. No refit purchase was made in the existing town during browser QA. Phone screenshots are in `docs/playtest-07-harbour.png` and `docs/playtest-07-upgrades.png`. Physical iPhone Safari performance and touch comfort remain unverified. Automated tests are not a substitute for device playtesting.
 

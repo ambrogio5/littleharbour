@@ -42,3 +42,25 @@
 .map-fitted{aspect-ratio:auto;background:#dce3d6}.map-fitted .map-scroller{height:auto;aspect-ratio:3/2}.map-fitted .map-tools{position:relative;inset:auto;padding:8px 10px 0}.map-fitted .map-bottom{position:relative;inset:auto;padding:8px 10px 10px;justify-content:flex-end}.map-fitted .map-caption{display:none}
 /* Workshop investment choices. */
 .refits-section{margin-top:30px;padding-top:25px;border-top:1px solid var(--line)}.refit-card{margin-top:20px;padding:15px;border:1px solid var(--line);border-radius:7px;background:#f8f7f0}.refit-card h3{font-size:17px;font-weight:600;margin:2px 0 16px}.refit-choices{display:grid;gap:12px}.refit-choice{border:1px solid #d7ddcc;background:#f2f3e9;border-radius:5px;padding:14px}.refit-choice.installed{border-color:#91a58b;background:#e5ebdb}.refit-choice h4{font-size:14px;font-weight:600;margin:9px 0}.refit-choice p{font-size:11px;line-height:1.6;color:var(--muted)}.refit-choice .cost{line-height:1.6}.refit-summary{border:1px solid #d4dbca;border-radius:6px;padding:14px;margin-top:18px;background:#e9eddf}.refit-summary>strong{font-size:12px}.refit-summary>p{font-size:11px;color:var(--muted);margin:7px 0 0;line-height:1.6}.refit-summary .text-button{margin-bottom:-8px}
+
+/* The project reveals only the authored section completed by the player. */
+.waterfront-layer{position:absolute;inset:0;background:url('assets/harbour-waterfront.png') center/100% 100% no-repeat;filter:saturate(.88) contrast(.97);pointer-events:none}
+.waterfront-wall{clip-path:polygon(40% 40.5%,68% 41%,68% 46.5%,50% 48%,40% 46%)}
+.waterfront-landing{clip-path:polygon(41% 45%,64% 45%,67% 55%,53% 59%,42% 54%)}
+.waterfront-arcade{clip-path:polygon(79% 36%,100% 36%,100% 57%,79% 57%)}
+.waterfront-pin{left:57%;top:54%}
+.waterfront-eyebrow{margin-top:24px}
+.waterfront-preview{position:relative;aspect-ratio:2.1;background:url('assets/harbour-waterfront.png') 70% 50%/150% auto;border-radius:12px;overflow:hidden;margin:20px 0}
+.waterfront-preview span{position:absolute;bottom:0;left:0;right:0;background:#193d36d9;color:#fff;padding:10px 14px;font-size:11px;letter-spacing:.02em}
+.restoration-stages{list-style:none;padding:0;display:flex;gap:8px;margin:24px 0}
+.restoration-stages li{flex:1;display:flex;gap:8px;align-items:flex-start;opacity:.55}
+.restoration-stages li.current,.restoration-stages li.done{opacity:1}
+.restoration-stages li>span{border:1px solid #b5baab;border-radius:50%;width:24px;height:24px;display:grid;place-items:center;flex-shrink:0;font-size:11px}
+.restoration-stages li.current>span,.restoration-stages li.done>span{background:#3f6252;color:white;border-color:#3f6252}
+.restoration-stages strong{font-size:12px;line-height:1.4;display:block}.restoration-stages small{font-size:10px;display:block;margin-top:4px}
+.restoration-card{border:1px solid #c7cebf;padding:22px;border-radius:12px;background:#f8f7ef}
+.restoration-card h3{font-family:Georgia,serif;font-weight:400;font-size:26px;margin:10px 0}
+.restoration-card p,.restoration-plan p{font-size:13px;line-height:1.65}.restoration-card .section-label{margin-top:22px}.restoration-card .button{margin-top:14px}.restoration-card .progress{margin-top:20px}
+.funding-stock{font-size:12px;line-height:1.5;color:#687362;margin:8px 0}.restoration-plan{margin:24px 0;border-top:1px solid #d7dacb;padding-top:16px}.restoration-plan summary{cursor:pointer;min-height:44px;font-size:13px;font-weight:600}
+.waterfront-entry{background:#e7eddf;border-color:#bbc8b1}
+@media(max-width:740px){.restoration-card{padding:18px}.restoration-stages{gap:6px}.restoration-stages li{display:block}.restoration-stages li>span{margin-bottom:7px}}

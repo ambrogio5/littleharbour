@@ -12,7 +12,7 @@ export const RECIPES={
  wine:{name:'Make wine',station:'estate',cost:{grapes:4},output:{wine:2},duration:24}
 };
 export const BUILD_COST={coins:80,wood:12,stone:4},SECOND_COST={coins:110,wood:10,stone:4},PIER_COST={coins:140,wood:10,stone:8},WORKSHOP_COST={coins:120,wood:8,stone:4};
-export function fresh(){return {version:5,refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
+export function fresh(){return {version:6,waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
 export function has(s,type){return s.businesses.includes(type);}
 export function canAfford(s,c){return Object.entries(c).every(([k,v])=>Number.isFinite(v)&&v>=0&&(k==='coins'?s.coins:s.stock[k])>=v);}
 function spend(s,c){for(const[k,v]of Object.entries(c))if(k==='coins')s.coins-=v;else s.stock[k]-=v;}
@@ -48,7 +48,7 @@ export function cancel(s,index){if(!Number.isInteger(index)||!canCancel(s,index)
 export function prioritize(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const station=RECIPES[s.jobs[index].key].station,first=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(index===first+1)return false;const [j]=s.jobs.splice(index,1);s.jobs.splice(first+1,0,j);note(s,'Batch moved to the front of its waiting queue');return true;}
 export function setTarget(s,key,target){if(!s.pier||!unlocked(s,key)||![0,6,12].includes(target))return false;s.targets[key]=target;note(s,target?RECIPES[key].name+' · maintain '+target+' in stock':'Automatic '+RECIPES[key].name.toLowerCase()+' stopped');return true;}
 function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],incoming=s.jobs.reduce((n,j)=>n+(j.key===key?r.output[item]:0),0);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+incoming<target)start(s,key,true);}}
-export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}automate(s);return completed;}
+export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}automate(s);return completed;}
 function withCharter(s,route){return s.charter?{...route,coins:Math.round(route.coins*1.2)}:route;}
 export function orders(s){
  if(!s.deliveries)return [{id:'local',name:'Cala Verde',description:'Supply the village market with its first bread delivery.',cost:{bread:4},coins:80,wood:8,stone:4}];
@@ -59,6 +59,7 @@ export function orders(s){
  {id:'local',name:'Cala Verde',description:'A balanced shipment for the coastal market.',cost:{bread:4,[product]:4},coins:180,wood:6,stone:2},
  {id:'materials',name:'Porto Santo',description:'A smaller order with more construction materials in return.',cost:{bread:2,[product]:2},coins:100,wood:10,stone:5},
  s.businesses.length===2?{id:'specialist',name:'Isola Lunga',description:'A mixed shipment from both of your businesses.',cost:{bread:4,fish:2,oil:2},coins:210,wood:6,stone:3}:{id:'specialist',name:'Isola Lunga',description:'A specialist shipment. No bread required.',cost:{[product]:6},coins:150,wood:2,stone:2}
+ ,...(s.waterfront.stage===3?[{id:'waterfront',name:'Porto Grande',description:'Bulk cargo from the restored waterfront. Larger shipments return more building materials.',cost:s.waterfront.path==='maritime'?{bread:6,fish:4,boatparts:2}:{bread:6,oil:4,wine:2},coins:320,wood:22,stone:12}]:[])
  ];
 }
 export function order(s,id=s.selectedOrder){return withCharter(s,orders(s).find(o=>o.id===id)||orders(s)[0]);}
@@ -73,7 +74,7 @@ export function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
- if(!x||![1,2,3,4,5].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
+ if(!x||![1,2,3,4,5,6].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  for(const k of ['coins','deliveries','harvests','milled','baked']){if(!Number.isSafeInteger(x[k])||x[k]<0||x[k]>1e9)invalid();s[k]=x[k];}
  if(!Number.isFinite(x.seconds)||x.seconds<0||x.seconds>1e10)invalid();s.seconds=x.seconds;
@@ -81,7 +82,7 @@ export function parseSave(raw){
  for(const k of ['ripe','pier']){if(typeof x[k]!=='boolean')invalid();s[k]=x[k];}
  if(![0,1,3].includes(x.speed)||!['fishing','olive',null].includes(x.expansion))invalid();s.speed=x.speed;s.expansion=x.expansion;
  if(x.version===1){s.businesses=x.expansion?[x.expansion]:[];s.onboarded=true;}
- else{if(!Array.isArray(x.businesses)||x.businesses.length>2||new Set(x.businesses).size!==x.businesses.length||x.businesses.some(b=>!['fishing','olive'].includes(b)))invalid();s.businesses=[...x.businesses];if(typeof x.workshopUpgrade!=='boolean'||typeof x.onboarded!=='boolean')invalid();s.workshopUpgrade=x.workshopUpgrade;s.onboarded=x.onboarded;if(!['local','materials','specialist'].includes(x.selectedOrder))invalid();s.selectedOrder=x.selectedOrder;if(!x.targets||typeof x.targets!=='object'||Array.isArray(x.targets))invalid();for(const[k,v]of Object.entries(x.targets)){if(!Object.hasOwn(RECIPES,k)||![0,6,12].includes(v))invalid();s.targets[k]=v;}}
+ else{if(!Array.isArray(x.businesses)||x.businesses.length>2||new Set(x.businesses).size!==x.businesses.length||x.businesses.some(b=>!['fishing','olive'].includes(b)))invalid();s.businesses=[...x.businesses];if(typeof x.workshopUpgrade!=='boolean'||typeof x.onboarded!=='boolean')invalid();s.workshopUpgrade=x.workshopUpgrade;s.onboarded=x.onboarded;if(!['local','materials','specialist',...(x.version>=6?['waterfront']:[])].includes(x.selectedOrder))invalid();s.selectedOrder=x.selectedOrder;if(!x.targets||typeof x.targets!=='object'||Array.isArray(x.targets))invalid();for(const[k,v]of Object.entries(x.targets)){if(!Object.hasOwn(RECIPES,k)||![0,6,12].includes(v))invalid();s.targets[k]=v;}}
  if((s.expansion&&!has(s,s.expansion))||(!s.expansion&&s.businesses.length)||(s.businesses.length===2&&!s.pier)||(s.pier&&(!s.expansion||s.deliveries<2))||(s.workshopUpgrade&&!s.pier)||(!s.pier&&Object.values(s.targets).some(Boolean)))invalid();
  if(x.version>=4){
   if(![null,'maritime','estate'].includes(x.specialisation)||!Array.isArray(x.specialists)||x.specialists.length>2||new Set(x.specialists).size!==x.specialists.length||x.specialists.some(k=>!['boatyard','estate'].includes(k)))invalid();
@@ -96,6 +97,15 @@ export function parseSave(raw){
   if(!x.refits||typeof x.refits!=='object'||Array.isArray(x.refits))invalid();
   for(const[st,mode]of Object.entries(x.refits)){if(!Object.hasOwn(REFITS,st)||!['speed','queue'].includes(mode)||!s.expansion||(st==='fishing'&&!has(s,'fishing')))invalid();s.refits[st]=mode;}
  }
+ if(x.version>=6){
+  const w=x.waterfront;
+  if(!w||typeof w!=='object'||Array.isArray(w)||![null,'maritime','estate'].includes(w.path)||!Number.isInteger(w.stage)||w.stage<0||w.stage>3||typeof w.funded!=='boolean'||!Number.isInteger(w.delivered)||w.delivered<0||w.delivered>2||!Number.isFinite(w.left)||w.left<0||w.left>WATERFRONT_SECONDS)invalid();
+  if(w.path===null){if(w.stage||w.funded||w.delivered||w.left)invalid();}
+  else if(!s.charter||underConstruction(s,'charter')||!s.specialists.includes(PATHS[w.path].station)||underConstruction(s,PATHS[w.path].station)||(!w.stage&&!w.funded))invalid();
+  if((!w.funded&&(w.delivered||w.left))||(w.stage===3&&w.funded)||(w.funded&&((w.delivered===2)!==(w.left>0))))invalid();
+  s.waterfront={path:w.path,stage:w.stage,funded:w.funded,delivered:w.delivered,left:w.left};
+ }
+ if(s.selectedOrder==='waterfront'&&s.waterfront.stage!==3)invalid();
  if(x.jobs.length>[...new Set(Object.values(RECIPES).map(r=>r.station))].reduce((total,st)=>total+capacity(s,st),0))invalid();
  for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>recipeDuration(s,j.key))invalid();s.jobs.push({key:j.key,left:j.left});}
  for(const station of ['field','mill','bakery','fishing','olive','boatyard','estate'])if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
@@ -145,6 +155,7 @@ export function chapterTwo(s){
 // Opening guidance is derived from stock and queues, never a second economy.
 export function openingGuide(s){
  const view=(title,description,label,tab='produce',station='overview')=>({title,description,label,action:'view',tab,station});
+ if(s.charter&&!underConstruction(s,'charter')){const c=chapterThree(s);return view(c.title,c.description,c.label,'waterfront');}
  if(s.pier){if(underConstruction(s,'pier'))return view('The quay is taking shape','Keep the workshops running while the crew finishes.','Watch the quay','map','pier');const c=chapterTwo(s);return view(c.title,c.description,'Continue chapter two',c.target);}
  if(s.deliveries&&!s.expansion)return view('Your first trade paid for a new livelihood','Fishing gives you a direct supply of fish. Olive oil adds a harvest-and-press chain. Both can be built later.','Compare the two businesses','build');
  if(s.expansion&&underConstruction(s,s.expansion))return view('Your new business is being built','You can prepare bread while the crew works. Production opens when construction finishes.','Check production');
@@ -186,3 +197,38 @@ export function refitBlocker(s,station,mode){
  return '';
 }
 export function installRefit(s,station,mode){if(refitBlocker(s,station,mode))return false;spend(s,REFITS[station][mode].cost);s.refits[station]=mode;note(s,REFITS[station].name+' refit · '+REFITS[station][mode].name);return true;}
+
+// A staged civic project uses the same goods, currency and simulation clock.
+export const WATERFRONT_SECONDS=12;
+export const WATERFRONT_STAGES=[
+ {name:'Sea wall',description:'Repair the stone edge and pave the working quay.',cost:{coins:200,wood:12,stone:20},maritime:{bread:4,fish:2},estate:{bread:4,oil:2}},
+ {name:'Public landing',description:'Rebuild the landing, steps and mooring points.',cost:{coins:300,wood:24,stone:12},maritime:{planks:6,boatparts:2},estate:{wine:4,oil:4}},
+ {name:'Trading arcade',description:'Fit out covered counters beside the harbour warehouse.',cost:{coins:400,wood:16,stone:16},maritime:{bread:6,boatparts:4,fish:4},estate:{bread:6,wine:6,oil:4}}
+];
+export function waterfrontBlocker(s){
+ const w=s.waterfront;
+ if(!s.charter||underConstruction(s,'charter'))return 'Finish the harbour charter first.';
+ if(w.stage===3)return 'Waterfront restoration complete.';
+ if(w.funded)return 'This stage is already funded.';
+ const path=w.path||s.specialisation,p=PATHS[path];
+ if(!p||!s.specialists.includes(p.station)||underConstruction(s,p.station))return 'Finish your chosen specialist workshop first.';
+ if(!canAfford(s,WATERFRONT_STAGES[w.stage].cost))return 'Keep trading for the remaining coins and materials.';
+ return '';
+}
+export function fundWaterfront(s,stage){
+ const w=s.waterfront;if(stage!==w.stage||waterfrontBlocker(s))return false;
+ spend(s,WATERFRONT_STAGES[w.stage].cost);w.path??=s.specialisation;w.funded=true;
+ note(s,WATERFRONT_STAGES[w.stage].name+' funded · two supply deliveries needed');return true;
+}
+export function waterfrontSupplies(s){const w=s.waterfront;return WATERFRONT_STAGES[w.stage]?.[w.path||s.specialisation]||{};}
+export function supplyWaterfront(s,stage,delivery){
+ const w=s.waterfront,c=waterfrontSupplies(s);
+ if(stage!==w.stage||delivery!==w.delivered||!w.funded||w.stage===3||w.left>0||w.delivered>=2||!canAfford(s,c))return false;
+ spend(s,c);w.delivered++;if(w.delivered===2)w.left=WATERFRONT_SECONDS;
+ note(s,WATERFRONT_STAGES[w.stage].name+' · supply '+w.delivered+'/2 delivered');return true;
+}
+export function chapterThree(s){
+ const w=s.waterfront,p=WATERFRONT_STAGES[w.stage];
+ if(w.stage===3)return {step:3,title:'A restored waterfront',description:'The sea wall, landing and trading arcade are open. Porto Grande now accepts bulk cargo for 22 timber and 12 stone per shipment.',label:'Visit the waterfront'};
+ return {step:w.stage,title:p.name,description:w.left?'Your crew is finishing this stage. Construction follows the simulation clock.':w.funded?'Deliver the remaining supplies. '+w.delivered+' of 2 consignments received.':'Fund the next stage of the waterfront restoration, then supply two consignments from your town.',label:w.funded?'View restoration progress':'Plan the waterfront'};
+}
