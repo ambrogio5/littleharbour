@@ -28,7 +28,7 @@ test('Refits cannot strand the first expansion or purchase an unowned business i
 });
 test('Refit saves migrate old towns and reject malformed or inconsistent upgrades',()=>{
  const legacy=town();legacy.version=4;delete legacy.refits;start(legacy,'mill');tick(legacy,2);
- const loaded=parseSave(JSON.stringify(legacy));assert.equal(loaded.version,7);assert.deepEqual(loaded.refits,{});assert.equal(loaded.jobs[0].left,6);
+ const loaded=parseSave(JSON.stringify(legacy));assert.equal(loaded.version,8);assert.deepEqual(loaded.refits,{});assert.equal(loaded.jobs[0].left,6);
  for(const refits of [null,[],{mill:'free'},{field:'speed'},{unknown:'queue'}]){const s=town();s.refits=refits;assert.throws(()=>parseSave(JSON.stringify(s)));}
  const s=fresh();s.refits={mill:'speed'};assert.throws(()=>parseSave(JSON.stringify(s)));
 });

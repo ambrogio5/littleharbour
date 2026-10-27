@@ -1,5 +1,14 @@
-export const ITEMS={wheat:'Wheat',flour:'Flour',bread:'Bread',olives:'Olives',oil:'Olive oil',fish:'Fish',wood:'Timber',stone:'Stone',planks:'Planks',boatparts:'Boat fittings',grapes:'Grapes',wine:'Wine',provisions:'Provisions'};
+export const ITEMS={wheat:'Wheat',flour:'Flour',bread:'Bread',olives:'Olives',oil:'Olive oil',fish:'Fish',wood:'Timber',stone:'Stone',planks:'Planks',boatparts:'Boat fittings',grapes:'Grapes',wine:'Wine',provisions:'Provisions',clay:'Clay',fruit:'Fruit',vegetables:'Vegetables',jars:'Jars',tiles:'Tiles',preserves:'Preserves'};
 export const RECIPES={
+ clay:{name:'Gather clay',station:'claypit',cost:{},output:{clay:4},duration:16},
+ orchard0:{name:'Harvest upper orchard',station:'terrace0',cost:{},output:{fruit:4},duration:12},
+ garden0:{name:'Harvest upper garden',station:'terrace0',cost:{},output:{vegetables:6},duration:20},
+ orchard1:{name:'Harvest lower orchard',station:'terrace1',cost:{},output:{fruit:4},duration:12},
+ garden1:{name:'Harvest lower garden',station:'terrace1',cost:{},output:{vegetables:6},duration:20},
+ jars:{name:'Fire jars',station:'kiln',cost:{clay:2,wood:1},output:{jars:2},duration:18},
+ tiles:{name:'Fire tiles',station:'kiln',cost:{clay:4,wood:2},output:{tiles:4},duration:22},
+ fruitPreserves:{name:'Preserve fruit',station:'preserving',cost:{fruit:4,jars:2},output:{preserves:4},duration:24},
+ vegetablePreserves:{name:'Preserve vegetables',station:'preserving',cost:{vegetables:6,jars:2},output:{preserves:4},duration:12},
  field:{name:'Grow wheat',station:'field',cost:{},output:{wheat:6},duration:12},
  mill:{name:'Mill flour',station:'mill',cost:{wheat:2},output:{flour:2},duration:8},
  bakery:{name:'Bake bread',station:'bakery',cost:{flour:2},output:{bread:2},duration:12},
@@ -45,3 +54,13 @@ export const MARKET_BUSINESSES={
  fishmonger:{plot:0,name:'Fishmonger',requires:'fishing',cost:{coins:120,wood:8,stone:4},order:{fish:4},coins:60},
  kitchen:{plot:1,name:'Harbour kitchen',requires:'olive',cost:{coins:120,wood:8,stone:4},order:{provisions:4},coins:90}
 };
+
+// Inland recipes share ordinary inventory, queues and simulation time.
+export const INLAND_ACCESS_COST={coins:240,wood:16,stone:16};
+export const INLAND_SECONDS={access:12,terrace:10,kiln:12,courtyard:12};
+export const TERRACE_TYPES={
+ orchard:{name:'Fruit orchard',recipePrefix:'orchard',cost:{coins:140,wood:10,stone:4},description:'Frequent fruit harvests; slower preserving. Four fruit fill a batch of jars.'},
+ garden:{name:'Kitchen garden',recipePrefix:'garden',cost:{coins:140,wood:6,stone:8},description:'Slower, larger harvests; quick preserving. Six vegetables fill a batch of jars.'}
+};
+export const KILN_COST={coins:200,wood:10,stone:16};
+export const COURTYARD_COST={coins:240,tiles:12,stone:8};

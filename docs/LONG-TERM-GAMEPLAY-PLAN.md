@@ -245,3 +245,7 @@ Initial acceptance targets to validate:
 - Actual phone performance is measured; desktop browser tests are not treated as iPhone validation.
 
 Primary risks: art consistency across map chunks; cumulative interface complexity; a single profitable route dominating every decision; too many low-value goods; endless civic delivery lists; scope expanding before the first new district is fun. Cut features that fail these gates. Preserve the campaign's sense of place and a manageable set of interdependent choices.
+
+## Playtest 10 implementation checkpoint
+
+Milestones A–C now have playable slices: market expansion, planning controls and the inland crop/pottery/preserving chain. The planning milestone uses three saved stock-target presets rather than deferred multi-recipe production orders. Two fixed terraces accept either crop; there is no free building placement or crop replacement yet. Tiles currently fund one courtyard project. Physical-phone acceptance, long-session balance and new-player usability gates remain unverified. Next development milestone is D, fleet logistics, after those playtest findings are addressed.

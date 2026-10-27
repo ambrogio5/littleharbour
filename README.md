@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 09
+# Little Harbour — Playtest 10
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-09.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-10.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -23,6 +23,19 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 11. Complete a different contract and establish the harbour charter.
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
+
+## New in Playtest 10
+
+This release completes the planning milestone and the following inland-chain milestone together.
+
+- **Production ledger:** search resources/workshops, compare stored/reserved/incoming goods, follow missing-input shortcuts and see why a queue or stock target has stopped. Workshop panels now show only their own queues.
+- **Three saved production plans:** save current stock targets and apply them later. Applying replaces targets in currently unlocked workshops, preserves paid batches and does not change local shop supply. Plans are browser-local preferences; town exports contain active targets, not preset slots.
+- **Inland terraces:** supply either market shop three times to unlock the path. Choose fruit orchard or kitchen garden independently on two fixed terraces. Their resource costs, harvest sizes and processing speeds differ. Crop choices are permanent for this prototype.
+- **Pottery and preserving:** gather clay, fire jars or tiles using timber, package either harvest as preserves, and export to Valle Serena for coins and building materials. Jars and tiles compete for the same kiln queue.
+- **Market courtyard:** after the first preserves shipment, invest twelve tiles plus funds and stone in paving. Completed paving raises local-order earnings by 25% (75 coins for fish, 113 for provisions).
+- **Visual expansion:** a third photographic map district, independent kiln and preserving-room overlays, crop overlays tied to production, construction markers, workers and kiln smoke. Crop overlays are still illustrative prototype assets.
+- **Sample town:** [explore the hillside immediately](https://little-harbour-prototype.ambrogiocremona.chatgpt.site/demo.html). It has an explicitly separate browser save and does not touch the main town.
+- Saves migrate to version 8. Both specialist paths have earned-resource progression tests through inland trade and courtyard completion. Timers remain accelerated; this does not claim a balanced full-length campaign or physical-device validation.
 
 ## New in Playtest 09
 
