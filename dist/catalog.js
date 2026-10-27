@@ -64,3 +64,30 @@ export const TERRACE_TYPES={
 };
 export const KILN_COST={coins:200,wood:10,stone:16};
 export const COURTYARD_COST={coins:240,tiles:12,stone:8};
+
+export const FLEET_BOATS={
+ cutter:{name:'Coastal cutter',description:'A light, quick vessel. Smaller cargo keeps departures affordable.',cost:{coins:240,wood:16,stone:4},cargoScale:1,timeScale:.75},
+ coaster:{name:'Trading coaster',description:'Twice the cargo and reward per voyage, with longer journeys.',cost:{coins:360,wood:24,stone:8},cargoScale:2,timeScale:1.25}
+};
+export const FLEET_UPGRADES={
+ speed:{name:'Improved rigging',description:'Voyages take 25% less time. Replaces the cargo setup.',cost:{coins:180,wood:12,stone:8},timeScale:.75,cargoScale:1},
+ cargo:{name:'Expanded hold',description:'Carry 50% more goods for 50% more reward. Replaces the speed setup.',cost:{coins:220,wood:16,stone:12},timeScale:1,cargoScale:1.5}
+};
+export const FLEET_ROUTES={
+ quarry:{name:'Pietra Cove',description:'Preserves, bread and empty jars supply the quarry crews. Return with building materials.',tiers:[
+  {name:'Quarry supply run',cost:{preserves:4,bread:4,jars:2},reward:{coins:80,wood:14,stone:18},duration:40,visits:0,lighthouse:false},
+  {name:'Quarry partnership',cost:{preserves:4,bread:4,jars:2},reward:{coins:100,wood:18,stone:23},duration:40,visits:3,lighthouse:false},
+  {name:'Outer quarry expedition',cost:{preserves:8,bread:8,jars:4},reward:{coins:240,wood:42,stone:54},duration:70,visits:3,lighthouse:true}
+ ]},
+ island:{name:'Isola dei Pescatori',description:'Preserves, bread and roof tiles support the island fishing community. Return with stronger coin earnings.',tiers:[
+  {name:'Island supply run',cost:{preserves:4,bread:2,tiles:2},reward:{coins:340,wood:4,stone:4},duration:48,visits:0,lighthouse:false},
+  {name:'Island partnership',cost:{preserves:4,bread:2,tiles:2},reward:{coins:425,wood:5,stone:5},duration:48,visits:3,lighthouse:false},
+  {name:'Outer island expedition',cost:{preserves:8,bread:4,tiles:4},reward:{coins:1020,wood:12,stone:12},duration:84,visits:3,lighthouse:true}
+ ]}
+};
+export const LIGHTHOUSE_SECONDS=18;
+export const LIGHTHOUSE_STAGES=[
+ {name:'Lighthouse foundation',description:'Secure the headland after making your first quarry connection.',cost:{coins:300,wood:8,stone:20,tiles:4},requires:{quarry:1,island:0}},
+ {name:'Keeper’s house',description:'Roof and provision the keeper’s house after establishing a quarry partnership and reaching the island.',cost:{coins:450,wood:12,stone:24,tiles:8,preserves:4},requires:{quarry:3,island:1}},
+ {name:'Lantern and second berth',description:'Complete both coastal partnerships. The beacon opens a second berth and longer expeditions.',cost:{coins:600,wood:16,stone:20,tiles:12,preserves:8},requires:{quarry:3,island:3}}
+];

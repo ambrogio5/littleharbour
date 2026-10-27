@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 10
+# Little Harbour — Playtest 11
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-10.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-11.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -24,7 +24,7 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
 
-## New in Playtest 10
+## New in Playtest 11
 
 This release completes the planning milestone and the following inland-chain milestone together.
 
@@ -167,3 +167,11 @@ Requires Node.js 20+ for tests and packaging. No application dependencies are re
 - Serve `dist/` with a static server where allowed to develop the module version.
 
 `dist/engine.js` owns state and simulation. `dist/app.js` owns interface rendering, events and saving. `dist/style.css` and `dist/index.html` own presentation. `scripts/build-standalone.mjs` packages the same source into the offline deliverable.
+
+## Playtest 11: The working coast
+
+After the first inland preserves shipment, Fleet opens two boat roles and two destinations. Quarry voyages bring construction supplies; island voyages earn coins. Three visits establish a partnership, improving returns and enabling optional repeat voyages. Restore the lighthouse in three stages to open the second berth and outer expeditions. Choose speed or cargo upgrades after establishing trade.
+
+Voyage requirements can be pinned and reserved; lighthouse reservations also protect coins. Recall refunds loaded cargo without rewards and stops repeats. Closing the game pauses progress. Existing saves migrate to version 9.
+
+Validation: 101 automated tests pass, including both earned-resource progression paths through the lighthouse and two boats, save migration, cancellation, reservations and UI rendering. Long-session pacing and physical iPhone/iPad testing remain outstanding.

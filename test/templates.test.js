@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import * as engine from '../dist/engine.js';
+import * as fleetUI from '../dist/fleet-ui.js';
+import * as coastView from '../dist/coast-view.js';
+import * as coastMap from '../dist/coast-map.js';
 import * as planning from '../dist/planning.js';
 import * as inlandMap from '../dist/inland-map.js';
 import * as districts from '../dist/districts.js';
@@ -10,9 +13,10 @@ import * as districts from '../dist/districts.js';
 // Test text templates independently of browser rendering. This catches missing
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
-const context=vm.createContext({...engine,...districts,...planning,...inlandMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
-vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,return:returnPanel()};}',context);
+const context=vm.createContext({...engine,...districts,...planning,...inlandMap,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
+vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,return:returnPanel()};}',context);
 vm.runInContext('function ledgerSnapshot(s,query,presets=[null,null,null]){state=s;station="ledger";ledgerQuery=query;targetPresets=presets;return production();}',context);
+vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);
 function snapshots(s,station,pin=null){return context.snapshot(s,station,pin);}
 function mature(){const s=engine.fresh();s.deliveries=2;s.pier=true;s.expansion='fishing';s.businesses=['fishing','olive'];return s;}
 test('Opening and upgraded-town panels render all supported branches',()=>{
@@ -171,4 +175,47 @@ test('Inland map reveals authored crops and workshops only when their constructi
  assert.equal((html.match(/class="inland-built"/g)||[]).length,2);
  assert(!html.includes('undefined'));assert(!html.includes('NaN'));
  s.inland.shipments=1;s.stock.tiles=12;engine.buildCourtyard(s);let market=snapshots(s,'overview').marketMap;assert(market.includes('Tiling in progress'));assert(!market.includes('class="courtyard-paving"'));engine.tick(s,12);market=snapshots(s,'overview').marketMap;assert(market.includes('Local earnings +25%'));assert(market.includes('class="courtyard-paving"'));
+});
+
+
+function fleetTown(){const s=inlandTown();s.inland={access:true,left:0,terraces:[{type:'orchard',left:0},null],kiln:{left:0},courtyard:false,courtyardLeft:0,shipments:1};s.coins=10000;for(const k of Object.keys(s.stock))s.stock[k]=500;return s;}
+function fleetSnapshot(s,slot=0,section='voyages',route='quarry',tier=1,pin=null){return context.fleetSnapshot(s,slot,section,route,tier,pin);}
+test('Fleet entry explains prerequisites, distinct boat roles and the locked second berth',()=>{
+ let p=fleetSnapshot(engine.fresh());assert(p.panel.includes('Complete your first preserves shipment'));assert(!p.panel.includes('data-action="fleet-buy"'));
+ const s=fleetTown();p=fleetSnapshot(s);for(const type of ['cutter','coaster'])assert(p.panel.includes('data-key="'+type+'"'));assert(p.panel.includes('30s'));assert(p.panel.includes('50s'));assert(p.panel.includes('Boats cannot currently be sold'));
+ p=fleetSnapshot(s,1);assert(p.panel.includes('Restore all three lighthouse stages'));assert(!p.panel.includes('data-action="fleet-buy"'));assert(p.map.includes('Lighthouse needed'));
+});
+
+test('Fleet voyage panels expose tier locks, own reservations, committed cargo and recall semantics',()=>{
+ const s=fleetTown();assert(engine.buyBoat(s,0,'cutter'));
+ let p=fleetSnapshot(s,0,'voyages','quarry',2);assert(p.panel.includes('3 visits needed'));assert.match(p.panel, /data-action="fleet-depart"[^>]*disabled/);
+ assert(engine.reserveFor(s,'fleet:0:quarry:1'));p=fleetSnapshot(s,0,'voyages','quarry',1,'fleet:0:quarry:1');assert(p.panel.includes('for this order'));assert(p.panel.includes('>Load & sail</button>'));assert(!p.panel.match(/data-action="fleet-depart"[^>]*disabled/));assert(p.plan.includes('Quarry supply run'));
+ assert(engine.startVoyage(s,0,'quarry'));p=fleetSnapshot(s);assert(p.panel.includes('CARGO COMMITTED'));assert(p.panel.includes('Loaded: 4 preserves · 4 bread · 2 jars'));assert(p.panel.includes('Recall & return cargo'));assert(p.panel.includes('earns no reward or visit'));assert(!p.panel.includes('data-action="fleet-depart"'));assert(p.map.includes('sailing to Pietra Cove'));assert(p.map.includes('<polyline'));
+ for(const [name,html]of Object.entries(p)){assert(!html.includes('undefined'),name);assert(!html.includes('NaN'),name);}
+});
+
+test('Partnerships and repeats explain eligibility and do not silently change voyage tiers',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'coaster');let p=fleetSnapshot(s);assert(p.panel.includes('Complete three visits'));assert.match(p.panel,/data-action="fleet-repeat"[^>]*disabled/);
+ s.fleet.visits.quarry=3;p=fleetSnapshot(s,0,'destinations');assert(p.panel.includes('Partnership established'));assert(p.panel.includes('Restore the lighthouse'));
+ p=fleetSnapshot(s,0,'voyages','quarry',2);assert(!p.panel.match(/data-action="fleet-depart"[^>]*disabled/));assert(p.panel.includes('Quarry partnership'));assert(engine.setRepeatVoyage(s,0,'quarry',2));p=fleetSnapshot(s,0,'voyages','island',1);assert(p.panel.includes('Enabled · Pietra Cove · Quarry partnership'));assert(p.panel.includes('Stop repeat trips'));assert(p.panel.includes('Stopping repeat leaves a current voyage running'));
+});
+
+test('Lighthouse templates pin coin funding and reveal restoration and berth unlock stages',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');let p=fleetSnapshot(s,0,'lighthouse');assert(p.panel.includes('Establish your fleet')===false);assert(p.panel.includes('Complete 1 visit'));
+ s.fleet.visits.quarry=3;s.fleet.visits.island=3;
+ for(let stage=0;stage<3;stage++){
+  assert(engine.reserveFor(s,'lighthouse:'+stage));p=fleetSnapshot(s,0,'lighthouse','quarry',1,'lighthouse:'+stage);assert(p.plan.includes('Coins'));assert(p.plan.includes('reserved'));for(const html of Object.values(p))assert(!html.includes('undefined'));
+  assert(engine.buildLighthouseStage(s,stage));p=fleetSnapshot(s,0,'lighthouse');assert(p.panel.includes('CREW ON SITE'));assert(p.panel.includes('data-lighthouse-time'));assert(p.map.includes('Crew on site'));engine.tick(s,18);
+  p=fleetSnapshot(s,0,'lighthouse');assert(p.map.includes('clip-path:'+coastMap.LIGHTHOUSE_PLOT.stagedClips[stage]));
+ }
+ assert(p.panel.includes('Choose a boat for berth two'));assert(p.map.includes('Beacon lit · two berths'));assert(p.map.includes('lighthouse-glow'));
+ assert(engine.buyBoat(s,1,'coaster'));p=fleetSnapshot(s,1);assert(p.panel.includes('Trading coaster'));assert(p.map.includes('data-coast-boat="0"'));assert(p.map.includes('data-coast-boat="1"'));
+});
+
+test('Fleet upgrades and goal navigation retain the chosen berth and contract',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');s.fleet.visits.quarry=3;
+ let p=fleetSnapshot(s);assert(p.panel.includes('Compare boat upgrades'));assert(p.panel.includes('Improved rigging'));assert(p.panel.includes('Expanded hold'));
+ assert(engine.installBoatUpgrade(s,0,'speed'));p=fleetSnapshot(s);assert(p.panel.includes('23 simulation seconds'));assert.match(p.panel,/data-action="fleet-upgrade"[^>]*data-key="speed"[^>]*disabled/);
+ const opened=context.openGoalSnapshot(s,'fleet:0:quarry:2');assert.equal(opened.tab,'fleet');assert.equal(opened.fleetSlot,0);assert.equal(opened.fleetSection,'voyages');assert.equal(opened.fleetSelections[0].route,'quarry');assert.equal(opened.fleetSelections[0].tier,2);
+ const light=context.openGoalSnapshot(s,'lighthouse:0');assert.equal(light.tab,'fleet');assert.equal(light.fleetSection,'lighthouse');
 });

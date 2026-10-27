@@ -17,5 +17,5 @@ test('Save validation rejects impossible phases and premature bulk route access'
 });
 test('Version 5 migration preserves refits and active work without charging restoration',()=>{
  const s=charter();s.version=5;delete s.waterfront;s.refits={mill:'speed'};s.jobs=[{key:'mill',left:3}];
- const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.version,8);assert.deepEqual(loaded.waterfront,{path:null,stage:0,funded:false,delivered:0,left:0});assert.equal(loaded.coins,s.coins);assert.deepEqual(loaded.stock,s.stock);assert.deepEqual(loaded.refits,s.refits);assert.deepEqual(loaded.jobs,s.jobs);
+ const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.version,9);assert.deepEqual(loaded.waterfront,{path:null,stage:0,funded:false,delivered:0,left:0});assert.equal(loaded.coins,s.coins);assert.deepEqual(loaded.stock,s.stock);assert.deepEqual(loaded.refits,s.refits);assert.deepEqual(loaded.jobs,s.jobs);
 });

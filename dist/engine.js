@@ -1,6 +1,6 @@
-import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST} from './catalog.js';
+import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS} from './catalog.js';
 export * from './catalog.js';
-export function fresh(){return {version:8,inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
+export function fresh(){return {version:9,fleet:{boats:[null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
 export function has(s,type){return s.businesses.includes(type);}
 export function reserved(s,item){return Object.values(s.reservations||{}).reduce((sum,c)=>sum+(c[item]||0),0);}
 export function available(s,item,goalId=null){return (item==='coins'?s.coins:s.stock[item]||0)-reserved(s,item)+(s.reservations?.[goalId]?.[item]||0);}
@@ -38,7 +38,7 @@ export function cancel(s,index){if(!Number.isInteger(index)||!canCancel(s,index)
 export function prioritize(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const station=RECIPES[s.jobs[index].key].station,first=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(index===first+1)return false;const [j]=s.jobs.splice(index,1);s.jobs.splice(first+1,0,j);note(s,'Batch moved to the front of its waiting queue');return true;}
 export function setTarget(s,key,target){if(!s.pier||!unlocked(s,key)||![0,6,12].includes(target))return false;s.targets[key]=target;note(s,target?RECIPES[key].name+' · maintain '+target+' in stock':'Automatic '+RECIPES[key].name.toLowerCase()+' stopped');return true;}
 function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],incoming=s.jobs.reduce((n,j)=>n+(RECIPES[j.key].output[item]||0),0);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+incoming<target)start(s,key,true);}}
-export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);automate(s);return completed;}
+export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);completed+=tickFleet(s,elapsed);automate(s);return completed;}
 function withCharter(s,route){return s.charter?{...route,coins:Math.round(route.coins*1.2)}:route;}
 export function orders(s){
  if(!s.deliveries)return [{id:'local',name:'Cala Verde',description:'Supply the village market with its first bread delivery.',cost:{bread:4},coins:80,wood:8,stone:4}];
@@ -65,7 +65,7 @@ export function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
- if(!x||![1,2,3,4,5,6,7,8].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
+ if(!x||![1,2,3,4,5,6,7,8,9].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  for(const k of ['coins','deliveries','harvests','milled','baked']){if(!Number.isSafeInteger(x[k])||x[k]<0||x[k]>1e9)invalid();s[k]=x[k];}
  if(!Number.isFinite(x.seconds)||x.seconds<0||x.seconds>1e10)invalid();s.seconds=x.seconds;
@@ -100,6 +100,7 @@ export function parseSave(raw){
  if(x.jobs.length>[...new Set(Object.values(RECIPES).map(r=>r.station))].reduce((total,st)=>total+capacity(s,st),0))invalid();
  if(x.version>=7)validateMarket(s,x.market,invalid);
  if(x.version>=8)validateInland(s,x.inland,invalid);
+ if(x.version>=9)validateFleet(s,x.fleet,invalid);
  if(s.selectedOrder==='inland'&&!inlandTradeReady(s))invalid();
  for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>recipeDuration(s,j.key))invalid();s.jobs.push({key:j.key,left:j.left});}
  for(const station of new Set(Object.values(RECIPES).map(r=>r.station)))if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
@@ -139,7 +140,7 @@ export function chapterTwo(s){
 // Opening guidance is derived from stock and queues, never a second economy.
 export function openingGuide(s){
  const view=(title,description,label,tab='produce',station='overview')=>({title,description,label,action:'view',tab,station});
- if(s.charter&&!underConstruction(s,'charter')){const c=s.inland.access?inlandGuide(s):s.waterfront.stage===3?marketGuide(s):chapterThree(s);return view(c.title,c.description,c.label,c.target||'waterfront');}
+ if(s.charter&&!underConstruction(s,'charter')){const c=fleetEligible(s)?fleetGuide(s):s.inland.access?inlandGuide(s):s.waterfront.stage===3?marketGuide(s):chapterThree(s);return view(c.title,c.description,c.label,c.target||'waterfront');}
  if(s.pier){if(underConstruction(s,'pier'))return view('The quay is taking shape','Keep the workshops running while the crew finishes.','Watch the quay','map','pier');const c=chapterTwo(s);return view(c.title,c.description,'Continue chapter two',c.target);}
  if(s.deliveries&&!s.expansion)return view('Your first trade paid for a new livelihood','Fishing gives you a direct supply of fish. Olive oil adds a harvest-and-press chain. Both can be built later.','Compare the two businesses','build');
  if(s.expansion&&underConstruction(s,s.expansion))return view('Your new business is being built','You can prepare bread while the crew works. Production opens when construction finishes.','Check production');
@@ -210,6 +211,8 @@ export function chapterThree(s){
 export function goalCost(s,id){
  if(typeof id!=='string')return null;
  const parts=id.split(':');
+ if(parts[0]==='fleet'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
+ if(parts[0]==='lighthouse'&&parts.length===2&&parts[1]===String(s.fleet.lighthouse.stage)&&!lighthouseAccessBlocker(s))return {...LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].cost};
  if(parts[0]==='trade'&&parts.length===2){const route=orders(s).find(o=>o.id===parts[1]);return route&&!route.locked?{...route.cost}:null;}
  if(parts[0]==='contract'&&parts.length===2&&s.contract?.id===parts[1])return {...CONTRACTS[parts[1]].cost};
  if(parts[0]==='waterfront'&&parts.length===3&&id===`waterfront:${s.waterfront.stage}:${s.waterfront.delivered}`&&s.waterfront.funded&&!s.waterfront.left&&s.waterfront.stage<3)return {...waterfrontSupplies(s)};
@@ -218,7 +221,9 @@ export function goalCost(s,id){
 }
 export function goalTitle(s,id){
  if(!goalCost(s,id))return null;
- const [kind,key]=id.split(':');
+ const [kind,key,route,tier]=id.split(':');
+ if(kind==='fleet')return FLEET_ROUTES[route].tiers[Number(tier)-1].name+' · berth '+(Number(key)+1);
+ if(kind==='lighthouse')return LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].name;
  return kind==='trade'?orders(s).find(o=>o.id===key).name:kind==='contract'?CONTRACTS[key].name:kind==='market'?MARKET_BUSINESSES[key].name+' standing order':WATERFRONT_STAGES[s.waterfront.stage].name+' supply '+(s.waterfront.delivered+1);
 }
 export function reserveFor(s,id,cost=undefined){
@@ -317,4 +322,102 @@ function validateInland(s,i,invalid){
  if(i.kiln!==null){if(!obj(i.kiln)||!time(i.kiln.left,INLAND_SECONDS.kiln))invalid();out.kiln={left:i.kiln.left};}
  if((i.shipments&&(!out.kiln||out.kiln.left||!out.terraces.some(t=>t&&!t.left)))||(i.courtyard&&!i.shipments)||(!i.courtyard&&i.courtyardLeft))invalid();
  s.inland=out;
+}
+
+
+// Voyages capture cargo and rewards when launched. Future balance changes do not
+// change paid voyages; settlement clears the trip before crediting its snapshot.
+export function fleetEligible(s){return s.inland.shipments>=1;}
+export function berthCount(s){return s.fleet.lighthouse.stage===3?2:1;}
+function fleetBoat(s,slot){return Number.isInteger(slot)&&slot>=0&&slot<2?s.fleet.boats[slot]:null;}
+export function boatBlocker(s,slot,type){
+ if(![0,1].includes(slot)||!Object.hasOwn(FLEET_BOATS,type))return 'Choose a berth and boat type.';
+ if(!fleetEligible(s))return 'Send your first inland preserves shipment first.';
+ if(slot>=berthCount(s))return 'Complete the lighthouse to open the second berth.';
+ if(slot===1&&!s.fleet.boats[0])return 'Buy a boat for the first berth first.';
+ if(s.fleet.boats[slot])return 'This berth already has a boat.';
+ if(!canAfford(s,FLEET_BOATS[type].cost))return 'Trade for the remaining boat funds and materials.';
+ return '';
+}
+export function buyBoat(s,slot,type){if(boatBlocker(s,slot,type))return false;spend(s,FLEET_BOATS[type].cost);s.fleet.boats[slot]={type,upgrade:null,trip:null,repeat:null};note(s,FLEET_BOATS[type].name+' moored at berth '+(slot+1));return true;}
+export function voyagePlan(s,slot,route,tier=1){
+ const b=fleetBoat(s,slot),r=Object.hasOwn(FLEET_ROUTES,route)?FLEET_ROUTES[route]:null,d=r&&Number.isInteger(tier)?r.tiers[tier-1]:null;
+ if(!b||!d)return null;
+ const boat=FLEET_BOATS[b.type],up=b.upgrade?FLEET_UPGRADES[b.upgrade]:null,scale=boat.cargoScale*(up?.cargoScale||1),scaled=cost=>Object.fromEntries(Object.entries(cost).map(([k,n])=>[k,Math.ceil(n*scale)]));
+ return {route,tier,name:d.name,destination:r.name,cost:scaled(d.cost),reward:scaled(d.reward),duration:Math.ceil(d.duration*boat.timeScale*(up?.timeScale||1)),goal:`fleet:${slot}:${route}:${tier}`};
+}
+function voyageAccessBlocker(s,slot,route,tier=1){
+ const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);
+ if(!fleetEligible(s)||!b||!p||slot>=berthCount(s))return 'Choose an owned boat and a valid route.';
+ const d=FLEET_ROUTES[route].tiers[tier-1];
+ if(s.fleet.visits[route]<d.visits)return 'Complete '+d.visits+' visits to '+FLEET_ROUTES[route].name+' first.';
+ if(d.lighthouse&&s.fleet.lighthouse.stage!==3)return 'Complete the lighthouse to navigate the outer route.';
+ return '';
+}
+export function voyageBlocker(s,slot,route,tier=1){const blocked=voyageAccessBlocker(s,slot,route,tier);if(blocked)return blocked;const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);if(b.trip)return 'This boat is already at sea.';if(!canAfford(s,p.cost,p.goal))return 'Prepare the missing cargo or release supplies reserved for other orders.';return '';}
+function releaseBerthReservations(s,slot){for(const id of Object.keys(s.reservations))if(id.startsWith(`fleet:${slot}:`))releaseReservation(s,id);}
+export function startVoyage(s,slot,route,tier=1,quiet=false){
+ if(voyageBlocker(s,slot,route,tier))return false;
+ const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);
+ spend(s,p.cost,p.goal);releaseBerthReservations(s,slot);
+ b.trip={route,tier,cargo:{...p.cost},reward:{...p.reward},duration:p.duration,left:p.duration};
+ if(!quiet)note(s,FLEET_BOATS[b.type].name+' departed for '+p.destination);
+ return true;
+}
+export function cancelVoyage(s,slot){const b=fleetBoat(s,slot);if(!b?.trip)return false;const cargo=b.trip.cargo;b.trip=null;b.repeat=null;add(s,cargo);note(s,'Voyage recalled · cargo returned; repeat sailings stopped');return true;}
+export function repeatVoyageBlocker(s,slot,route,tier=1){const b=fleetBoat(s,slot);if(!b)return 'Choose an owned boat.';if(route===null)return '';const blocked=voyageAccessBlocker(s,slot,route,tier);if(blocked)return blocked;if(s.fleet.visits[route]<3)return 'Complete three visits to this destination before enabling repeat sailings.';return '';}
+export function setRepeatVoyage(s,slot,route,tier=1){if(repeatVoyageBlocker(s,slot,route,tier))return false;const b=fleetBoat(s,slot),old=b.repeat;if(old&&(route!==old.route||tier!==old.tier))releaseReservation(s,`fleet:${slot}:${old.route}:${old.tier}`);b.repeat=route===null?null:{route,tier};note(s,route===null?'Repeat sailings stopped':'Repeat sailings set · '+FLEET_ROUTES[route].name);return true;}
+export function boatUpgradeBlocker(s,slot,mode){const b=fleetBoat(s,slot);if(!b||!Object.hasOwn(FLEET_UPGRADES,mode))return 'Choose an owned boat and a setup.';if(b.trip)return 'Wait for the boat to return before changing its setup.';if(s.fleet.visits.quarry+s.fleet.visits.island<3)return 'Complete three voyages before upgrading a boat.';if(b.upgrade===mode)return 'This setup is already installed.';if(!canAfford(s,FLEET_UPGRADES[mode].cost))return 'Trade for the remaining upgrade funds and materials.';return '';}
+export function installBoatUpgrade(s,slot,mode){if(boatUpgradeBlocker(s,slot,mode))return false;spend(s,FLEET_UPGRADES[mode].cost);releaseBerthReservations(s,slot);fleetBoat(s,slot).upgrade=mode;note(s,FLEET_UPGRADES[mode].name+' installed at berth '+(slot+1));return true;}
+function lighthouseAccessBlocker(s){
+ const l=s.fleet.lighthouse,d=LIGHTHOUSE_STAGES[l.stage];
+ if(!fleetEligible(s)||!s.fleet.boats[0])return 'Establish your fleet first.';
+ if(!d)return 'The lighthouse is complete.';
+ if(l.left)return 'The lighthouse crew is still working.';
+ const missing=Object.entries(d.requires).filter(([route,n])=>s.fleet.visits[route]<n);
+ if(missing.length)return 'Complete '+missing.map(([route,n])=>n+' visit'+(n===1?'':'s')+' to '+FLEET_ROUTES[route].name).join(' and ')+' first.';
+ return '';
+}
+export function lighthouseBlocker(s){const blocked=lighthouseAccessBlocker(s);if(blocked)return blocked;const l=s.fleet.lighthouse;if(!canAfford(s,LIGHTHOUSE_STAGES[l.stage].cost,'lighthouse:'+l.stage))return 'Gather the lighthouse funding and supplies shown below.';return '';}
+export function buildLighthouseStage(s,expectedStage){const l=s.fleet.lighthouse;if(expectedStage!==l.stage||lighthouseBlocker(s))return false;const stage=LIGHTHOUSE_STAGES[l.stage],goal='lighthouse:'+l.stage;spend(s,stage.cost,goal);releaseReservation(s,goal);l.left=LIGHTHOUSE_SECONDS;note(s,stage.name+' construction started');return true;}
+function tickFleet(s,elapsed){
+ let changed=0;const l=s.fleet.lighthouse;
+ if(l.left>0){l.left=Math.max(0,l.left-elapsed);if(!l.left){note(s,LIGHTHOUSE_STAGES[l.stage].name+' complete');l.stage++;changed++;}}
+ for(let slot=0;slot<2;slot++){
+  const b=s.fleet.boats[slot];if(!b)continue;
+  if(b.trip){b.trip.left=Math.max(0,b.trip.left-elapsed);if(!b.trip.left){const trip=b.trip;b.trip=null;s.coins+=trip.reward.coins||0;add(s,Object.fromEntries(Object.entries(trip.reward).filter(([k])=>k!=='coins')));s.fleet.visits[trip.route]++;note(s,FLEET_ROUTES[trip.route].name+' voyage returned · '+s.fleet.visits[trip.route]+' completed visit'+(s.fleet.visits[trip.route]===1?'':'s'));changed++;}}
+  // At most one settlement per berth per tick. A new repeat trip begins now;
+  // elapsed time from the previous trip is never spent again on this voyage.
+  if(!b.trip&&b.repeat&&startVoyage(s,slot,b.repeat.route,b.repeat.tier,true))changed++;
+ }
+ return changed;
+}
+export function fleetGuide(s){
+ if(!s.fleet.boats[0])return {step:0,title:'Establish your coastal fleet',description:'Your preserves can supply longer voyages. Buy a quick cutter or a larger coaster for the first berth.',label:'Choose your first boat',target:'fleet'};
+ if(!s.fleet.visits.quarry)return {step:1,title:'Reach Pietra Cove',description:'Supply the quarry crews and bring back materials for the lighthouse foundation.',label:'Plan a quarry voyage',target:'fleet'};
+ if(s.fleet.lighthouse.stage===0)return {step:2,title:'Lay the lighthouse foundation',description:'Invest in the headland while your boat builds coastal relationships.',label:'Plan the lighthouse',target:'fleet'};
+ if(s.fleet.visits.quarry<3||s.fleet.visits.island<3)return {step:3,title:'Build two coastal partnerships',description:'Complete three visits to each destination. Partnerships improve rewards and unlock optional repeat sailings.',label:'Plan your next voyage',target:'fleet'};
+ if(s.fleet.lighthouse.stage<3)return {step:4,title:'Light the coast',description:'Finish the keeper’s house and lantern with kiln tiles and supplies. The completed lighthouse opens outer routes and a second berth.',label:'Continue the lighthouse',target:'fleet'};
+ if(!s.fleet.boats[1])return {step:5,title:'Open a second working berth',description:'Add another boat and choose complementary roles. Both berths can sail independently.',label:'Choose your second boat',target:'fleet'};
+ return {step:6,title:'A connected coastline',description:'Choose short supply runs or outer expeditions, manage two boats and balance repeat sailings against local orders.',label:'Manage the fleet',target:'fleet'};
+}
+function validateFleet(s,f,invalid){
+ const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),count=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
+ if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==2||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
+ const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>LIGHTHOUSE_SECONDS||(l.stage===3&&l.left))invalid();
+ const out={boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
+ if(!fleetEligible(s)&&(f.boats.some(b=>b!==null)||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
+ if(!f.boats[0]&&(f.boats[1]!==null||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
+ if(l.stage||l.left){const requirement=LIGHTHOUSE_STAGES[l.left?l.stage:l.stage-1].requires;if(Object.entries(requirement).some(([route,n])=>f.visits[route]<n))invalid();}
+ const packet=(value,allowed)=>{if(!obj(value)||!Object.keys(value).length)invalid();const result={};for(const[k,n]of Object.entries(value)){if(!allowed.includes(k)||!Number.isSafeInteger(n)||n<=0||n>1000000)invalid();result[k]=n;}return result;};
+ for(let slot=0;slot<2;slot++){
+  const b=f.boats[slot];if(b===null)continue;
+  if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot===1&&l.stage!==3)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
+  const result={type:b.type,upgrade:b.upgrade,trip:null,repeat:null};
+  const validRoute=(route,tier)=>Object.hasOwn(FLEET_ROUTES,route)&&Number.isInteger(tier)&&tier>=1&&tier<=3&&f.visits[route]>=FLEET_ROUTES[route].tiers[tier-1].visits&&(!FLEET_ROUTES[route].tiers[tier-1].lighthouse||l.stage===3);
+  if(b.trip!==null){const t=b.trip;if(!obj(t)||!validRoute(t.route,t.tier)||!Number.isFinite(t.duration)||t.duration<=0||t.duration>86400||!Number.isFinite(t.left)||t.left<=0||t.left>t.duration)invalid();result.trip={route:t.route,tier:t.tier,cargo:packet(t.cargo,Object.keys(s.stock)),reward:packet(t.reward,['coins','wood','stone']),duration:t.duration,left:t.left};}
+  if(b.repeat!==null){const r=b.repeat;if(!obj(r)||!validRoute(r.route,r.tier)||f.visits[r.route]<3)invalid();result.repeat={route:r.route,tier:r.tier};}
+  out.boats[slot]=result;
+ }
+ s.fleet=out;
 }
