@@ -14,9 +14,9 @@ import * as districts from '../dist/districts.js';
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
 const context=vm.createContext({...engine,...districts,...planning,...inlandMap,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
-vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,return:returnPanel()};}',context);
+vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,fleetModes,fleetCircuits,return:returnPanel()};}',context);
 vm.runInContext('function ledgerSnapshot(s,query,presets=[null,null,null]){state=s;station="ledger";ledgerQuery=query;targetPresets=presets;return production();}',context);
-vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);
+vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetModes=["single","single"];fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);
 function snapshots(s,station,pin=null){return context.snapshot(s,station,pin);}
 function mature(){const s=engine.fresh();s.deliveries=2;s.pier=true;s.expansion='fishing';s.businesses=['fishing','olive'];return s;}
 test('Opening and upgraded-town panels render all supported branches',()=>{
@@ -218,4 +218,36 @@ test('Fleet upgrades and goal navigation retain the chosen berth and contract',(
  assert(engine.installBoatUpgrade(s,0,'speed'));p=fleetSnapshot(s);assert(p.panel.includes('23 simulation seconds'));assert.match(p.panel,/data-action="fleet-upgrade"[^>]*data-key="speed"[^>]*disabled/);
  const opened=context.openGoalSnapshot(s,'fleet:0:quarry:2');assert.equal(opened.tab,'fleet');assert.equal(opened.fleetSlot,0);assert.equal(opened.fleetSection,'voyages');assert.equal(opened.fleetSelections[0].route,'quarry');assert.equal(opened.fleetSelections[0].tier,2);
  const light=context.openGoalSnapshot(s,'lighthouse:0');assert.equal(light.tab,'fleet');assert.equal(light.fleetSection,'lighthouse');
+});
+
+vm.runInContext('function circuitSnapshot(s,stops,pin=null){state=s;fleetSlot=0;fleetSection="voyages";fleetModes=["circuit","single"];fleetCircuits=[stops,[{route:"quarry",tier:1},{route:"island",tier:1}]];pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel()};}',context);
+
+test('Circuit planner previews finite capacity and disables oversized combinations',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');s.fleet.visits={quarry:3,island:3};s.fleet.lighthouse.stage=3;
+ const basic=[{route:'quarry',tier:1},{route:'island',tier:1}],outer=[{route:'quarry',tier:3},{route:'island',tier:3}];
+ let p=context.circuitSnapshot(s,basic);assert(p.panel.includes('18 / 20 units'));assert(!/data-action="circuit-depart"[^>]*disabled/.test(p.panel));assert(!p.panel.includes('data-action="fleet-repeat"'));
+ p=context.circuitSnapshot(s,outer);assert(p.panel.includes('36 / 20 units'));assert(p.panel.includes('Too much cargo'));assert.match(p.panel,/data-action="circuit-depart"[^>]*disabled/);
+ s.fleet.development.quarry=2;engine.installBoatUpgrade(s,0,'cargo');p=context.circuitSnapshot(s,outer);assert(p.panel.includes('36 / 39 units'));assert(!/data-action="circuit-depart"[^>]*disabled/.test(p.panel));
+});
+
+test('Circuit reservations restore both selected contracts and survive a paid voyage reload',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');s.fleet.visits={quarry:3,island:3};
+ const stops=[{route:'quarry',tier:2},{route:'island',tier:1}],goal='circuit:0:2:1';
+ assert(engine.reserveFor(s,goal));let p=context.circuitSnapshot(s,stops,goal);assert(p.panel.includes('for this order'));assert(p.plan.includes('Coastal circuit'));
+ const open=context.openGoalSnapshot(s,goal);assert.equal(open.tab,'fleet');assert.equal(open.fleetModes[0],'circuit');assert.equal(open.fleetCircuits[0][0].tier,2);assert.equal(open.fleetCircuits[0][1].tier,1);
+ const single=context.openGoalSnapshot(s,'fleet:0:quarry:2');assert.equal(single.fleetModes[0],'single');assert.equal(single.fleetSelections[0].tier,2);
+ assert(engine.startCircuit(s,0,stops));const restored=engine.parseSave(JSON.stringify(s));assert(restored);
+ p=context.circuitSnapshot(restored,stops);assert(p.panel.includes('CARGO COMMITTED'));assert(p.panel.includes('Pietra Cove'));assert(p.panel.includes('Isola dei Pescatori'));assert(p.panel.includes('Recall & return cargo'));assert(!p.panel.includes('data-action="circuit-depart"'));assert(!p.panel.includes('data-action="fleet-repeat"'));for(const html of Object.values(p)){assert(!html.includes('undefined'));assert(!html.includes('NaN'));}
+});
+
+test('Destination projects pin their funds and commissions replace finished project controls',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');s.fleet.visits={quarry:10,island:10};
+ for(const route of ['quarry','island']){
+  for(let stage=0;stage<3;stage++){
+   const goal='coastal:'+route+':'+stage;assert(engine.reserveFor(s,goal));const p=fleetSnapshot(s,0,'destinations','quarry',1,goal);assert(p.panel.includes(engine.COASTAL_PROJECTS[route][stage].name));assert(p.plan.includes('Coins'));assert(p.plan.includes('reserved'));
+   const open=context.openGoalSnapshot(s,goal);assert.equal(open.fleetSection,'destinations');assert(engine.fundCoastalProject(s,route,stage));
+  }
+  const plan=engine.commissionPlan(s,route),p=fleetSnapshot(s,0,'destinations','quarry',1,plan.goal);assert(p.panel.includes(plan.name));assert(p.panel.includes('Deliver commission'));assert(p.panel.includes('does not occupy a boat'));assert.equal(context.openGoalSnapshot(s,plan.goal).fleetSection,'destinations');assert(engine.completeCommission(s,route,0));
+ }
+ const final=fleetSnapshot(s,0,'destinations');assert(!final.panel.includes('data-action="coastal-fund"'));assert.equal((final.panel.match(/data-action="commission-complete"/g)||[]).length,2);
 });

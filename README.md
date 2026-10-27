@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 11
+# Little Harbour — Playtest 12
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-11.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-12.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -175,3 +175,13 @@ After the first inland preserves shipment, Fleet opens two boat roles and two de
 Voyage requirements can be pinned and reserved; lighthouse reservations also protect coins. Recall refunds loaded cargo without rewards and stops repeats. Closing the game pauses progress. Existing saves migrate to version 9.
 
 Validation: 101 automated tests pass, including both earned-resource progression paths through the lighthouse and two boats, save migration, cancellation, reservations and UI rendering. Long-session pacing and physical iPhone/iPad testing remain outstanding.
+
+## Playtest 12: Coastal development
+
+Fleet now offers a two-stop circuit planner. Choose a contract tier for each destination; the combined cargo must fit the hold. Circuits take 20% less time than the same pair of separate base-load journeys. The cargo upgrade expands circuit capacity; single-route behavior remains compatible with Playtest 11. Rewards and both visits settle together on return, and recalling returns all cargo without reward.
+
+Each destination has three projects unlocked after 3, 5 and 8 visits. Funding competes with production and voyages. Quarry projects improve material returns and hold capacity; island projects improve coins and voyage speed. The map reveals photographic settlement improvements as projects finish. Completing development unlocks three rotating commissions per destination. These commissions use existing goods and provide recurring goals without real-time deadlines.
+
+Boats use photographic transparent artwork, shadows, wakes and subtle dock movement. Reduced-motion preferences and the simulation pause are respected. Existing towns and active trips migrate to save version 10.
+
+Validation: 112 automated tests pass, including migration, reserved-stock protection, finite cargo, circuit settlement/cancellation, stale commission actions, navigation and map geometry. Standalone bundle passes JavaScript syntax checks. Live browser visual checks and physical iPhone/iPad testing remain incomplete because the testing browser has no authenticated session; no long-session balance claim is made.

@@ -71,7 +71,7 @@ export const FLEET_BOATS={
 };
 export const FLEET_UPGRADES={
  speed:{name:'Improved rigging',description:'Voyages take 25% less time. Replaces the cargo setup.',cost:{coins:180,wood:12,stone:8},timeScale:.75,cargoScale:1},
- cargo:{name:'Expanded hold',description:'Carry 50% more goods for 50% more reward. Replaces the speed setup.',cost:{coins:220,wood:16,stone:12},timeScale:1,cargoScale:1.5}
+ cargo:{name:'Expanded hold',description:'Single-destination voyages carry 50% more goods for 50% more reward. Circuits gain 50% hold capacity. Replaces the speed setup.',cost:{coins:220,wood:16,stone:12},timeScale:1,cargoScale:1.5}
 };
 export const FLEET_ROUTES={
  quarry:{name:'Pietra Cove',description:'Preserves, bread and empty jars supply the quarry crews. Return with building materials.',tiers:[
@@ -91,3 +91,28 @@ export const LIGHTHOUSE_STAGES=[
  {name:'Keeper’s house',description:'Roof and provision the keeper’s house after establishing a quarry partnership and reaching the island.',cost:{coins:450,wood:12,stone:24,tiles:8,preserves:4},requires:{quarry:3,island:1}},
  {name:'Lantern and second berth',description:'Complete both coastal partnerships. The beacon opens a second berth and longer expeditions.',cost:{coins:600,wood:16,stone:20,tiles:12,preserves:8},requires:{quarry:3,island:3}}
 ];
+
+export const COASTAL_PROJECTS={
+ quarry:[
+  {name:'Crew landing',description:'Rebuild the landing. All quarry voyages return 20% more timber and stone.',cost:{coins:280,wood:20,stone:16,tiles:8},visits:3},
+  {name:'Cargo crane',description:'Fit a loading crane. Every boat gains six cargo spaces per base cargo scale.',cost:{coins:420,wood:28,stone:24,jars:12},visits:5},
+  {name:'Masons’ workshop',description:'Open a workshop with rotating supply commissions for construction materials.',cost:{coins:650,wood:32,stone:40,tiles:20,preserves:12},visits:8}
+ ],
+ island:[
+  {name:'Covered fish market',description:'Roof the trading square. All island voyages return 15% more coins.',cost:{coins:320,wood:16,stone:16,tiles:12},visits:3},
+  {name:'Coastal pilot station',description:'Establish local pilots. All fleet voyages become 15% faster.',cost:{coins:460,wood:24,stone:20,preserves:12},visits:5},
+  {name:'Island chandlery',description:'Open a chandlery with rotating supply commissions for strong coin returns.',cost:{coins:700,wood:30,stone:32,tiles:20,jars:16},visits:8}
+ ]
+};
+export const COASTAL_COMMISSIONS={
+ quarry:[
+  {name:'Masons’ lunch provision',cost:{bread:12,preserves:8},reward:{coins:140,wood:28,stone:46}},
+  {name:'Workshop roof repair',cost:{tiles:12,wood:8},reward:{coins:180,wood:16,stone:48}},
+  {name:'Crew pantry restock',cost:{jars:8,preserves:8,oil:4},reward:{coins:180,wood:36,stone:36}}
+ ],
+ island:[
+  {name:'Harbour feast',cost:{bread:10,fish:8,preserves:6},reward:{coins:720}},
+  {name:'Roofing the waterfront',cost:{tiles:12,wood:10},reward:{coins:620}},
+  {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:820}}
+ ]
+};

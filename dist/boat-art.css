@@ -1,0 +1,22 @@
+/* Matched photographic vessels with separate surface effects. */
+.boat-art{display:inline-block;position:relative;aspect-ratio:3/2;isolation:isolate;overflow:visible;transform-origin:50% 59%}
+.boat-model{position:absolute;inset:0;display:block;background-position:center;background-size:contain;background-repeat:no-repeat;z-index:2}
+.boat-art-cutter .boat-model{background-image:url('assets/boat-cutter.png')}
+.boat-art-coaster .boat-model{background-image:url('assets/boat-coaster.png')}
+.boat-wake,.boat-waterline{display:none;position:absolute;pointer-events:none}
+.coast-boat{width:78px;height:56px;z-index:3}
+.coast-boat.coaster{width:91px;height:62px}
+.coast-boat .fleet-hull{position:relative;inset:auto;display:block;background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;width:100%;height:100%;filter:none;transition:transform .5s ease-out}
+.coast-boat .boat-model{filter:drop-shadow(1px 3px 1px #153b4066);animation:boat-rest 4.8s ease-in-out infinite}
+.coast-boat .boat-waterline{display:block;left:9%;right:6%;top:51%;height:24%;border-radius:50%;border-bottom:1px solid #c7e9df88;box-shadow:0 2px 4px #19484b55;z-index:1}
+.coast-boat.sailing .boat-wake{display:block;right:76%;top:50%;width:85%;height:35%;border-radius:70% 10% 10% 70%;background:linear-gradient(90deg,transparent,#c7e6dd33 38%,#e6f5e97a 100%);clip-path:polygon(0 0,100% 28%,100% 72%,0 100%,22% 56%);filter:blur(.6px);animation:boat-foam 1.7s ease-in-out infinite;z-index:0}
+.coast-boat.sailing .boat-model{animation:boat-underway 1.8s ease-in-out infinite}
+.coast-boat>span:not(.fleet-hull){background:#f7f0dfed;color:#35584f;border:1px solid #d2dccf;box-shadow:0 1px 3px #133c4540;right:3px;bottom:-1px;font-weight:600}
+.coast-boat.paused .boat-model,.coast-boat.paused .boat-wake{animation-play-state:paused}
+.boat-choice>.fleet-hull{width:100%;height:150px;margin:0 auto 16px;max-width:260px}
+.boat-summary>.fleet-hull{width:110px;height:76px}
+@keyframes boat-rest{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-1px) rotate(.5deg)}}
+@keyframes boat-underway{0%,100%{transform:translateY(0)}50%{transform:translateY(-.6px)}}
+@keyframes boat-foam{0%,100%{opacity:.6;transform:scaleX(.9)}50%{opacity:.95;transform:scaleX(1.1)}}
+@media(max-width:740px){.coast-boat{width:64px;height:48px}.coast-boat.coaster{width:75px;height:53px}.boat-choice>.fleet-hull{height:135px}.boat-summary>.fleet-hull{width:100px;height:70px}}
+@media(prefers-reduced-motion:reduce){.coast-boat .boat-model,.coast-boat .boat-wake{animation:none}.coast-boat .fleet-hull{transition:none}}

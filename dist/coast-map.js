@@ -32,3 +32,16 @@ export const COAST_BERTH_ROUTES={
  quarry:[[[1121,748],[1030,722],...COAST_ROUTES.quarry],[[1091,860],[1000,832],[935,758],...COAST_ROUTES.quarry]],
  island:[[[1121,748],[1030,755],...COAST_ROUTES.island],[[1091,860],[1000,832],...COAST_ROUTES.island]]
 };
+// Photographic upgrades are revealed only inside each completed project footprint.
+export const COAST_PROJECT_CLIPS={
+ quarry:[
+  'polygon(18.5% 11%,29.5% 11%,31% 20.5%,18.5% 21%)',
+  'polygon(28% 15%,34.8% 15%,34.8% 25%,28% 25%)',
+  'polygon(9% 11.5%,18.5% 11.5%,18.5% 21%,9% 21%)'
+ ],
+ island:[
+  'polygon(20.5% 61.5%,29.2% 61.5%,29.2% 69%,20.5% 69%)',
+  'polygon(9.5% 63.5%,15.5% 63.5%,15.5% 70%,9.5% 70%)',
+  'polygon(29.2% 62%,36.8% 62%,36.8% 68.5%,29.2% 68.5%)'
+ ]
+};

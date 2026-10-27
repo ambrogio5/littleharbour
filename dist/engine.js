@@ -1,6 +1,6 @@
-import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS} from './catalog.js';
+import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS} from './catalog.js';
 export * from './catalog.js';
-export function fresh(){return {version:9,fleet:{boats:[null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
+export function fresh(){return {version:10,fleet:{development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
 export function has(s,type){return s.businesses.includes(type);}
 export function reserved(s,item){return Object.values(s.reservations||{}).reduce((sum,c)=>sum+(c[item]||0),0);}
 export function available(s,item,goalId=null){return (item==='coins'?s.coins:s.stock[item]||0)-reserved(s,item)+(s.reservations?.[goalId]?.[item]||0);}
@@ -65,7 +65,7 @@ export function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
- if(!x||![1,2,3,4,5,6,7,8,9].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
+ if(!x||![1,2,3,4,5,6,7,8,9,10].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  for(const k of ['coins','deliveries','harvests','milled','baked']){if(!Number.isSafeInteger(x[k])||x[k]<0||x[k]>1e9)invalid();s[k]=x[k];}
  if(!Number.isFinite(x.seconds)||x.seconds<0||x.seconds>1e10)invalid();s.seconds=x.seconds;
@@ -100,7 +100,7 @@ export function parseSave(raw){
  if(x.jobs.length>[...new Set(Object.values(RECIPES).map(r=>r.station))].reduce((total,st)=>total+capacity(s,st),0))invalid();
  if(x.version>=7)validateMarket(s,x.market,invalid);
  if(x.version>=8)validateInland(s,x.inland,invalid);
- if(x.version>=9)validateFleet(s,x.fleet,invalid);
+ if(x.version>=9)validateFleet(s,x.fleet,invalid,x.version);
  if(s.selectedOrder==='inland'&&!inlandTradeReady(s))invalid();
  for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>recipeDuration(s,j.key))invalid();s.jobs.push({key:j.key,left:j.left});}
  for(const station of new Set(Object.values(RECIPES).map(r=>r.station)))if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
@@ -211,6 +211,9 @@ export function chapterThree(s){
 export function goalCost(s,id){
  if(typeof id!=='string')return null;
  const parts=id.split(':');
+ if(parts[0]==='circuit'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[2])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),stops=[{route:'quarry',tier:Number(parts[2])},{route:'island',tier:Number(parts[3])}],p=circuitPlan(s,slot,stops);return p&&!fleetBoat(s,slot).trip&&!circuitAccessBlocker(s,slot,stops)?{...p.cost}:null;}
+ if(parts[0]==='coastal'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.development[parts[1]])&&!coastalProjectAccessBlocker(s,parts[1]))return {...COASTAL_PROJECTS[parts[1]][s.fleet.development[parts[1]]].cost};
+ if(parts[0]==='commission'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.commissions[parts[1]])&&s.fleet.development[parts[1]]===3)return {...commissionPlan(s,parts[1]).cost};
  if(parts[0]==='fleet'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
  if(parts[0]==='lighthouse'&&parts.length===2&&parts[1]===String(s.fleet.lighthouse.stage)&&!lighthouseAccessBlocker(s))return {...LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].cost};
  if(parts[0]==='trade'&&parts.length===2){const route=orders(s).find(o=>o.id===parts[1]);return route&&!route.locked?{...route.cost}:null;}
@@ -222,6 +225,9 @@ export function goalCost(s,id){
 export function goalTitle(s,id){
  if(!goalCost(s,id))return null;
  const [kind,key,route,tier]=id.split(':');
+ if(kind==='circuit')return 'Coastal circuit · berth '+(Number(key)+1);
+ if(kind==='coastal')return COASTAL_PROJECTS[key][s.fleet.development[key]].name;
+ if(kind==='commission')return commissionPlan(s,key).name;
  if(kind==='fleet')return FLEET_ROUTES[route].tiers[Number(tier)-1].name+' · berth '+(Number(key)+1);
  if(kind==='lighthouse')return LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].name;
  return kind==='trade'?orders(s).find(o=>o.id===key).name:kind==='contract'?CONTRACTS[key].name:kind==='market'?MARKET_BUSINESSES[key].name+' standing order':WATERFRONT_STAGES[s.waterfront.stage].name+' supply '+(s.waterfront.delivered+1);
@@ -344,7 +350,7 @@ export function voyagePlan(s,slot,route,tier=1){
  const b=fleetBoat(s,slot),r=Object.hasOwn(FLEET_ROUTES,route)?FLEET_ROUTES[route]:null,d=r&&Number.isInteger(tier)?r.tiers[tier-1]:null;
  if(!b||!d)return null;
  const boat=FLEET_BOATS[b.type],up=b.upgrade?FLEET_UPGRADES[b.upgrade]:null,scale=boat.cargoScale*(up?.cargoScale||1),scaled=cost=>Object.fromEntries(Object.entries(cost).map(([k,n])=>[k,Math.ceil(n*scale)]));
- return {route,tier,name:d.name,destination:r.name,cost:scaled(d.cost),reward:scaled(d.reward),duration:Math.ceil(d.duration*boat.timeScale*(up?.timeScale||1)),goal:`fleet:${slot}:${route}:${tier}`};
+ return {route,tier,name:d.name,destination:r.name,cost:scaled(d.cost),reward:coastalReward(s,route,scaled(d.reward)),duration:Math.ceil(d.duration*boat.timeScale*(up?.timeScale||1)*(s.fleet.development.island>=2?.85:1)),goal:`fleet:${slot}:${route}:${tier}`};
 }
 function voyageAccessBlocker(s,slot,route,tier=1){
  const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);
@@ -355,7 +361,7 @@ function voyageAccessBlocker(s,slot,route,tier=1){
  return '';
 }
 export function voyageBlocker(s,slot,route,tier=1){const blocked=voyageAccessBlocker(s,slot,route,tier);if(blocked)return blocked;const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);if(b.trip)return 'This boat is already at sea.';if(!canAfford(s,p.cost,p.goal))return 'Prepare the missing cargo or release supplies reserved for other orders.';return '';}
-function releaseBerthReservations(s,slot){for(const id of Object.keys(s.reservations))if(id.startsWith(`fleet:${slot}:`))releaseReservation(s,id);}
+function releaseBerthReservations(s,slot){for(const id of Object.keys(s.reservations))if(id.startsWith(`fleet:${slot}:`)||id.startsWith(`circuit:${slot}:`))releaseReservation(s,id);}
 export function startVoyage(s,slot,route,tier=1,quiet=false){
  if(voyageBlocker(s,slot,route,tier))return false;
  const b=fleetBoat(s,slot),p=voyagePlan(s,slot,route,tier);
@@ -385,7 +391,7 @@ function tickFleet(s,elapsed){
  if(l.left>0){l.left=Math.max(0,l.left-elapsed);if(!l.left){note(s,LIGHTHOUSE_STAGES[l.stage].name+' complete');l.stage++;changed++;}}
  for(let slot=0;slot<2;slot++){
   const b=s.fleet.boats[slot];if(!b)continue;
-  if(b.trip){b.trip.left=Math.max(0,b.trip.left-elapsed);if(!b.trip.left){const trip=b.trip;b.trip=null;s.coins+=trip.reward.coins||0;add(s,Object.fromEntries(Object.entries(trip.reward).filter(([k])=>k!=='coins')));s.fleet.visits[trip.route]++;note(s,FLEET_ROUTES[trip.route].name+' voyage returned · '+s.fleet.visits[trip.route]+' completed visit'+(s.fleet.visits[trip.route]===1?'':'s'));changed++;}}
+  if(b.trip){b.trip.left=Math.max(0,b.trip.left-elapsed);if(!b.trip.left){const trip=b.trip;b.trip=null;s.coins+=trip.reward.coins||0;add(s,Object.fromEntries(Object.entries(trip.reward).filter(([k])=>k!=='coins')));for(const stop of trip.stops||[{route:trip.route}])s.fleet.visits[stop.route]++;note(s,trip.stops?'Coastal circuit returned · both destinations supplied':FLEET_ROUTES[trip.route].name+' voyage returned · '+s.fleet.visits[trip.route]+' completed visit'+(s.fleet.visits[trip.route]===1?'':'s'));changed++;}}
   // At most one settlement per berth per tick. A new repeat trip begins now;
   // elapsed time from the previous trip is never spent again on this voyage.
   if(!b.trip&&b.repeat&&startVoyage(s,slot,b.repeat.route,b.repeat.tier,true))changed++;
@@ -399,13 +405,19 @@ export function fleetGuide(s){
  if(s.fleet.visits.quarry<3||s.fleet.visits.island<3)return {step:3,title:'Build two coastal partnerships',description:'Complete three visits to each destination. Partnerships improve rewards and unlock optional repeat sailings.',label:'Plan your next voyage',target:'fleet'};
  if(s.fleet.lighthouse.stage<3)return {step:4,title:'Light the coast',description:'Finish the keeper’s house and lantern with kiln tiles and supplies. The completed lighthouse opens outer routes and a second berth.',label:'Continue the lighthouse',target:'fleet'};
  if(!s.fleet.boats[1])return {step:5,title:'Open a second working berth',description:'Add another boat and choose complementary roles. Both berths can sail independently.',label:'Choose your second boat',target:'fleet'};
- return {step:6,title:'A connected coastline',description:'Choose short supply runs or outer expeditions, manage two boats and balance repeat sailings against local orders.',label:'Manage the fleet',target:'fleet'};
+ if(s.fleet.development.quarry<3||s.fleet.development.island<3)return {step:6,title:'Build the coastal settlements',description:'Supply three local projects at each destination. New landings, a crane and pilots improve the whole fleet.',label:'Develop the destinations',target:'fleet'};
+ if(!s.fleet.commissions.quarry||!s.fleet.commissions.island)return {step:7,title:'Supply the coastal workshops',description:'The masons and chandlery now offer rotating commissions. Balance local supplies against your next circuit.',label:'Review local commissions',target:'fleet'};
+ return {step:8,title:'A working coastal network',description:'Mix contracts to fit your holds, run two-berth circuits and supply rotating commissions at both settlements.',label:'Manage the destinations',target:'fleet'};
 }
-function validateFleet(s,f,invalid){
+function validateFleet(s,f,invalid,version){
  const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),count=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
  if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==2||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
  const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>LIGHTHOUSE_SECONDS||(l.stage===3&&l.left))invalid();
- const out={boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
+ const out={development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
+ if(version>=10){
+  if(!obj(f.development)||!obj(f.commissions)||Object.keys(f.development).length!==2||Object.keys(f.commissions).length!==2)invalid();
+  for(const route of ['quarry','island']){const stage=f.development[route],n=f.commissions[route];if(!Number.isInteger(stage)||stage<0||stage>3||!count(n)||(n&&stage!==3)||(stage&&(!f.boats[0]||f.visits[route]<COASTAL_PROJECTS[route][stage-1].visits)))invalid();out.development[route]=stage;out.commissions[route]=n;}
+ }
  if(!fleetEligible(s)&&(f.boats.some(b=>b!==null)||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
  if(!f.boats[0]&&(f.boats[1]!==null||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
  if(l.stage||l.left){const requirement=LIGHTHOUSE_STAGES[l.left?l.stage:l.stage-1].requires;if(Object.entries(requirement).some(([route,n])=>f.visits[route]<n))invalid();}
@@ -415,9 +427,30 @@ function validateFleet(s,f,invalid){
   if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot===1&&l.stage!==3)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
   const result={type:b.type,upgrade:b.upgrade,trip:null,repeat:null};
   const validRoute=(route,tier)=>Object.hasOwn(FLEET_ROUTES,route)&&Number.isInteger(tier)&&tier>=1&&tier<=3&&f.visits[route]>=FLEET_ROUTES[route].tiers[tier-1].visits&&(!FLEET_ROUTES[route].tiers[tier-1].lighthouse||l.stage===3);
-  if(b.trip!==null){const t=b.trip;if(!obj(t)||!validRoute(t.route,t.tier)||!Number.isFinite(t.duration)||t.duration<=0||t.duration>86400||!Number.isFinite(t.left)||t.left<=0||t.left>t.duration)invalid();result.trip={route:t.route,tier:t.tier,cargo:packet(t.cargo,Object.keys(s.stock)),reward:packet(t.reward,['coins','wood','stone']),duration:t.duration,left:t.left};}
+  if(b.trip!==null){const t=b.trip;if(!obj(t)||!validRoute(t.route,t.tier)||!Number.isFinite(t.duration)||t.duration<=0||t.duration>86400||!Number.isFinite(t.left)||t.left<=0||t.left>t.duration)invalid();result.trip={route:t.route,tier:t.tier,cargo:packet(t.cargo,Object.keys(s.stock)),reward:packet(t.reward,['coins','wood','stone']),duration:t.duration,left:t.left};if(t.stops!==undefined){if(version<10||!Array.isArray(t.stops)||t.stops.length!==2||t.stops[0]?.route!=='quarry'||t.stops[1]?.route!=='island'||t.route!==t.stops[0].route||t.tier!==t.stops[0].tier||t.stops.some(stop=>!obj(stop)||!validRoute(stop.route,stop.tier)))invalid();result.trip.stops=t.stops.map(stop=>({route:stop.route,tier:stop.tier}));}}
+
   if(b.repeat!==null){const r=b.repeat;if(!obj(r)||!validRoute(r.route,r.tier)||f.visits[r.route]<3)invalid();result.repeat={route:r.route,tier:r.tier};}
   out.boats[slot]=result;
  }
  s.fleet=out;
 }
+
+function coastalReward(s,route,reward){const out={...reward};if(route==='quarry'&&s.fleet.development.quarry>=1)for(const k of ['wood','stone'])if(out[k])out[k]=Math.ceil(out[k]*1.2);if(route==='island'&&s.fleet.development.island>=1&&out.coins)out.coins=Math.ceil(out.coins*1.15);return out;}
+export function boatCargoCapacity(s,slot){const b=fleetBoat(s,slot);return b?Math.floor((20+(s.fleet.development.quarry>=2?6:0))*FLEET_BOATS[b.type].cargoScale*(b.upgrade==='cargo'?1.5:1)):0;}
+function validCircuitStops(stops){return Array.isArray(stops)&&stops.length===2&&stops[0]?.route==='quarry'&&stops[1]?.route==='island'&&stops.every(p=>Number.isInteger(p.tier)&&p.tier>=1&&p.tier<=3);}
+export function circuitPlan(s,slot,stops){
+ const b=fleetBoat(s,slot);if(!b||!validCircuitStops(stops))return null;
+ const cost={},reward={},boat=FLEET_BOATS[b.type];let duration=0;
+ for(const stop of stops){const d=FLEET_ROUTES[stop.route].tiers[stop.tier-1];for(const[k,n]of Object.entries(d.cost))cost[k]=(cost[k]||0)+Math.ceil(n*boat.cargoScale);const returns=coastalReward(s,stop.route,Object.fromEntries(Object.entries(d.reward).map(([k,n])=>[k,Math.ceil(n*boat.cargoScale)])));for(const[k,n]of Object.entries(returns))reward[k]=(reward[k]||0)+n;duration+=d.duration*boat.timeScale;}
+ duration=Math.ceil(duration*.8*(b.upgrade==='speed'?.75:1)*(s.fleet.development.island>=2?.85:1));
+ return {name:'Pietra Cove → Isola dei Pescatori',cost,reward,duration,used:Object.values(cost).reduce((a,b)=>a+b,0),capacity:boatCargoCapacity(s,slot),stops:stops.map(p=>({...p})),goal:`circuit:${slot}:${stops[0].tier}:${stops[1].tier}`};
+}
+function circuitAccessBlocker(s,slot,stops){const p=circuitPlan(s,slot,stops);if(!p)return 'Choose two valid coastal contracts.';for(const stop of stops){const reason=voyageAccessBlocker(s,slot,stop.route,stop.tier);if(reason)return reason;}if(p.used>p.capacity)return `This circuit needs ${p.used} cargo spaces; your hold has ${p.capacity}. Choose smaller contracts, expand the hold or build the quarry crane.`;return '';}
+export function circuitBlocker(s,slot,stops){const reason=circuitAccessBlocker(s,slot,stops);if(reason)return reason;if(fleetBoat(s,slot).trip)return 'This boat is already at sea.';const p=circuitPlan(s,slot,stops);return canAfford(s,p.cost,p.goal)?'':'Prepare the missing cargo or release supplies reserved for other orders.';}
+export function startCircuit(s,slot,stops){if(circuitBlocker(s,slot,stops))return false;const p=circuitPlan(s,slot,stops),b=fleetBoat(s,slot);spend(s,p.cost,p.goal);releaseBerthReservations(s,slot);b.repeat=null;b.trip={route:stops[0].route,tier:stops[0].tier,cargo:{...p.cost},reward:{...p.reward},duration:p.duration,left:p.duration,stops:p.stops};note(s,'Coastal circuit departed · both contracts loaded; single-route repeats stopped');return true;}
+function coastalProjectAccessBlocker(s,route){if(!Object.hasOwn(COASTAL_PROJECTS,route))return 'Choose a coastal settlement.';const stage=s.fleet.development[route],d=COASTAL_PROJECTS[route][stage];if(!fleetEligible(s)||!s.fleet.boats[0])return 'Establish your coastal fleet first.';if(!d)return 'This settlement is fully developed.';if(s.fleet.visits[route]<d.visits)return `Complete ${d.visits} visits to ${FLEET_ROUTES[route].name} first.`;return '';}
+export function coastalProjectBlocker(s,route){const reason=coastalProjectAccessBlocker(s,route);if(reason)return reason;const stage=s.fleet.development[route];return canAfford(s,COASTAL_PROJECTS[route][stage].cost,`coastal:${route}:${stage}`)?'':'Gather the project funding and supplies.';}
+export function fundCoastalProject(s,route,expectedStage){if(!Object.hasOwn(COASTAL_PROJECTS,route)||expectedStage!==s.fleet.development[route]||coastalProjectBlocker(s,route))return false;const d=COASTAL_PROJECTS[route][expectedStage],goal=`coastal:${route}:${expectedStage}`;spend(s,d.cost,goal);releaseReservation(s,goal);s.fleet.development[route]++;note(s,d.name+' complete · '+FLEET_ROUTES[route].name);return true;}
+export function commissionPlan(s,route){if(!Object.hasOwn(COASTAL_COMMISSIONS,route))return null;const count=s.fleet.commissions[route],d=COASTAL_COMMISSIONS[route][count%COASTAL_COMMISSIONS[route].length];return {...d,cost:{...d.cost},reward:{...d.reward},count,goal:`commission:${route}:${count}`};}
+export function commissionBlocker(s,route){const p=commissionPlan(s,route);if(!p)return 'Choose a coastal settlement.';if(s.fleet.development[route]!==3)return 'Complete all three settlement projects to open commissions.';return canAfford(s,p.cost,p.goal)?'':'Prepare the commission supplies or release other reservations.';}
+export function completeCommission(s,route,expectedCount){const p=commissionPlan(s,route);if(!p||p.count!==expectedCount||commissionBlocker(s,route))return false;spend(s,p.cost,p.goal);releaseReservation(s,p.goal);s.coins+=p.reward.coins||0;add(s,Object.fromEntries(Object.entries(p.reward).filter(([k])=>k!=='coins')));s.fleet.commissions[route]++;note(s,p.name+' fulfilled · next local commission available');return true;}
