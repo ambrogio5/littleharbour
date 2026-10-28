@@ -20,7 +20,7 @@ export function createHarbourScene(canvas,getState,isPaused,getDuration=()=>14){
  const ctx=canvas.getContext('2d');if(!ctx)return {emit(){},reset(){}};
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  let clock=getState().seconds,lastFrame=performance.now(),lastPaint=0,frameId,trips=[],flashes=[],width=0,height=0;
- function resize(){const box=canvas.parentElement.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
+ function resize(){const box={width:canvas.parentElement.clientWidth,height:canvas.parentElement.clientHeight},dpr=Math.min(devicePixelRatio||1,2);width=box.width;height=box.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
  const observer=new ResizeObserver(resize);observer.observe(canvas.parentElement);resize();
  function emit(type,detail){
   if(type==='milestone'){flashes.push({text:detail==='delivery'?'First trade complete':detail==='pier'?'New routes open':'Business open',x:detail==='olive'?360:detail==='fishing'?720:1190,y:detail==='olive'?565:detail==='fishing'?650:500,start:clock});}
@@ -111,7 +111,7 @@ export function createMarketScene(canvas,getState,isPaused,plots){
  const ctx=canvas.getContext('2d');if(!ctx)return {emit(){},reset(){}};
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');let frameId,lastPaint=0,trips=[],seen={};
  const anchors=Object.fromEntries(plots.filter(p=>p.business).map(p=>[p.business,p.roadPoint]));
- function resize(){const box=canvas.parentElement.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(box.width*dpr));canvas.height=Math.max(1,Math.round(box.height*dpr));}
+ function resize(){const box={width:canvas.parentElement.clientWidth,height:canvas.parentElement.clientHeight},dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(box.width*dpr));canvas.height=Math.max(1,Math.round(box.height*dpr));}
  const observer=new ResizeObserver(resize);observer.observe(canvas.parentElement);resize();
  function reset(){trips=[];seen=Object.fromEntries(Object.entries(getState().market.businesses).map(([key,b])=>[key,b.deliveries]));}
  function emit(type){if(!anchors[type])return;seen[type]=getState().market.businesses[type]?.deliveries||0;trips.push({type,start:getState().seconds});trips=trips.slice(-6);}

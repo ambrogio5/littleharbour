@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 14
+# Little Harbour — Playtest 15
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,9 +6,9 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-14.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-15.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
-The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
+The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. Drag the unified map in any direction; pinch or use + / − to zoom. Whole town fits all areas, Home returns to the harbour, and the minimap jumps between districts. On phones, production controls sit below the map. The Back to map button returns to the settlement.
 
 1. Harvest the ripe wheat field.
 2. Queue two flour batches at the mill.
@@ -23,6 +23,15 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 11. Complete a different contract and establish the harbour charter.
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
+
+## New in Playtest 15
+
+- **Unified navigable map:** all five areas share one world and camera, with photographic connecting terrain, soft scene edges, roads, drag/pinch navigation, zoom controls, a minimap, and keyboard panning. Existing artwork and active buildings retain their authored local positions. This is a unified composition of the district artwork, not a replacement of every building asset.
+- **Action clarity:** ready and working markers, three contextual task cards with Locate shortcuts, and visible future districts with accurate unlock requirements. Reserved supplies are excluded from ready-shipment checks.
+- **Town direction:** after quay construction, choose Trading port (+10% harbour shipment coins), Builders’ town (+20% harbour shipment timber/stone, rounded), or Local life (+20% market/neighbourhood coins). First choice is free; switching costs 100 unreserved coins. Bonuses do not apply to fleet voyages. Existing specialist paths are independent.
+- **UI:** larger map, scrollable labelled resources, compact action cards, dark-mode controls and a desktop management panel that stays in view.
+- All 146 automated tests pass, including camera gestures, bounds, reservation-aware tasks and direction rewards.
+- Existing version-12 saves load with no town direction selected. The direction is included in town exports. Browser visual and physical-device gesture checks are not available in this environment; these require a follow-up playtest.
 
 ## New in Playtest 14
 
