@@ -195,3 +195,7 @@ New production chains: timber → furniture and flax → cloth → sails. Furnit
 The fifth district uses photographic scenery and independently placed building sprites; labels and plot selection follow the actual layout. Existing towns migrate to save version 11 without resetting progress.
 
 Validation: 127 automated tests cover production, save migration, queue capacity, moving, redevelopment, refits, orders, reservations and navigation. See docs/p13-balance.md for the mathematical cost/throughput assessment. Browser controls are unavailable in this session, so visual layout and physical-device interaction have not been verified; long-session pacing remains a playtest task.
+
+### Appearance
+
+Use the moon/sun button in the top bar to toggle dark mode. The first visit follows the device colour preference; an explicit choice is remembered across town and sample pages on this browser. Appearance is separate from exported game saves.

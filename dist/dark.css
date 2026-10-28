@@ -1,0 +1,27 @@
+/* Warm charcoal surfaces and sea-glass accents. Artwork retains its original colours. */
+#themeToggle{font-size:21px;flex-shrink:0;min-width:40px;min-height:40px}
+html[data-theme=dark]{--ink:#e3e9df;--muted:#acb9ad;--paper:#172321;--line:#3a4c46;--accent:#96c9b6;--blue:#a7c7d8;--sand:#253530;color-scheme:dark}
+html[data-theme=dark] :is(.wallet,.resource,.recipe-card,.construction-card,.path-card,.charter-card,.contract-card,.quick-panel,.quick-actions>button,.workshop-card,.refit-card,.refit-choice,.restoration-card,.market-business,.pinned-plan,.plan-goods>button,.return-project,.reservation-ledger>div,.ledger-card,.preset-row button,.boat-choice,.voyage-card,.destination-card,.lighthouse-step,.repeat-card,.boat-upgrade,.neigh-build-choice,.neigh-built-summary,.neigh-production,.neigh-order,.neigh-refit,.neigh-move,dialog,.milestone-notice){background-color:#22332e;color:var(--ink);border-color:var(--line)}
+html[data-theme=dark] :is(.journey,.waterfront-entry,.market-entry,.fleet-entry,.neighbourhood-entry,.local-demand,.partnership-progress,.cargo-capacity,.lighthouse-step.finished,.refit-summary,.sample-banner,.paused-note,.success-tag,.full-inventory span,.ledger-status,.opening-cargo>span){background-color:#2b4036;color:var(--ink);border-color:#496052}
+html[data-theme=dark] :is(.station-selector button,.segmented,.segmented button,.job-actions button,.route-options button,.workshop-recipe>button,.district-nav button,.market-tabs button,.auto-toggle,.fleet-navigation button,.berth-selector button,.fleet-routes button,.fleet-contracts button,.fleet-mode button,.neigh-navigation button,.neigh-plot-tabs button,.ledger-search input){background-color:#24352f;color:var(--ink);border-color:#4a6054}
+html[data-theme=dark] :is(.button,.button:not(:disabled):hover){background:#8abda7;color:#142b23;border-color:#8abda7}
+html[data-theme=dark] .button.secondary{background:#2b4036;color:#cce5d5;border-color:#648171}
+html[data-theme=dark] :is(.station-selector button.active,.segmented button.active,.route-options .active,.market-tabs .active,.path-card.selected,.refit-choice.installed,[aria-pressed=true]:not(.map-pin):not(.coast-boat):not(#themeToggle),.mobile-nav button.active){background-color:#385a49;color:#f1f5e8;border-color:#8abda7}
+html[data-theme=dark] :is(.tabs,.mobile-nav){background:var(--paper);border-color:var(--line)}
+html[data-theme=dark] :is(.tabs button,.text-button,.ingredient-name,.resource em,.object small,.full-inventory .inventory-good>span){color:var(--ink)!important}
+html[data-theme=dark] :is(.hint,.description,.section-label,.panel-eyebrow,.eyebrow,.ingredient-row small,.recipe-card small,.job-name small,.route-unlock small,.funding-stock,.empty-queue,.activity,.activity li,.refit-description,.neigh-map-label small){color:var(--muted)}
+html[data-theme=dark] :is(.enough,.success-tag,.selected-label,.idle-label){color:#a9d6b2}
+html[data-theme=dark] :is(.over-capacity,.ledger-status.shortage){background:#513a2d;color:#f0c7a8}
+html[data-theme=dark] :is(.progress,.journey-track span){background:#3b4f44}
+html[data-theme=dark] :is(.progress i,.journey-track .complete,.coastal-project-track li.complete>span){background:#92bfa3;color:#172321}
+html[data-theme=dark] :is(.map-pin,.map-tools button,.district-edge-link,.neigh-map-label,.market-road-gate,.market-road-works,.market-work small){background:#20372feb;color:#edf2e2;border-color:#779280;box-shadow:0 2px 8px #09151055}
+html[data-theme=dark] .map-pin small{color:#c5d6c7}
+html[data-theme=dark] .time-controls{background:#1c3029ed;border-color:#657d6d}
+html[data-theme=dark] .time-controls button{color:#d6e4d7}
+html[data-theme=dark] .time-controls button.active{background:#9fc5aa;color:#182c21}
+html[data-theme=dark] :is(.milestone-dismiss,.icon-button){color:var(--ink);border-color:var(--line);background:transparent}
+html[data-theme=dark] #toast{background:#d3e4d4;color:#172b22;box-shadow:0 3px 15px #0008}
+html[data-theme=dark] dialog::backdrop{background:#07110dd9}
+html[data-theme=dark] :is(button,a,input):focus-visible{outline-color:#e9c77d}
+html[data-theme=dark] .full-inventory .inventory-good>span{background:none}
+html[data-theme=dark] button:disabled{opacity:.55}

@@ -3,8 +3,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-Playtest-13.html');
+const theme=fs.readFileSync(path.join(root,'dist/theme.js'),'utf8');
 let html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
-const css=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css'].map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n').replace(/url\('assets\/([^']+)'\)/g,(_,file)=>"url('data:image/png;base64,"+fs.readFileSync(path.join(root,'dist/assets',file)).toString('base64')+"')");
+const css=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','dark.css'].map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n').replace(/url\('assets\/([^']+)'\)/g,(_,file)=>"url('data:image/png;base64,"+fs.readFileSync(path.join(root,'dist/assets',file)).toString('base64')+"')");
 const catalog=fs.readFileSync(path.join(root,'dist/catalog.js'),'utf8').replace(/^export /gm,'');
 const engine=fs.readFileSync(path.join(root,'dist/engine.js'),'utf8').replace(/^import .*\n/gm,'').replace(/^export \* .*\n/gm,'').replace(/^export /gm,'');
 const scene=fs.readFileSync(path.join(root,'dist/scene.js'),'utf8').replace(/^export /gm,'');
@@ -20,6 +21,7 @@ const planning=fs.readFileSync(path.join(root,'dist/planning.js'),'utf8').replac
 const app=fs.readFileSync(path.join(root,'dist/app.js'),'utf8').replace(/^import .*\n/gm,'');
 html=html.replace('<link rel="stylesheet" href="style.css">',()=>'<style>'+css+'</style>');
 html=html.replace('<link rel="stylesheet" href="fleet-depth.css">','').replace('<link rel="stylesheet" href="boat-art.css">','').replace('<link rel="stylesheet" href="neighbourhood.css">','');
+html=html.replace('<link rel="stylesheet" href="dark.css">','').replace('<script src="theme.js"></script>',()=>'<script>'+theme+'</script>');
 html=html.replace('<script type="module" src="app.js"></script>',()=>'<script>'+catalog+'\n'+engine+'\n'+scene+'\n'+districts+'\n'+inlandMap+'\n'+coastMap+'\n'+boatArt+'\n'+fleetUI+'\n'+coastView+'\n'+demo+'\n'+planning+'\n'+neighbourhoodUIBundle+'\n'+app+'</script>');
 if(/(?:src|href)="https?:\/\//.test(html)||/@import/.test(html))throw new Error('External assets must not be present.');
 fs.writeFileSync(destination,html);
