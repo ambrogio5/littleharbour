@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 13
+# Little Harbour — Playtest 14
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-13.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-14.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -23,6 +23,13 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 11. Complete a different contract and establish the harbour charter.
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
+
+## New in Playtest 14
+
+- **Project production plans:** use “Plan production” beside a project's requirements to see stored and queued supplies, upstream recipes and workshop workload. “Queue missing batches” starts affordable work now, protecting reserved goods and supplies needed for the final delivery. Repeated taps do not duplicate incoming production.
+- **Ferry terminal:** after neighbourhood access and lighthouse restoration, open the terminal from Build or Fleet. Three stages each need funding and three supply deliveries; progress survives reloads. Completed stages reveal waterfront improvements.
+- **Passenger services:** dispatch an existing boat with bread and preserves to either coastal destination. Services compete with cargo for boat time, pay fares, and do not advance cargo partnerships. Recall returns provisions without a fare.
+- Existing saves migrate to version 12. Dark mode covers the new panels. All 140 automated tests pass; browser visual checks, physical iPhone/iPad checks and long-session balance playtesting remain outstanding. See [balance notes](docs/p14-balance.md).
 
 ## New in Playtest 11
 
@@ -186,7 +193,7 @@ Boats use photographic transparent artwork, shadows, wakes and subtle dock movem
 
 Validation: 112 automated tests pass, including migration, reserved-stock protection, finite cargo, circuit settlement/cancellation, stale commission actions, navigation and map geometry. Standalone bundle passes JavaScript syntax checks. Live browser visual checks and physical iPhone/iPad testing remain incomplete because the testing browser has no authenticated session; no long-session balance claim is made.
 
-## Playtest 13: A living town
+## Playtest 14: A living town
 
 Three visits to either coastal destination unlock the neighbourhood entry in Build and Fleet. Open the district, buy any of six plots, and place a town house, carpenter, weaving studio, sail loft, public square or flax garden. Each workshop is unique; up to two homes are allowed. Six plots create a choice between a second home and the public square. Buildings can move or swap freely between purchased plots. Redevelopment retains land and stored goods, refunds half the building coin cost and blocks removal while queued work would be lost.
 

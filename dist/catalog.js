@@ -138,3 +138,13 @@ export const NEIGHBOURHOOD_ORDERS=[
  {name:'Cloth for the covered market',cost:{cloth:6,preserves:4},reward:{coins:320,wood:8}},
  {name:'Sails for visiting crews',cost:{sails:4,bread:6},reward:{coins:420,wood:12}}
 ];
+
+export const FERRY_STAGES=[
+ {name:'Passenger landing',description:'Lay a safe paved landing and provision the builders. Three supply batches complete the stage.',cost:{coins:200},supplies:{wood:8,tiles:4,bread:4}},
+ {name:'Waiting hall',description:'Furnish and shade a modest waiting hall. Three supply batches complete the stage.',cost:{coins:300},supplies:{furniture:4,cloth:2,bread:4}},
+ {name:'Ticket office and departure quay',description:'Finish the office and prepare passenger services. Three supply batches open the terminal.',cost:{coins:450},supplies:{furniture:2,cloth:4,preserves:4}}
+];
+export const FERRY_SERVICES={
+ quarry:{name:'Pietra Cove passenger service',cost:{bread:4,preserves:2},reward:{coins:180},duration:36},
+ island:{name:'Island passenger service',cost:{bread:6,preserves:2},reward:{coins:220},duration:48}
+};

@@ -25,3 +25,7 @@ html[data-theme=dark] dialog::backdrop{background:#07110dd9}
 html[data-theme=dark] :is(button,a,input):focus-visible{outline-color:#e9c77d}
 html[data-theme=dark] .full-inventory .inventory-good>span{background:none}
 html[data-theme=dark] button:disabled{opacity:.55}
+
+html[data-theme=dark] :is(.ferry-stage,.ferry-boat,.ferry-locked,.ferry-batch-track>span){background:#22332e;color:var(--ink);border-color:var(--line)}
+html[data-theme=dark] :is(.ferry-entry,.ferry-stage.complete,.ferry-delivery-progress,.ferry-run-count){background:#2b4036;color:var(--ink);border-color:#496052}
+html[data-theme=dark] .ferry-batch-track>span.done{background:#385a49;color:#f1f5e8}

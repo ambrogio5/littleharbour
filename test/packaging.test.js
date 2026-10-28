@@ -14,9 +14,9 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   assert.equal(result.status,0,result.stderr);
   const html=readFileSync(file,'utf8');
   const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-  assert.equal(scripts.length,1);
-  assert.doesNotThrow(()=>new Script(scripts[0][1]));
-  assert(scripts[0][1].includes('$$=s=>[...document.querySelectorAll(s)]'));
+  assert.equal(scripts.length,2);
+  for(const [,code]of scripts)assert.doesNotThrow(()=>new Script(code));
+  assert(scripts[1][1].includes('$$=s=>[...document.querySelectorAll(s)]'));
   assert(html.includes('data:image/png;base64,'));
   assert(!html.includes('src="app.js"'));
   assert(!html.includes('href="style.css"'));
