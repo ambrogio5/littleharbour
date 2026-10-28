@@ -1,0 +1,43 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sampleTown} from '../dist/demo-town.js';
+import {selectOrder,dispatch,buyBoat,startVoyage,tick,parseSave,start,cancel,capacity,recipeDuration,unlocked,reserveFor,goalCost,neighbourhoodEligible,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,moveNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,refitBoatSails,sailRefitBlocker,voyagePlan,circuitPlan,installBoatUpgrade,neighbourhoodOrder,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,NEIGHBOURHOOD_BUILDINGS} from '../dist/engine.js';
+function town(){const s=sampleTown();selectOrder(s,'inland');assert(dispatch(s));s.coins=12000;for(const k of Object.keys(s.stock))s.stock[k]=200;assert(buyBoat(s,0,'cutter'));return s;}
+function partnership(){const s=town();for(let i=0;i<3;i++){assert(startVoyage(s,0,'quarry'));tick(s,30);}return s;}
+function district(){const s=partnership();assert(openNeighbourhood(s));return s;}
+function build(s,index,type){assert(buyNeighbourhoodPlot(s,index));assert(buildNeighbourhood(s,index,type));}
+
+test('Neighbourhood unlocks at either partnership and purchases/builds are atomic and reserved',()=>{
+ const locked=town(),before=JSON.stringify(locked);assert(!neighbourhoodEligible(locked));assert(neighbourhoodAccessBlocker(locked));assert(!openNeighbourhood(locked));assert.equal(JSON.stringify(locked),before);
+ const s=partnership();assert(reserveFor(s,'neighbourhood:access'));assert(openNeighbourhood(s));assert(!openNeighbourhood(s));assert(reserveFor(s,'neighbourhood:plot:4'));assert(buyNeighbourhoodPlot(s,4));assert.equal(goalCost(s,'neighbourhood:plot:4'),null);assert(reserveFor(s,'neighbourhood:build:4:weaver'));assert(buildNeighbourhood(s,4,'weaver'));assert.equal(unlocked(s,'cloth'),true);assert(!Object.keys(s.reservations).length);assert(plotBlocker(s,4));assert(!buyNeighbourhoodPlot(s,6));assert(!buildNeighbourhood(s,4,'home'));
+ assert(buyNeighbourhoodPlot(s,0));const snapshot=JSON.stringify(s);assert(neighbourhoodBuildBlocker(s,0,'weaver'));assert(!buildNeighbourhood(s,0,'weaver'));assert.equal(JSON.stringify(s),snapshot);assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Crafts use ordinary timber and queue limits grow only through homes and furnishings',()=>{
+ const s=district();build(s,0,'carpenter');assert(unlocked(s,'furniture'));assert.equal(capacity(s,'carpenter'),2);s.stock.furniture=0;s.stock.wood=8;assert(start(s,'furniture'));assert(start(s,'furniture'));assert(!start(s,'furniture'));tick(s,48);assert.equal(s.stock.furniture,4);assert.equal(s.stock.wood,0);
+ s.stock.wood=100;build(s,1,'home');assert.equal(capacity(s,'carpenter'),3);assert(homeUpgradeBlocker(s,1));s.stock.furniture=6;assert(reserveFor(s,'neighbourhood:home:1'));assert(upgradeNeighbourhoodHome(s,1));assert.equal(capacity(s,'carpenter'),4);assert(!upgradeNeighbourhoodHome(s,1));assert.equal(s.stock.furniture,0);assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Square speed changes only future batches; active work reloads and moves without loss',()=>{
+ const s=district();build(s,0,'flaxgarden');assert(start(s,'flax'));assert.equal(s.jobs[0].left,18);build(s,1,'square');assert.equal(recipeDuration(s,'flax'),16.2);assert.equal(s.jobs[0].left,18);assert.deepEqual(parseSave(JSON.stringify(s)),s);assert(buyNeighbourhoodPlot(s,2));assert(moveNeighbourhoodBuilding(s,0,2));assert.equal(s.neighbourhood.plots[2].type,'flaxgarden');assert.equal(s.jobs[0].left,18);tick(s,18);assert(start(s,'flax'));assert.equal(s.jobs[0].left,16.2);
+});
+test('Free swapping preserves furnished homes and invalidates location-specific reservations',()=>{
+ const s=district();build(s,0,'home');build(s,1,'carpenter');assert(reserveFor(s,'neighbourhood:home:0'));assert(moveNeighbourhoodBuilding(s,0,1));assert.equal(s.neighbourhood.plots[1].type,'home');assert(!Object.keys(s.reservations).length);assert(upgradeNeighbourhoodHome(s,1));assert(moveNeighbourhoodBuilding(s,1,0));assert.equal(s.neighbourhood.plots[0].level,1);assert(!moveNeighbourhoodBuilding(s,0,0));assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Redevelopment recovers half the building coins and cannot destroy queued work or excess home queues',()=>{
+ const s=district();build(s,0,'home');build(s,1,'carpenter');for(let i=0;i<3;i++)assert(start(s,'furniture'));assert(neighbourhoodRemoveBlocker(s,0));assert(!removeNeighbourhoodBuilding(s,0));assert(!removeNeighbourhoodBuilding(s,1));tick(s,24);const coins=s.coins;assert(removeNeighbourhoodBuilding(s,0));assert.equal(s.coins,coins+Math.floor(NEIGHBOURHOOD_BUILDINGS.home.cost.coins/2));assert.deepEqual(s.neighbourhood.plots[0],{type:null,level:0});assert(buildNeighbourhood(s,0,'weaver'));tick(s,48);assert(removeNeighbourhoodBuilding(s,1));assert(buildNeighbourhood(s,1,'flaxgarden'));assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Sail refits stack with speed setup, respect paid voyages and cannot be charged twice',()=>{
+ const s=district();build(s,0,'sailmaker');const old=voyagePlan(s,0,'quarry').duration;assert(installBoatUpgrade(s,0,'speed'));const speed=voyagePlan(s,0,'quarry').duration;assert(reserveFor(s,'neighbourhood:sails:0'));assert(startVoyage(s,0,'quarry'));assert(!s.reservations['neighbourhood:sails:0']);const trip=structuredClone(s.fleet.boats[0].trip);assert(sailRefitBlocker(s,0));assert(!refitBoatSails(s,0));assert.deepEqual(s.fleet.boats[0].trip,trip);tick(s,30);assert(reserveFor(s,'neighbourhood:sails:0'));assert(refitBoatSails(s,0));assert(voyagePlan(s,0,'quarry').duration<speed);assert(speed<old);const snapshot=JSON.stringify(s);assert(!refitBoatSails(s,0));assert.equal(JSON.stringify(s),snapshot);assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Rotating local orders compete with furnishing supplies and reject stale completions',()=>{
+ const s=district();build(s,0,'home');s.stock.furniture=6;assert(reserveFor(s,'neighbourhood:home:0'));assert(neighbourhoodOrderBlocker(s));const before=JSON.stringify(s);assert(!completeNeighbourhoodOrder(s,0));assert.equal(JSON.stringify(s),before);s.stock.furniture=12;const p=neighbourhoodOrder(s),coins=s.coins;assert(reserveFor(s,p.goal));assert(completeNeighbourhoodOrder(s,0));assert.equal(s.coins,coins+p.reward.coins);assert.equal(s.stock.furniture,6);assert(!completeNeighbourhoodOrder(s,0));assert.equal(neighbourhoodOrder(s).id,1);assert(upgradeNeighbourhoodHome(s,0));assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});
+test('Version10 saves migrate goods and sail flags without changing existing paid trips',()=>{
+ const s=partnership();assert(startVoyage(s,0,'quarry'));s.version=10;delete s.neighbourhood;for(const k of ['flax','cloth','furniture','sails'])delete s.stock[k];delete s.fleet.boats[0].sails;const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.version,11);assert.deepEqual(loaded.fleet.boats[0].trip,s.fleet.boats[0].trip);assert.equal(loaded.fleet.boats[0].sails,false);assert.equal(loaded.stock.cloth,0);assert.equal(loaded.neighbourhood.access,false);
+});
+test('Invalid plot phases, duplicates, goods and refits are rejected without replacing valid saves',()=>{
+ const s=district();build(s,0,'home');for(const change of [x=>delete x.neighbourhood,x=>x.neighbourhood.plots.push(null),x=>x.neighbourhood.access=false,x=>x.neighbourhood.plots[1]={type:'weaver',level:1},x=>x.neighbourhood.plots[1]={type:'fake',level:0},x=>x.neighbourhood.plots[1]={type:null,level:1},x=>x.neighbourhood.orders=-1,x=>x.stock.flax=-1,x=>delete x.fleet.boats[0].sails,x=>{x.neighbourhood.plots[1]={type:'home',level:0};x.neighbourhood.plots[2]={type:'home',level:0};}]){const bad=structuredClone(s);change(bad);assert.throws(()=>parseSave(JSON.stringify(bad)));}
+});
+test('An earned craft chain furnishes a home and refits a boat from zero new goods',()=>{
+ const s=district();for(const [i,type]of ['carpenter','flaxgarden','weaver','sailmaker','home'].entries())build(s,i,type);for(const k of ['flax','cloth','furniture','sails'])s.stock[k]=0;
+ for(let i=0;i<3;i++){assert(start(s,'furniture'));tick(s,24);}for(let i=0;i<6;i++){assert(start(s,'flax'));tick(s,18);assert(start(s,'cloth'));tick(s,24);}assert.equal(s.stock.furniture,6);assert.equal(s.stock.cloth,12);assert(upgradeNeighbourhoodHome(s,4));for(let i=0;i<2;i++){assert(start(s,'sails'));tick(s,30);}assert.equal(s.stock.sails,4);assert(refitBoatSails(s,0));assert.equal(s.stock.sails,0);assert.equal(s.stock.cloth,0);assert(s.fleet.boats[0].sails);assert.deepEqual(parseSave(JSON.stringify(s)),s);
+});

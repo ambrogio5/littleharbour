@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 12
+# Little Harbour — Playtest 13
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-12.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-13.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. On narrower screens, swipe the map horizontally to reach the harbour; production controls sit below it. The Back to map button returns to the settlement.
 
@@ -185,3 +185,13 @@ Each destination has three projects unlocked after 3, 5 and 8 visits. Funding co
 Boats use photographic transparent artwork, shadows, wakes and subtle dock movement. Reduced-motion preferences and the simulation pause are respected. Existing towns and active trips migrate to save version 10.
 
 Validation: 112 automated tests pass, including migration, reserved-stock protection, finite cargo, circuit settlement/cancellation, stale commission actions, navigation and map geometry. Standalone bundle passes JavaScript syntax checks. Live browser visual checks and physical iPhone/iPad testing remain incomplete because the testing browser has no authenticated session; no long-session balance claim is made.
+
+## Playtest 13: A living town
+
+Three visits to either coastal destination unlock the neighbourhood entry in Build and Fleet. Open the district, buy any of six plots, and place a town house, carpenter, weaving studio, sail loft, public square or flax garden. Each workshop is unique; up to two homes are allowed. Six plots create a choice between a second home and the public square. Buildings can move or swap freely between purchased plots. Redevelopment retains land and stored goods, refunds half the building coin cost and blocks removal while queued work would be lost.
+
+New production chains: timber → furniture and flax → cloth → sails. Furniture and cloth furnish homes, increasing neighbourhood queue capacity. These are queue slots, not parallel production workers. The public square makes future batches 10% faster. Sails can supply local orders or permanently refit idle boats for 10% faster future voyages. Three rotating local orders compete for the same goods. All investment goals support reservations and pinned requirements.
+
+The fifth district uses photographic scenery and independently placed building sprites; labels and plot selection follow the actual layout. Existing towns migrate to save version 11 without resetting progress.
+
+Validation: 127 automated tests cover production, save migration, queue capacity, moving, redevelopment, refits, orders, reservations and navigation. See docs/p13-balance.md for the mathematical cost/throughput assessment. Browser controls are unavailable in this session, so visual layout and physical-device interaction have not been verified; long-session pacing remains a playtest task.

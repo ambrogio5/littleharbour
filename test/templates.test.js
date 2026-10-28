@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import * as engine from '../dist/engine.js';
 import * as fleetUI from '../dist/fleet-ui.js';
+import * as neighbourhoodUIViews from '../dist/neighbourhood-ui.js';
 import * as coastView from '../dist/coast-view.js';
 import * as coastMap from '../dist/coast-map.js';
 import * as planning from '../dist/planning.js';
@@ -13,8 +14,8 @@ import * as districts from '../dist/districts.js';
 // Test text templates independently of browser rendering. This catches missing
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
-const context=vm.createContext({...engine,...districts,...planning,...inlandMap,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
-vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,fleetModes,fleetCircuits,return:returnPanel()};}',context);
+const context=vm.createContext({...engine,...districts,...planning,...inlandMap,...neighbourhoodUIViews,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
+vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,fleetModes,fleetCircuits,neighbourhoodUI,return:returnPanel()};}',context);
 vm.runInContext('function ledgerSnapshot(s,query,presets=[null,null,null]){state=s;station="ledger";ledgerQuery=query;targetPresets=presets;return production();}',context);
 vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetModes=["single","single"];fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);
 function snapshots(s,station,pin=null){return context.snapshot(s,station,pin);}
@@ -250,4 +251,15 @@ test('Destination projects pin their funds and commissions replace finished proj
   const plan=engine.commissionPlan(s,route),p=fleetSnapshot(s,0,'destinations','quarry',1,plan.goal);assert(p.panel.includes(plan.name));assert(p.panel.includes('Deliver commission'));assert(p.panel.includes('does not occupy a boat'));assert.equal(context.openGoalSnapshot(s,plan.goal).fleetSection,'destinations');assert(engine.completeCommission(s,route,0));
  }
  const final=fleetSnapshot(s,0,'destinations');assert(!final.panel.includes('data-action="coastal-fund"'));assert.equal((final.panel.match(/data-action="commission-complete"/g)||[]).length,2);
+});
+
+vm.runInContext('function neighbourhoodSnapshot(s,plot=0,section="overview",pin=null){state=s;neighbourhoodUI={plot,section,moveFrom:null};pinnedGoal=pin;return {panel:neighbourhoodPanel(),plan:planPanel()};} function neighbourhoodIngredient(s,item,goal){state=s;render=()=>{};returnContext=null;rememberReturn(goal);goIngredient(item);return {tab,station,neighbourhoodUI,return:returnPanel()};}',context);
+
+test('Neighbourhood funding pins and ingredient shortcuts return to the correct project',()=>{
+ const s=fleetTown();engine.buyBoat(s,0,'cutter');s.fleet.visits.quarry=3;assert(engine.openNeighbourhood(s));
+ for(const [i,type]of ['home','carpenter','flaxgarden','weaver','sailmaker'].entries()){assert(engine.buyNeighbourhoodPlot(s,i));assert(engine.buildNeighbourhood(s,i,type));}
+ const goal='neighbourhood:home:0';assert(engine.reserveFor(s,goal));const p=context.neighbourhoodSnapshot(s,0,'overview',goal);assert(p.panel.includes('for this order'));assert(p.plan.includes('Coins'));assert(p.plan.includes('Furniture'));assert(p.plan.includes('Cloth'));assert(!p.panel.match(/data-action="neigh-upgrade"[^>]*disabled/));
+ for(const [item,station]of Object.entries({flax:'flaxgarden',furniture:'carpenter',cloth:'weaver',sails:'sailmaker'})){const target=context.neighbourhoodIngredient(s,item,goal);assert.equal(target.tab,'produce');assert.equal(target.station,station);assert(target.return.includes('Furnish town house'));}
+ for(const [id,section,plot]of [['neighbourhood:plot:5','overview',5],['neighbourhood:home:0','overview',0],['neighbourhood:order:0','orders',null],['neighbourhood:sails:0','orders',null]]){const opened=context.openGoalSnapshot(s,id);assert.equal(opened.tab,'neighbourhood');assert.equal(opened.neighbourhoodUI.section,section);if(plot!==null)assert.equal(opened.neighbourhoodUI.plot,plot);}
+ assert(engine.removeNeighbourhoodBuilding(s,3));const missing=context.neighbourhoodIngredient(s,'cloth',goal);assert.equal(missing.tab,'neighbourhood');assert.equal(missing.neighbourhoodUI.section,'overview');
 });

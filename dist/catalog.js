@@ -1,5 +1,9 @@
-export const ITEMS={wheat:'Wheat',flour:'Flour',bread:'Bread',olives:'Olives',oil:'Olive oil',fish:'Fish',wood:'Timber',stone:'Stone',planks:'Planks',boatparts:'Boat fittings',grapes:'Grapes',wine:'Wine',provisions:'Provisions',clay:'Clay',fruit:'Fruit',vegetables:'Vegetables',jars:'Jars',tiles:'Tiles',preserves:'Preserves'};
+export const ITEMS={wheat:'Wheat',flour:'Flour',bread:'Bread',olives:'Olives',oil:'Olive oil',fish:'Fish',wood:'Timber',stone:'Stone',planks:'Planks',boatparts:'Boat fittings',grapes:'Grapes',wine:'Wine',provisions:'Provisions',clay:'Clay',fruit:'Fruit',vegetables:'Vegetables',jars:'Jars',tiles:'Tiles',preserves:'Preserves',flax:'Flax',cloth:'Cloth',furniture:'Furniture',sails:'Sails'};
 export const RECIPES={
+ flax:{name:'Harvest flax',station:'flaxgarden',cost:{},output:{flax:4},duration:18},
+ cloth:{name:'Weave cloth',station:'weaver',cost:{flax:4},output:{cloth:2},duration:24},
+ furniture:{name:'Make furniture',station:'carpenter',cost:{wood:4},output:{furniture:2},duration:24},
+ sails:{name:'Stitch sails',station:'sailmaker',cost:{cloth:4,wood:2},output:{sails:2},duration:30},
  clay:{name:'Gather clay',station:'claypit',cost:{},output:{clay:4},duration:16},
  orchard0:{name:'Harvest upper orchard',station:'terrace0',cost:{},output:{fruit:4},duration:12},
  garden0:{name:'Harvest upper garden',station:'terrace0',cost:{},output:{vegetables:6},duration:20},
@@ -116,3 +120,21 @@ export const COASTAL_COMMISSIONS={
   {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:820}}
  ]
 };
+
+export const NEIGHBOURHOOD_ACCESS_COST={coins:180,wood:12,stone:10};
+export const PLOT_COST={coins:60,wood:4,stone:4};
+export const NEIGHBOURHOOD_BUILDINGS={
+ home:{name:'Town house',description:'Adds one queue slot to every neighbourhood workshop. Furnish it for one more. Up to two homes.',cost:{coins:120,wood:12,stone:8}},
+ carpenter:{name:'Carpenter',description:'Turns ordinary timber into furniture for homes and local orders.',cost:{coins:140,wood:14,stone:8},recipe:'furniture'},
+ weaver:{name:'Weaving studio',description:'Weaves flax into cloth for homes, sails and local orders.',cost:{coins:140,wood:12,stone:8},recipe:'cloth'},
+ sailmaker:{name:'Sail loft',description:'Stitches cloth into sails for permanent boat refits and local orders.',cost:{coins:180,wood:16,stone:10},recipe:'sails'},
+ square:{name:'Public square',description:'Makes new neighbourhood production batches 10% faster. Existing work keeps its paid duration.',cost:{coins:200,wood:8,stone:16,tiles:8}},
+ flaxgarden:{name:'Flax garden',description:'A renewable flax harvest supplies your weaving studio.',cost:{coins:100,wood:6,stone:4},recipe:'flax'}
+};
+export const HOME_UPGRADE_COST={coins:120,furniture:6,cloth:4};
+export const SAIL_REFIT_COST={coins:120,sails:4,wood:8};
+export const NEIGHBOURHOOD_ORDERS=[
+ {name:'Furnish the harbour office',cost:{furniture:6,bread:4},reward:{coins:240,wood:8}},
+ {name:'Cloth for the covered market',cost:{cloth:6,preserves:4},reward:{coins:320,wood:8}},
+ {name:'Sails for visiting crews',cost:{sails:4,bread:6},reward:{coins:420,wood:12}}
+];
