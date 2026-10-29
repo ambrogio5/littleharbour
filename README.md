@@ -34,6 +34,7 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 - **Zoom and filtering:** drag/pinch/wheel zoom, keyboard panning, whole-town and home camera buttons, a navigable minimap, plus All / Ready / Areas filters. Map shortcuts never mint goods or bypass unlock conditions.
 - **Mobile-first controls:** compact two-row navigation, horizontal task rail, a large touch map, and existing mobile tab bar. Dark and light themes retain the same V2 composition.
 - **Resources on demand:** immediate top-bar coin/timber/stone/bread status on desktop with a toggle revealing the full interactive inventory. Save storage and the game economy are unchanged.
+- **Downloadable playtest:** after every successful push to main, the GitHub Actions test run offers a standalone HTML artifact, with image data included only once per distinct asset. It is a large offline file, separate from the normal multi-file hosted site.
 - The V2 artwork reuses the existing photographic district files and adds CSS/vector presentation; the large PNG assets remain individual repository files, not new Base64 sources. Browser/device visual acceptance testing is still needed.
 
 ## New in Playtest 16
