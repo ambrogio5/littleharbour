@@ -34,5 +34,5 @@ jobs:
           name: Little-Harbour-V2-Playtest
           path: Little-Harbour-V2-Playtest.html
           retention-days: 30
-          compression-level: 0
+          compression-level: 6
           if-no-files-found: error
