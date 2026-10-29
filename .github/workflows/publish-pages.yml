@@ -1,7 +1,8 @@
-name: Publish Little Harbour playtest (manual)
-# Enable Pages in Settings → Pages → Build and deployment: GitHub Actions,
-# then run this workflow from the Actions tab to publish ./dist.
+name: Publish Little Harbour playtest
+# GitHub Pages is now enabled; publish tested changes to the playable web site.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
