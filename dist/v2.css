@@ -241,3 +241,13 @@ html[data-theme=light] .v2-context-copy h2{color:#f4f5e9}
  .unified-map .world-minimap{width:95px}
 }
 @media(prefers-reduced-motion:reduce){.v2-task-card,.v2-topnav button,.v2-map-rail button{transition:none!important}}
+
+/* Final interaction refinements */
+#v2Stock{display:flex;align-items:center;gap:8px}
+.unified-map .world-overview .world-region-label,.unified-map.world-overview .world-region-label{transform:translate(-50%,-50%) scale(1.3);max-width:230px;white-space:normal}
+.unified-map.world-overview .world-region-label strong{font-size:17px}
+.unified-map .world-roads .world-sea-path{stroke:#fff4d4;stroke-width:8;stroke-dasharray:15 19;opacity:.72;filter:drop-shadow(0 2px 3px #14575a99)}
+.unified-map .world-roads .world-land-path{stroke:#e7d1a5;stroke-width:10;opacity:.36}
+.v2-task-copy em{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.v2-show-resources .resource-strip{scroll-margin-top:76px}
+@media(max-width:740px){#v2Stock{display:none}.unified-map.world-overview .world-region-label{transform:translate(-50%,-50%) scale(1.15);max-width:160px}.unified-map.world-overview .world-region-label strong{font-size:13px}}
