@@ -20,5 +20,19 @@ jobs:
           node --check dist/app.js
           node --check dist/engine.js
           node --check dist/neighbourhood-ui.js
+          node --check dist/v2-ui.js
+          node --check dist/world-map.js
       - name: Run regression and standalone packaging tests
         run: npm test
+      - name: Build downloadable V2 playtest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run standalone -- ./Little-Harbour-V2-Playtest.html
+      - name: Upload standalone V2 HTML
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Little-Harbour-V2-Playtest
+          path: Little-Harbour-V2-Playtest.html
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
