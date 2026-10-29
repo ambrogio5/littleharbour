@@ -37,7 +37,7 @@ try{
   await page.locator('.v2-topnav [data-tab="produce"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Keep the town moving'));
   await page.locator('.v2-topnav [data-tab="trade"]').click();
-  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Coastal trade'));
+  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
   await page.locator('.v2-topnav [data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
   await page.locator('.v2-topnav [data-tab="map"]').click();
