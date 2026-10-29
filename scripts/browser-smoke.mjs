@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import path from 'node:path';
+import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {chromium} from 'playwright-core';
+
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist');
+const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.svg':'image/svg+xml','.webp':'image/webp'};
+const server=http.createServer((req,res)=>{
+ const p=decodeURIComponent((req.url||'/').split('?')[0]),relative=p==='/'?'index.html':p.slice(1);
+ const file=path.resolve(root,relative);
+ if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
+ const stat=fs.existsSync(file)&&fs.statSync(file);
+ if(!stat?.isFile()){res.writeHead(404).end('Not found');return;}
+ res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store'});
+ fs.createReadStream(file).pipe(res);
+});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const base='http://127.0.0.1:'+server.address().port;
+let browser;
+try{
+ browser=await chromium.launch({channel:'chrome',headless:true,args:['--disable-dev-shm-usage','--no-sandbox']});
+ for(const device of [
+  {name:'iPhone-sized touch',viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:3},
+  {name:'desktop',viewport:{width:1440,height:900},isMobile:false,hasTouch:false,deviceScaleFactor:1}
+ ]){
+  const context=await browser.newContext({viewport:device.viewport,isMobile:device.isMobile,hasTouch:device.hasTouch,deviceScaleFactor:device.deviceScaleFactor});
+  const page=await context.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:25000});
+  await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null,{timeout:20000});
+  if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
+  assert((await page.locator('#v2TaskCards .v2-task-card').count())>=1,'task cards must render');
+  assert((await page.locator('#map .world-camera-tools button').count())>=4,'map camera buttons must exist');
+  // Exercise the actual native click event chain and the V2 panel routing.
+  await page.locator('.v2-topnav [data-tab="produce"]').click();
+  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Keep the town moving'));
+  await page.locator('.v2-topnav [data-tab="trade"]').click();
+  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Coastal trade'));
+  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
+  await page.locator('.v2-topnav [data-tab="map"]').click();
+  await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
+  // Verify map camera and focus controls are actual working buttons.
+  await page.locator('#map [data-camera="home"]').click();
+  const before=await page.locator('#worldZoom').innerText();
+  await page.locator('#map [data-camera="in"]').click();
+  const after=await page.locator('#worldZoom').innerText();
+  assert.notEqual(after,before,'map zoom must update');
+  await page.locator('#map [data-camera="fit"]').click();
+  await page.locator('#map [data-world-region="harbour"].world-region-label').click();
+  assert((await page.locator('#v2MapPlace').innerText()).includes('harbour'),'district focus must update map title');
+  await page.locator('#map [data-action="v2-filter"][data-key="ready"]').click();
+  assert.equal(await page.locator('#map [data-action="v2-filter"][data-key="ready"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#map [data-action="v2-filter"][data-key="all"]').click();
+  // The first playable action must change real saved state.
+  const initial=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-v1')).stock.wheat);
+  await page.locator('#v2TaskCards [data-key="harvest"]').click();
+  const afterHarvest=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-v1')).stock.wheat);
+  assert.equal(afterHarvest,initial+6,'harvest task must produce six real wheat');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
+  const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-v1')).stock.wheat);
+  assert.equal(restored,afterHarvest,'reload must preserve save progress');
+  assert.deepEqual(errors,[],'browser errors: '+errors.join(' | '));
+  // Sample route shares same code and should initialize normally too.
+  await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
+  if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
+  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
+  assert.deepEqual(errors,[],'sample page browser errors: '+errors.join(' | '));
+  console.log('PASS '+device.name+': V2 initialized, navigated, zoomed, filtered, harvested, restored save and opened sample.');
+  await context.close();
+ }
+}finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
