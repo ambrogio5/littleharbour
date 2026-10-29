@@ -24,6 +24,10 @@ jobs:
           node --check dist/world-map.js
       - name: Run regression and standalone packaging tests
         run: npm test
+      - name: Install browser test driver
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core
+      - name: Interactive browser smoke (mobile and desktop)
+        run: node scripts/browser-smoke.mjs
       - name: Build downloadable V2 playtest
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run standalone -- ./Little-Harbour-V2-Playtest.html
