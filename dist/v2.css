@@ -264,3 +264,11 @@ html[data-theme=light] .v2-context-copy h2{color:#f4f5e9}
  }
  .unified-map .world-camera-tools button[data-camera=fit]::after{content:'▦';font-size:17px;line-height:1}
 }
+
+/* V2.1: district rectangles overlap. Never let their transparent hit boxes
+   swallow taps on a neighbouring district's landmarks. Only real buttons
+   receive pointer events; photographic layers remain decorative. */
+.unified-map .district-track>.map-stage{pointer-events:none!important}
+.unified-map .map-stage button{pointer-events:auto}
+.unified-map .map-stage.world-locked button:not(.world-region-label){pointer-events:none!important}
+.unified-map .map-stage.world-locked .world-region-label{pointer-events:auto}
