@@ -217,7 +217,7 @@ function render(){
  $('#v2Hero').innerHTML=v2ContextHero(state,tab);
  $('#v2TaskCards').innerHTML=v2TaskCards(state);
  $('#v2MapSub').textContent=state.speed===0?'Paused · Select 1× or 3× to resume':'Drag to explore · Tap places to manage';
- $('.v2-topnav [data-tab]').forEach(b=>{b.setAttribute('aria-current',b.dataset.tab===tab?'page':'false');if(b.dataset.v2Needs==='pier')b.hidden=!state.pier;else if(b.dataset.v2Needs==='fleet')b.hidden=!state.inland.access;});
+ $$('.v2-topnav [data-tab]').forEach(b=>{b.setAttribute('aria-current',b.dataset.tab===tab?'page':'false');if(b.dataset.v2Needs==='pier')b.hidden=!state.pier;else if(b.dataset.v2Needs==='fleet')b.hidden=!state.inland.access;});
  $('#map').classList.toggle('v2-filter-ready',v2MapFilter==='ready');
  $('#map').classList.toggle('v2-filter-areas',v2MapFilter==='areas');
  $('#townSubtitle').textContent=state.pier?'An established harbour. New routes ahead.':state.expansion?'Your first business is taking root.':state.deliveries?'The first trade is done. Time to grow.':'A small harbour. Your first working day.';
@@ -278,7 +278,7 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
  if(b.dataset.select){const s=b.dataset.select;choose(['trade','build','waterfront','market','inland'].includes(s)?s:'produce',!['trade','build','waterfront','market','inland'].includes(s)?s:null,true);return;}
  const a=b.dataset.action;let success=false;
  if(a==='v2-inventory'){const showing=document.body.classList.toggle('v2-show-resources');b.setAttribute('aria-pressed',String(showing));b.setAttribute('aria-label',showing?'Hide all resources':'Show all resources');b.textContent=showing?'−':'＋';return;}
- if(a==='v2-filter'){if(!['all','ready','areas'].includes(b.dataset.key))return;v2MapFilter=b.dataset.key;$('.v2-map-rail button').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.key===v2MapFilter)));render();return;}
+ if(a==='v2-filter'){if(!['all','ready','areas'].includes(b.dataset.key))return;v2MapFilter=b.dataset.key;$$('.v2-map-rail button').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.key===v2MapFilter)));render();return;}
  if(a==='v2-tasks-more'){choose('map',null,true);return;}
  if(a==='v2-next'){nextStep();return;}
  if(a==='v2-task'){const task=v2Tasks(state).find(t=>t.id===b.dataset.key);if(!task)return;if(task.id==='harvest'){if(harvestReplant(state)){scene?.emit('harvest');toast('Wheat harvested and next crop planted.');render();}else choose('produce','field',true);return;}if(task.id==='next'){nextStep();return;}if(task.id==='production'){choose('produce','overview',true);return;}worldMap?.focus(task.district);choose(task.tab,null,true);return;}
