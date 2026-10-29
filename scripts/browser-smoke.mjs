@@ -12,7 +12,7 @@ const server=http.createServer((req,res)=>{
  const file=path.resolve(root,relative);
  if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
  const stat=fs.existsSync(file)&&fs.statSync(file);
- if(!stat?.isFile()){res.writeHead(404).end('Not found');return;}
+ if(!stat||!stat.isFile()){res.writeHead(404).end('Not found');return;}
  res.writeHead(200,{'content-type':mime[path.extname(file)]||'application/octet-stream','cache-control':'no-store'});
  fs.createReadStream(file).pipe(res);
 });
