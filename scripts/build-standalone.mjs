@@ -5,7 +5,14 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V2-Playtest.html');
 const theme=fs.readFileSync(path.join(root,'dist/theme.js'),'utf8');
 let html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
-const css=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','ferry.css','project-planning.css','dark.css','world-map.css','v2.css'].map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n').replace(/url\('assets\/([^']+)'\)/g,(_,file)=>"url('data:image/png;base64,"+fs.readFileSync(path.join(root,'dist/assets',file)).toString('base64')+"')");
+// Embed each image only once. Earlier standalone builds repeated multi-megabyte
+// Base64 PNGs for every CSS selector and inflated the HTML unnecessarily.
+const styleSource=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','ferry.css','project-planning.css','dark.css','world-map.css','v2.css']
+ .map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n');
+const assetFiles=[...new Set([...styleSource.matchAll(/url\('assets\/([^']+)'\)/g)].map(match=>match[1]))];
+const assetVars=new Map(assetFiles.map((file,index)=>[file,'--lh-art-'+index]));
+const css=':root{'+assetFiles.map(file=>assetVars.get(file)+":url('data:image/png;base64,"+fs.readFileSync(path.join(root,'dist/assets',file)).toString('base64')+"');").join('')+'}\n'
+ +styleSource.replace(/url\('assets\/([^']+)'\)/g,(_,file)=>'var('+assetVars.get(file)+')');
 const catalog=fs.readFileSync(path.join(root,'dist/catalog.js'),'utf8').replace(/^export /gm,'');
 const engine=fs.readFileSync(path.join(root,'dist/engine.js'),'utf8').replace(/^import .*\n/gm,'').replace(/^export \* .*\n/gm,'').replace(/^export /gm,'');
 const scene=fs.readFileSync(path.join(root,'dist/scene.js'),'utf8').replace(/^export /gm,'');
