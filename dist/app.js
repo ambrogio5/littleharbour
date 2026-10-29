@@ -6,7 +6,7 @@ import {projectPlan,queueProject} from './project-planning.js';
 import {projectPanelView} from './project-ui.js';
 import {ferryEntryView,ferryPanelView} from './ferry-ui.js';
 import {ferryEligible,ferryFundingBlocker,fundFerryStage,ferryDeliveryBlocker,deliverFerrySupplies,ferryServiceBlocker,startFerryService,ferryGuide} from './engine.js';
-import {chooseResidentsProposal,deliverResidentsSupplies,residentsDeliveryBlocker} from './engine.js';
+import {chooseResidentsProposal,deliverResidentsSupplies,residentsDeliveryBlocker,residentsComplete} from './engine.js';
 import {neighbourhoodPanelView,neighbourhoodMapView,residentsPanelView,residentsEntryView} from './neighbourhood-ui.js';
 import {NEIGHBOURHOOD_BUILDINGS,neighbourhoodEligible,neighbourhoodReady,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,neighbourhoodMoveBlocker,moveNeighbourhoodBuilding,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,sailRefitBlocker,refitBoatSails,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,neighbourhoodGuide} from './engine.js';
 import {boatCargoCapacity,circuitPlan,circuitBlocker,startCircuit,coastalProjectBlocker,fundCoastalProject,commissionBlocker,completeCommission} from './engine.js';
