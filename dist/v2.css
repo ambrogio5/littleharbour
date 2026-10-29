@@ -251,3 +251,16 @@ html[data-theme=light] .v2-context-copy h2{color:#f4f5e9}
 .v2-task-copy em{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .v2-show-resources .resource-strip{scroll-margin-top:76px}
 @media(max-width:740px){#v2Stock{display:none}.unified-map.world-overview .world-region-label{transform:translate(-50%,-50%) scale(1.15);max-width:160px}.unified-map.world-overview .world-region-label strong{font-size:13px}}
+
+/* V2.1 mobile: keep both essential camera destinations available.
+   Compact glyphs let Home + Whole town fit beside zoom without hiding tools. */
+@media(max-width:740px){
+ .unified-map .world-camera-tools button[data-camera=home]{
+   display:block!important;min-width:33px!important;padding:5px!important;font-size:0!important;
+ }
+ .unified-map .world-camera-tools button[data-camera=home]::after{content:'⌂';font-size:19px;line-height:1}
+ .unified-map .world-camera-tools button[data-camera=fit]{
+   display:block!important;min-width:33px!important;max-width:38px!important;padding:5px!important;font-size:0!important;
+ }
+ .unified-map .world-camera-tools button[data-camera=fit]::after{content:'▦';font-size:17px;line-height:1}
+}
