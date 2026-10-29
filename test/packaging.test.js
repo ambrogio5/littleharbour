@@ -18,6 +18,11 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   for(const [,code]of scripts)assert.doesNotThrow(()=>new Script(code));
   assert(scripts[1][1].includes('$$=s=>[...document.querySelectorAll(s)]'));
   assert(html.includes('data:image/png;base64,'));
+  assert(html.includes('id="v2TaskCards"'));
+  assert(html.includes('v2-task-grid'));
+  assert(html.includes('function v2Tasks('));
+  assert(!html.includes('href="v2.css"'));
+  assert(!html.includes('src="v2-ui.js"'));
   assert(!html.includes('src="app.js"'));
   assert(!html.includes('href="style.css"'));
   assert(!html.includes('@import'));

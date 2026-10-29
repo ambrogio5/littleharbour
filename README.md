@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 16
+# Little Harbour — V2 / Playtest 17
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-16.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-V2-Playtest.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. Drag the unified map in any direction; pinch or use + / − to zoom. Whole town fits all areas, Home returns to the harbour, and the minimap jumps between districts. On phones, production controls sit below the map. The Back to map button returns to the settlement.
 
@@ -24,6 +24,17 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
 14. Compare the residents' proposals, then deliver supplies in three stages for a lasting civic improvement.
+
+## New in V2 / Playtest 17
+
+- **Map-first layout:** a wider navigable world with one persistent camera, visually differentiated inland paths and sea routes, a compact map status overlay and region labels that open zoomed district views.
+- **Functional top-level navigation:** Map, Production, Trade, Build, Contracts and Fleet work from a common top bar and switch the live management context without duplicating full pages.
+- **No more competing chapter cards:** the previous tall task list, progression strip and production shortcuts have been replaced visually with a compact four-card rail driven by actual inventory, neighbourhood, ferry and workshop status. Existing saved chapter and goal elements stay in the DOM for compatibility.
+- **Contextual management:** each selected activity has a scenic image header, clear description and the real underlying controls in the adjacent management pane. Map has its own practical town overview and a next-step action.
+- **Zoom and filtering:** drag/pinch/wheel zoom, keyboard panning, whole-town and home camera buttons, a navigable minimap, plus All / Ready / Areas filters. Map shortcuts never mint goods or bypass unlock conditions.
+- **Mobile-first controls:** compact two-row navigation, horizontal task rail, a large touch map, and existing mobile tab bar. Dark and light themes retain the same V2 composition.
+- **Resources on demand:** immediate top-bar coin/timber/stone/bread status on desktop with a toggle revealing the full interactive inventory. Save storage and the game economy are unchanged.
+- The V2 artwork reuses the existing photographic district files and adds CSS/vector presentation; the large PNG assets remain individual repository files, not new Base64 sources. Browser/device visual acceptance testing is still needed.
 
 ## New in Playtest 16
 
