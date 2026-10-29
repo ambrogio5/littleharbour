@@ -148,3 +148,17 @@ export const FERRY_SERVICES={
  quarry:{name:'Pietra Cove passenger service',cost:{bread:4,preserves:2},reward:{coins:180},duration:36},
  island:{name:'Island passenger service',cost:{bread:6,preserves:2},reward:{coins:220},duration:48}
 };
+
+/* Branching community project. Supplies are delivered in three distinct stages. */
+export const RESIDENT_PROPOSALS=Object.freeze({
+ garden:{name:'Public garden',description:'Create a shaded meeting place with paths, trees and a shared garden.',benefit:'One permanent extra queue slot at every neighbourhood workshop.',stages:[
+  {name:'Prepare the ground',cost:{wood:10,stone:6,tiles:4}},
+  {name:'Lay paths and borders',cost:{preserves:6,cloth:4,clay:6}},
+  {name:'Plant and furnish',cost:{furniture:4,tiles:8,preserves:8}}
+ ]},
+ square:{name:'Commercial square',description:'Build a lively covered square where residents trade locally made goods.',benefit:'Market and neighbourhood orders pay 20% more coins, permanently.',stages:[
+  {name:'Lay the foundations',cost:{wood:10,stone:8,tiles:6}},
+  {name:'Build covered stalls',cost:{furniture:4,cloth:6,stone:6}},
+  {name:'Open for trade',cost:{tiles:10,preserves:8,furniture:4}}
+ ]}
+});
