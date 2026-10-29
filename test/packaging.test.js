@@ -18,6 +18,8 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   for(const [,code]of scripts)assert.doesNotThrow(()=>new Script(code));
   assert(scripts[1][1].includes('$$=s=>[...document.querySelectorAll(s)]'));
   assert(html.includes('data:image/png;base64,'));
+  assert(html.includes('--lh-art-'));
+  assert((html.match(/data:image\/png;base64,/g)||[]).length<=30,'Inline image data should be embedded once per asset, never per CSS use');
   assert(html.includes('id="v2TaskCards"'));
   assert(html.includes('v2-task-grid'));
   assert(html.includes('function v2Tasks('));
