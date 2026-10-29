@@ -16,7 +16,7 @@ export function createWorldMap(root){
  const viewport=root.querySelector('.map-scroller'),track=root.querySelector('.district-track');
  root.classList.add('unified-map');viewport.tabIndex=0;viewport.setAttribute('aria-label','Town map. Drag to explore; use plus and minus to zoom, arrow keys to pan.');
  track.style.width=WORLD_SIZE.w+'px';track.style.height=WORLD_SIZE.h+'px';
- track.insertAdjacentHTML('afterbegin','<svg class="world-roads" viewBox="0 0 2680 1840" aria-hidden="true"><path d="M600 1360 Q960 1180 920 820 T550 360 M920 820 Q1300 650 1810 460 M1810 460 Q2150 790 1930 1230 M600 1360 Q1100 1670 1930 1230"/></svg>');
+ track.insertAdjacentHTML('afterbegin','<svg class="world-roads" viewBox="0 0 2680 1840" aria-hidden="true"><path class="world-land-path" d="M530 350 C700 470 740 650 860 800 C920 930 770 1160 650 1360 M900 800 C1220 660 1480 510 1820 460 M1720 490 C1810 650 1830 730 1940 880"/><path class="world-sea-path" d="M850 1470 C1100 1670 1490 1720 2000 1360"/></svg>');
  for(const[id,r]of Object.entries(WORLD_REGIONS)){
   const el=document.getElementById(id+'Stage');el.dataset.region=id;
   Object.assign(el.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'});
@@ -35,8 +35,8 @@ export function createWorldMap(root){
  viewport.addEventListener('pointerup',release);viewport.addEventListener('pointercancel',release);
  // Suppress the click after a pan without suppressing a stationary building tap.
  root.addEventListener('click',e=>{if(Date.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();return;}const button=e.target.closest('button');if(button?.dataset.camera){e.stopPropagation();const a=button.dataset.camera;if(a==='fit')fit();else if(a==='home')focus('harbour');else zoom(a==='in'?1.35:1/1.35);return;}if(button?.dataset.worldRegion){focus(button.dataset.worldRegion);e.stopPropagation();return;}const region=e.target.closest('[data-region]');if(region&&camera.z<.43){focus(region.dataset.region);e.preventDefault();e.stopPropagation();}},true);
- viewport.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();zoom(Math.exp(-e.deltaY*.008),point(e));},{passive:false});
- viewport.addEventListener('keydown',e=>{if(e.target!==viewport)return;const shifts={ArrowLeft:[80,0],ArrowRight:[-80,0],ArrowUp:[0,80],ArrowDown:[0,-80]};if(shifts[e.key]){e.preventDefault();camera.x+=shifts[e.key][0];camera.y+=shifts[e.key][1];draw();}else if(['+','=','-','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home')fit();else zoom(e.key==='-'?1/1.35:1.35);}});
+ viewport.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.x-=e.deltaX||e.deltaY;camera.y-=e.deltaY;draw();}else zoom(Math.exp(-e.deltaY*.0025),point(e));},{passive:false});
+ viewport.addEventListener('keydown',e=>{if(e.target!==viewport)return;const shifts={ArrowLeft:[80,0],ArrowRight:[-80,0],ArrowUp:[0,80],ArrowDown:[0,-80]};if(shifts[e.key]){e.preventDefault();camera.x+=shifts[e.key][0];camera.y+=shifts[e.key][1];draw();}else if(['+','=','-','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home')focus('harbour');else zoom(e.key==='-'?1/1.35:1.35);}});
  new ResizeObserver(draw).observe(viewport);focus('harbour');
  return {focus,fit,zoom,update(locks){for(const[id,r]of Object.entries(WORLD_REGIONS)){const el=document.getElementById(id+'Stage'),reason=locks[id];el.hidden=false;el.classList.toggle('world-locked',!!reason);el.querySelector('.world-region-label small').textContent=reason||'Tap buildings to manage';el.querySelectorAll('button:not(.world-region-label)').forEach(b=>{b.inert=!!reason;});}draw();}};
 }
