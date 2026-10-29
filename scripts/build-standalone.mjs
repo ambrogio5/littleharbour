@@ -35,9 +35,9 @@ const v2UI=fs.readFileSync(path.join(root,'dist/v2-ui.js'),'utf8').replace(/^imp
 const app=fs.readFileSync(path.join(root,'dist/app.js'),'utf8').replace(/^import .*\n/gm,'');
 html=html.replace('<link rel="stylesheet" href="style.css">',()=>'<style>'+css+'</style>');
 html=html.replace('<link rel="stylesheet" href="fleet-depth.css">','').replace('<link rel="stylesheet" href="boat-art.css">','').replace('<link rel="stylesheet" href="neighbourhood.css">','');
-html=html.replace('<link rel="stylesheet" href="v2.css">','');
+html=html.replace(/<link rel="stylesheet" href="v2\.css(?:\?v=[^"]+)?">/,'');
 html=html.replace('<link rel="stylesheet" href="world-map.css">','').replace('<link rel="stylesheet" href="dark.css">','').replace('<link rel="stylesheet" href="ferry.css">','').replace('<link rel="stylesheet" href="project-planning.css">','').replace('<script src="theme.js"></script>',()=>'<script>'+theme+'</script>');
-html=html.replace('<script type="module" src="app.js"></script>',()=>'<script>'+catalog+'\n'+engine+'\n'+scene+'\n'+districts+'\n'+inlandMap+'\n'+coastMap+'\n'+boatArt+'\n'+fleetUI+'\n'+ferryArt+'\n'+coastView+'\n'+demo+'\n'+planning+'\n'+neighbourhoodUIBundle+'\n'+projectPlanning+'\n'+projectUI+'\n'+ferryUI+'\n'+worldMap+'\n'+worldGuide+'\n'+v2UI+'\n'+app+'</script>');
+html=html.replace(/<script type="module" src="app\.js(?:\?v=[^"]+)?"><\/script>/,()=>'<script>'+catalog+'\n'+engine+'\n'+scene+'\n'+districts+'\n'+inlandMap+'\n'+coastMap+'\n'+boatArt+'\n'+fleetUI+'\n'+ferryArt+'\n'+coastView+'\n'+demo+'\n'+planning+'\n'+neighbourhoodUIBundle+'\n'+projectPlanning+'\n'+projectUI+'\n'+ferryUI+'\n'+worldMap+'\n'+worldGuide+'\n'+v2UI+'\n'+app+'</script>');
 if(/(?:src|href)="https?:\/\//.test(html)||/@import/.test(html))throw new Error('External assets must not be present.');
 fs.writeFileSync(destination,html);
 console.log(destination);
