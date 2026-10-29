@@ -1,4 +1,4 @@
-# Little Harbour — Playtest 15
+# Little Harbour — Playtest 16
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-15.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-Playtest-16.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. Drag the unified map in any direction; pinch or use + / − to zoom. Whole town fits all areas, Home returns to the harbour, and the minimap jumps between districts. On phones, production controls sit below the map. The Back to map button returns to the settlement.
 
@@ -23,6 +23,15 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 11. Complete a different contract and establish the harbour charter.
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
+14. Compare the residents' proposals, then deliver supplies in three stages for a lasting civic improvement.
+
+## New in Playtest 16
+
+- **Residents' plot:** after opening the new neighbourhood, visit **Build → Compare the proposals** or tap **Residents’ plot** on the map. Choose **Public garden** or **Commercial square**; you can change proposals freely until the first actual supply delivery.
+- **Three staged deliveries:** each proposal has different supply requirements at every stage. The first delivery locks the choice. Completed supplies change the civic plot artwork and its three progress markers immediately. Progress is retained in exports and saves.
+- **Distinct lasting benefits:** the public garden adds one permanent neighbourhood workshop queue slot; the commercial square adds 20% coin earnings to local market and neighbourhood orders, stacking with current town improvements.
+- **Planning and guidance:** pinned requirements, reservation-aware delivery costs, production planning, contextual action cards and map shortcuts connect to the new plot. Older saves migrate to version 13 without losing their existing town.
+- **Small artwork update:** new civic-site visuals are authored in vector markup layered over the current photographic map. No new large Base64 images are needed to commit and host the source; the optional single-file offline builder continues embedding the existing imagery.
 
 ## New in Playtest 15
 
