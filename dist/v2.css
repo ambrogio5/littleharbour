@@ -1,0 +1,243 @@
+/* Little Harbour V2 — map-first responsive interface. Existing game art & logic remain intact. */
+:root{
+ --v2-deep:#091e20;--v2-panel:#122d2b;--v2-panel-2:#173a35;
+ --v2-glass:rgba(9,32,30,.92);--v2-edge:rgba(194,228,207,.2);
+ --v2-mint:#93ddc4;--v2-text:#ecf3e9;--v2-soft:#bbccc3;--v2-gold:#ebc27b;
+}
+body{background:#0a2120;min-height:100svh;}
+.topbar{
+ position:relative;z-index:50;max-width:none;width:100%;height:76px;padding:0 22px;
+ background:linear-gradient(105deg,#0a2525,#0b1b20);color:var(--v2-text);
+ border-bottom:1px solid #5f877444;gap:16px;justify-content:initial;
+ box-shadow:0 4px 28px #081b184a;
+}
+.topbar .brand{gap:9px;flex:none;color:#ecf3e9;letter-spacing:1.8px;font-family:Georgia,serif;font-weight:400;font-size:20px;line-height:1}
+.topbar .brand small{font-family:system-ui,sans-serif;color:#a0b8aa;font-size:8px;letter-spacing:1.4px;line-height:1.3;margin-top:6px}
+.topbar .brand-mark{font-size:33px;color:var(--v2-gold)}
+.v2-topnav{display:flex;gap:3px;align-items:center;flex:1;min-width:0;padding-left:18px}
+.v2-topnav button{background:none;border:1px solid transparent;color:#c4d5ce;border-radius:9px;min-height:44px;min-width:0;padding:8px 12px;white-space:nowrap;display:flex;gap:8px;align-items:center;font-size:12px}
+.v2-topnav button:hover,.v2-topnav button[aria-current=page]{background:#1c453b;border-color:#86cbaa88;color:#f4fff7}
+.v2-topnav button .v2-nav-icon{font-family:Georgia,serif;font-size:18px;color:#dbc79e}
+.v2-topnav button[hidden]{display:none}
+.v2-hud-wallet{height:44px;display:flex;align-items:center;gap:11px;border:1px solid #6383796b;border-radius:10px;padding:0 12px;flex:none;color:#eff9ed;background:#0f2527}
+.v2-hud-coin{display:flex;align-items:center;gap:7px;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px}
+.v2-hud-coin i{font-style:normal;color:var(--v2-gold);font-size:20px}
+.v2-stock{display:flex;gap:6px;align-items:center;padding-left:9px;border-left:1px solid #b9d0bd33;font-variant-numeric:tabular-nums}
+.v2-stock i{font-size:18px;font-style:normal;color:#e1b477}
+.v2-stock span{display:flex;flex-direction:column;line-height:1.25}
+.v2-stock small{font-size:9px;color:#adc2b7}
+.v2-stock strong{font-size:12px;font-weight:700;color:#f0f4eb}
+.v2-inventory-button{display:grid;place-items:center;min-width:32px;height:34px;border:1px solid #a1c3ae77;border-radius:7px;background:#1d4036;color:#e9f6e7;font-size:15px}
+.topbar .top-actions{gap:6px;margin-left:0;color:#b1c0bb}
+.topbar #saveStatus{display:none}
+.topbar .icon-button{color:#dcebe3;border-color:#92b3a377;min-width:39px;min-height:39px;background:#ffffff08;border-radius:10px}
+main{max-width:none;width:100%;margin:0;padding:16px 17px 24px;gap:16px;grid-template-columns:minmax(0,1fr) minmax(330px,360px);align-items:start}
+.world-area{min-width:0}.world-heading{margin:0 0 11px;padding:2px 2px 0}
+.world-heading h1{font:400 23px Georgia,serif;color:#f2f3e7;letter-spacing:.1px;margin:3px 0}
+.world-heading .eyebrow{color:#9abcac;font-size:8px}
+.world-heading .town-subtitle{font-size:11px;line-height:1.4;color:#aec3b8;margin:4px 0 0}
+.world-heading .wallet{display:none}
+.resource-strip{display:none;gap:8px;flex-wrap:nowrap;margin:0 0 11px;padding:9px;border:1px solid #74948366;border-radius:10px;background:#112d29;scrollbar-width:thin}
+.v2-show-resources .resource-strip{display:flex}
+.resource-strip .resource{color:#ecf4e8;border:1px solid #6a937655;border-radius:7px;background:#224039;flex:0 0 auto;min-width:96px}
+.resource-strip .resource em{color:#c3cfc6}.resource-strip .resource-icon{color:#e5bd83}
+.resource-strip .resource strong{color:#f7f7e9}
+.unified-map,.unified-map.map-fitted{
+ width:100%;height:clamp(520px,calc(100svh - 246px),870px);max-height:none;
+ border:1px solid #658e8a;border-radius:17px;background:#82adb2;
+ box-shadow:0 14px 45px #05171688;
+}
+.unified-map .map-scroller{background:radial-gradient(ellipse at 30% 45%,#8db2a7,#508e95 80%)}
+.unified-map .district-track{background-color:#83a59d;background-size:100% 100%}
+.unified-map .map-stage:before{inset:-20px;filter:blur(22px);opacity:.6}
+.unified-map #coastStage:before{background:#75a8aa}
+.unified-map .map-stage>.map-image,.unified-map .market-base,.unified-map .inland-base,.unified-map .coast-base,.unified-map .neighbourhood-base{
+ mask-image:radial-gradient(ellipse 81% 80% at center,#000 66%,transparent 100%);
+}
+.unified-map .map-pin{padding:7px 10px;min-height:42px;max-width:180px;background:#112f2be8;color:#f1f4eb;border:1px solid #d8e0cc8c;border-radius:30px;box-shadow:0 6px 14px #09231d80;backdrop-filter:blur(7px);font-size:11px}
+.unified-map .map-pin small{color:#d4ddce;line-height:1.1}
+.unified-map .map-pin .pin-icon{color:#eac58b}
+.unified-map .map-pin.selected{border-color:#92edc6;outline:3px solid #9ae5be90;outline-offset:1px}
+.unified-map .map-pin[data-world-status=ready]{border-color:#8df0b9;box-shadow:0 0 0 3px #3ba56a99,0 4px 16px #122b2980}
+.unified-map .map-pin[data-world-status=ready]:after{top:-16px;background:#3f8a63}
+.unified-map .world-region-label{
+ top:9%;border:1px solid #b9e0caaa;border-radius:24px;padding:10px 16px;
+ background:#112c29eb;color:#f8f8ed;box-shadow:0 5px 24px #102d2b8e;
+ backdrop-filter:blur(8px);text-align:center
+}
+.world-region-label strong{font-size:17px}
+.world-region-label small{color:#b4c7b9}
+.unified-map .world-region-label:focus-visible,.unified-map .map-pin:focus-visible{outline:3px solid #f7db9b;outline-offset:4px}
+.unified-map .world-minimap{border:1px solid #cce5d4aa;border-radius:11px;background:#093431b8;overflow:hidden;backdrop-filter:blur(10px);width:148px}
+.unified-map .world-minimap button{border:1px solid #80ae97;background:#133c34e8;color:#eef6e9;border-radius:50%;font-size:9px}
+.unified-map .world-minimap .mini-camera{stroke:#e4f1df}
+.unified-map .world-camera-tools{top:13px;right:13px;left:auto;background:#102a27d9;border:1px solid #b4d9c34d;border-radius:11px;padding:5px;gap:2px;backdrop-filter:blur(8px)}
+.unified-map .world-camera-tools button{border:0;box-shadow:none;background:transparent;color:#f5f4e8;min-height:39px;min-width:39px}
+.unified-map .world-camera-tools button:hover{background:#29644c}
+.unified-map .world-camera-tools span{font-size:10px;color:#d1e1d7;background:transparent;min-width:42px;text-align:center}
+.unified-map .world-touch-hint{display:none}
+.unified-map .map-tools{top:68px;right:14px}
+.unified-map .map-tools button{background:#11342dce;color:#e9f2e4;border:1px solid #92bdaa80;border-radius:7px;min-height:39px}
+.unified-map .map-bottom{bottom:13px;left:13px;right:13px}
+.unified-map #mapState{background:#0c302be8;color:#eaf1e5;border:1px solid #b5cfb766;border-radius:9px;max-width:50%}
+.unified-map .time-controls{background:#0e342edc;color:#f2f7ed}
+.v2-map-rail{position:absolute;left:14px;top:15px;z-index:24;display:flex;align-items:center;gap:6px;background:#12312be2;border:1px solid #a9d4b676;border-radius:10px;padding:5px;backdrop-filter:blur(10px)}
+.v2-map-rail button{min-height:39px;min-width:43px;background:transparent;border:1px solid transparent;border-radius:6px;color:#d7e5d8;font-size:11px;padding:7px 11px}
+.v2-map-rail button[aria-pressed=true],.v2-map-rail button:hover{background:#30654f;color:white;border-color:#c0e3c055}
+.v2-map-rail .v2-rail-glyph{font-size:16px;margin-right:5px}
+.v2-map-context{position:absolute;top:77px;left:14px;z-index:13;max-width:240px;background:#10332dd7;border:1px solid #b0cfb66a;color:#e7f5e5;border-radius:9px;padding:9px 12px;pointer-events:none;box-shadow:0 4px 11px #08282066}
+.v2-map-context strong{font:400 17px Georgia,serif;display:block}
+.v2-map-context small{font-size:10px;color:#c9d7c9;display:block;margin-top:4px}
+.v2-map-legend{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:14;display:flex;gap:10px;background:#10352fda;border-radius:9px;color:#e4f0e7;padding:8px 12px;pointer-events:none;white-space:nowrap}
+.v2-map-legend span{font-size:10px}
+.v2-map-legend b{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#81cda5}
+.v2-map-legend span:nth-child(2) b{background:#7fa8c5}
+.v2-map-legend span:nth-child(3) b{background:#afa99a}
+.v2-filter-ready .map-pin:not([data-world-status=ready]):not(.selected),.v2-filter-ready .neigh-map-plot,.v2-filter-ready .residents-map-site,.v2-filter-ready .world-region-label{opacity:.28}
+.v2-filter-ready .map-pin[data-world-status=ready]{opacity:1}
+.v2-filter-areas .map-pin:not(.selected),.v2-filter-areas .neigh-map-plot,.v2-filter-areas .residents-map-site{opacity:.15}
+.v2-filter-areas .world-region-label{opacity:1}
+.v2-filter-ready .map-pin:not([data-world-status=ready]):focus-visible,.v2-filter-areas .map-pin:focus-visible{opacity:1}
+.world-roads path{stroke:#dccfa5;stroke-width:10;stroke-dasharray:1 0;opacity:.47}
+.world-area>.world-map-legend{display:none}
+.world-area>.town-map-actions{display:none}
+.world-area>.journey{display:none}
+.world-area>.quick-panel{display:none}
+.v2-task-section{margin-top:13px;border:1px solid #42685994;background:#0e2927;border-radius:14px;padding:15px}
+.v2-task-section>header{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:11px}
+.v2-task-section h2{font:400 21px Georgia,serif;color:#eef4e9;margin:0}
+.v2-task-section header p{color:#aec2b6;font-size:10px;margin:0}
+.v2-task-heading{display:flex;gap:10px;align-items:baseline}
+.v2-task-section>header button{color:#b4e8d0;background:none;border:0;text-decoration:underline;text-underline-offset:5px;white-space:nowrap;min-height:36px;font-size:11px}
+.v2-task-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.v2-task-card{min-height:112px;display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid #52766b80;border-radius:10px;background:#16332f;color:#f0f4e9;padding:15px 10px;min-width:0;position:relative}
+.v2-task-card:hover,.v2-task-card:focus-visible{border-color:#93d6bc;background:#22483e;box-shadow:0 4px 12px #0b1f1d60}
+.v2-task-icon{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#0a2221;color:#eed8b1;font-size:19px}
+.v2-task-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.v2-task-copy small{font-size:8px;font-weight:700;letter-spacing:1.4px;color:#a5cbb7}
+.v2-task-copy strong{font:400 15px Georgia,serif;line-height:1.22;word-wrap:break-word}
+.v2-task-copy em{font-style:normal;font-size:10px;line-height:1.5;color:#b8cac2}
+.v2-task-arrow{align-self:center;flex:none;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;color:#e8f5e7;background:#285248;font-size:14px}
+.management{
+ max-height:calc(100svh - 108px);top:16px;padding:0;
+ background:#102724;color:#eaf4e8;border:1px solid #56797194;border-radius:16px;
+ box-shadow:0 10px 40px #051b1780;scrollbar-width:thin;scrollbar-color:#527666 transparent;overflow-x:hidden;
+}
+.management>.back-to-map{display:none}
+.management>.tabs{display:none}
+.management>.management-speed{display:none}
+.v2-side-hero{border-bottom:1px solid #55796955;margin:0;overflow:hidden}
+.v2-context-image{height:165px;background-size:cover;background-position:center;position:relative}
+.v2-context-image:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#091d1d00 22%,#102724 100%)}
+.v2-art-harbour{background-image:url('assets/harbour-waterfront.png')}
+.v2-art-market{background-image:url('assets/market-base.png')}
+.v2-art-coast{background-image:url('assets/coast-base.png')}
+.v2-art-inland{background-image:url('assets/inland-base.png')}
+.v2-art-neighbourhood{background-image:url('assets/neighbourhood-base.png')}
+.v2-context-copy{padding:5px 20px 17px}
+.v2-context-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.v2-context-meta small{font-size:9px;color:#b0c6b7;letter-spacing:1.7px}
+.v2-context-meta span{font-size:10px;color:#a9e5c5;white-space:nowrap}
+.v2-context-copy h2{font:400 28px Georgia,serif;line-height:1.1;margin:11px 0 7px;color:#f5f4e8}
+.v2-context-copy p{font-size:12px;color:#bfcec3;line-height:1.6;margin:5px 0}
+.management #returnProject{padding:0 16px}
+.management #panel{padding:14px 18px 24px;color:#e8eee5}
+.management #panel h2,.management #panel h3{color:#ecf1e6}
+.management #panel .description,.management #panel .hint,.management #panel .panel-eyebrow{color:#b6c9bd}
+.management #panel :is(.button,.button:not(:disabled):hover){background:#8cd8bb;border-color:#8cd8bb;color:#0b2923}
+.management #panel .button.secondary{background:#234b40;border-color:#658e75;color:#e1f8e8}
+.management #panel :is(.build-card,.refit-card,.path-card,.contract-card,.workshop-card,.market-business,.ferry-stage,.neigh-build-choice,.neigh-built-summary,.neigh-production,.neigh-order,.neigh-refit,.neigh-move,.resident-proposal,.resident-delivery,.production-overview,.voyage-card,.boat-choice,.destination-card,.construction-card,.ledger-card,.town-focus-card,.restoration-card,.recipe-card,.quick-panel,.plan-goods>button){
+ background-color:#17352e;color:#e9f1e8;border-color:#5a7d6f7d;
+}
+.management #panel :is(.text-button,.ingredient-name,.resource em){color:#afe8d2}
+.management #panel :is(.cost,.ingredient-row,.reward,.order-destination){color:#e8f0e6}
+.management #panel button:disabled{opacity:.52}
+.management .activity{padding:10px 18px 18px;color:#b7cbc0;border-top:1px solid #47716254}
+.management .section-label{color:#aabfb1}
+.management #log li{color:#bfd1c6}
+.v2-overview-panel>h2{font:400 25px Georgia,serif;line-height:1.12;margin:8px 0 10px}
+.v2-overview-panel>.button{width:100%;margin:15px 0}
+.v2-overview-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.v2-overview-links button{min-height:82px;text-align:left;border:1px solid #567e6c;border-radius:8px;background:#1e4035;color:#e6f1e3;padding:12px;display:flex;flex-direction:column;gap:4px}
+.v2-overview-links button:hover{background:#2b5849}
+.v2-overview-links button span{font-size:21px;color:#e7c993}.v2-overview-links button strong{font-size:12px}
+.v2-overview-links button small{font-size:10px;color:#b8cdbd}
+html[data-theme=dark] .management{background:#102724}
+html[data-theme=dark] .management #panel{background:transparent}
+html[data-theme=dark] :is(.v2-overview-links button,.v2-task-card){color:#eaf3e8}
+html[data-theme=light] .management{background:#172f2b;color:#eaf4e8}
+html[data-theme=light] .management #panel{background:transparent;color:#e9f1e8}
+html[data-theme=light] .management #panel :is(.section-label,.hint,.description){color:#c3d0c5}
+html[data-theme=light] .management #panel .text-button{color:#b3e9cf!important}
+html[data-theme=light] .v2-context-copy h2{color:#f4f5e9}
+.v2-task-card:focus-visible,.v2-map-rail button:focus-visible,.v2-topnav button:focus-visible{outline:3px solid #f0cf8d;outline-offset:2px}
+@media(max-width:1280px){
+ .topbar{padding:0 13px;gap:9px}.topbar .brand{font-size:17px;letter-spacing:1px}.v2-topnav{gap:0;padding-left:3px}
+ .v2-topnav button{font-size:11px;padding:7px 9px;gap:5px}
+ .v2-hud-wallet{gap:8px;padding:0 8px}.v2-stock{padding-left:6px}
+ main{grid-template-columns:minmax(0,1fr) 330px;gap:11px;padding:12px}
+ .v2-task-card{padding:11px 8px;gap:7px}.v2-task-icon{width:31px;height:31px;font-size:16px}
+ .v2-task-copy strong{font-size:13px}.v2-task-arrow{width:23px;height:23px}
+}
+@media(max-width:1000px){
+ .v2-hud-wallet .v2-stock:nth-of-type(3){display:none}
+ .v2-topnav button .v2-nav-icon{display:none}
+ .v2-task-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .management{max-height:calc(100svh - 104px)}
+}
+@media(max-width:740px){
+ body{padding-bottom:71px}
+ .topbar{height:auto;min-height:66px;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:59px 47px;padding:0 10px 5px;gap:0}
+ .topbar .brand{grid-row:1;grid-column:1;font-size:18px}
+ .topbar .top-actions{grid-row:1;grid-column:2;justify-self:end}
+ .v2-hud-wallet{grid-row:1;grid-column:1 / 3;justify-self:center;max-width:60%;transform:translateX(16%);background:none;border:0;padding:0;gap:6px}
+ .v2-hud-wallet .v2-stock{display:none}
+ .v2-hud-wallet .v2-hud-coin{font-size:12px}
+ .v2-hud-wallet .v2-inventory-button{min-width:29px;height:29px}
+ .v2-topnav{grid-column:1 / 3;grid-row:2;display:flex;gap:1px;overflow-x:auto;padding-left:0;padding-bottom:4px;scrollbar-width:none}
+ .v2-topnav button{flex:1 0 auto;justify-content:center;min-height:39px;font-size:10px;padding:7px 9px}
+ .v2-topnav button .v2-nav-icon{display:none}
+ .topbar .icon-button{min-width:31px;width:31px;height:31px;min-height:31px;font-size:14px}
+ main{display:block;padding:9px 10px}
+ .world-heading{margin:2px 2px 8px}
+ .world-heading h1{font-size:19px}
+ .world-heading .town-subtitle{display:none}
+ .unified-map,.unified-map.map-fitted{height:clamp(340px,55svh,600px);min-height:340px;margin:0;border-radius:11px}
+ .v2-map-rail{top:8px;left:8px;gap:1px;padding:3px}
+ .v2-map-rail button{font-size:10px;min-width:36px;min-height:36px;padding:5px}
+ .v2-map-rail .v2-rail-glyph{font-size:13px;margin-right:2px}
+ .unified-map .world-camera-tools{top:8px;right:8px;padding:3px;gap:0}
+ .unified-map .world-camera-tools button{min-width:31px;min-height:36px;font-size:16px}
+ .unified-map .world-camera-tools button[data-camera=home],.unified-map .world-camera-tools span{display:none}
+ .unified-map .map-tools{top:50px;right:8px}
+ .v2-map-context{top:55px;left:8px;max-width:168px;padding:5px 8px}
+ .v2-map-context strong{font-size:12px}.v2-map-context small{font-size:9px}
+ .v2-map-legend{display:none}
+ .unified-map .world-minimap{width:102px;bottom:55px;right:7px}
+ .unified-map #mapState{font-size:9px;max-width:66%;padding:7px}
+ .unified-map .map-bottom{bottom:8px;left:8px;right:8px}
+ .v2-task-section{padding:11px 9px;margin-top:10px}
+ .v2-task-heading p{display:none}
+ .v2-task-section h2{font-size:18px}
+ .v2-task-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;gap:8px;padding-bottom:4px}
+ .v2-task-card{flex:0 0 min(78vw,300px);min-height:101px;scroll-snap-align:center;padding:12px}
+ .v2-task-copy strong{font-size:16px}
+ .management{position:relative;top:auto;max-height:none;overflow:visible;margin-top:13px;border-radius:12px}
+ .management>.tabs{display:none}
+ .v2-context-image{height:148px}
+ .v2-context-copy{padding:5px 14px 14px}
+ .v2-context-copy h2{font-size:26px}
+ .management #panel{padding:14px}
+ .management .activity{padding:10px 14px}
+ .mobile-nav.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:#0b2925;border-top:1px solid #5b907b}
+ .mobile-nav button{color:#d7e8df;font-size:10px}
+}
+@media(max-width:440px){
+ .topbar .brand{font-size:14px}
+ .v2-hud-wallet{transform:translateX(27%);max-width:47%}
+ .topbar .top-actions{gap:3px}
+ .v2-map-rail button{font-size:9px;padding:4px}
+ .unified-map .world-camera-tools button[data-camera=fit]{font-size:9px;max-width:53px;min-width:45px}
+ .unified-map .world-minimap{width:95px}
+}
+@media(prefers-reduced-motion:reduce){.v2-task-card,.v2-topnav button,.v2-map-rail button{transition:none!important}}
