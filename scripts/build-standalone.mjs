@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-Playtest-16.html');
+const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V2-Playtest.html');
 const theme=fs.readFileSync(path.join(root,'dist/theme.js'),'utf8');
 let html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
 const css=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','ferry.css','project-planning.css','dark.css','world-map.css','v2.css'].map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n').replace(/url\('assets\/([^']+)'\)/g,(_,file)=>"url('data:image/png;base64,"+fs.readFileSync(path.join(root,'dist/assets',file)).toString('base64')+"')");
