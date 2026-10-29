@@ -3,3 +3,27 @@
 @media(max-width:740px){.neigh-navigation button{padding:8px 4px;font-size:11px}.neigh-build-choice,.neigh-built-summary,.neigh-production,.neigh-order,.neigh-refit,.neigh-move{padding:16px}.neigh-map-label{padding:5px 6px}.neigh-map-label strong{font-size:10px}.neigh-map-label small{font-size:8px}.map-fitted .neigh-map-label small{display:none}.map-fitted .neigh-map-label{min-width:72px;max-width:130%;padding:5px 3px}.map-fitted .neigh-map-label strong{font-size:8px}.map-fitted .neigh-empty-pad{font-size:20px}.map-fitted .neigh-map-plot>.neigh-building-art{bottom:12px}.neigh-plot-tabs small{font-size:9px}}
 
 .neigh-photo-art{display:block;aspect-ratio:1;background-image:url('assets/neighbourhood-buildings.png');background-size:300% 200%;background-repeat:no-repeat;position:relative}.neigh-map-plot>.neigh-photo-art{height:auto;aspect-ratio:1;bottom:20px}.neigh-build-choice>.neigh-photo-art,.neigh-built-summary>.neigh-photo-art{width:180px;height:180px}.neigh-furnished-garden{position:absolute;left:14%;bottom:10%;width:18%;height:8%;border-radius:50%;background:radial-gradient(ellipse,#ad6963 12%,#637b4b 35%,transparent 70%);filter:drop-shadow(1px 2px 1px #304c2f55)}
+
+/* Residents' independent civic plot — no photographic Base64 payloads. */
+.residents-map-site{position:absolute;z-index:6;left:49%;top:13%;transform:translate(-50%,-5%);width:29%;height:27%;border:0;background:none;padding:0;cursor:pointer;color:#274338;display:flex;align-items:center;flex-direction:column}
+.residents-illustration{width:100%;height:auto;overflow:visible;filter:drop-shadow(2px 5px 5px #213c285c);pointer-events:none}
+.residents-map-label{position:absolute;top:68%;left:50%;transform:translateX(-50%);width:max-content;min-width:160px;max-width:160%;border:1px solid #c7c7b0;border-radius:7px;background:#f7f5e9f4;box-shadow:0 3px 11px #2436283d;padding:7px 12px;text-align:center;line-height:1.4;pointer-events:none}
+.residents-map-label strong{display:block;font:600 12px system-ui}.residents-map-label small{display:block;font-size:10px;margin-top:2px;color:#4d6554}
+.residents-stage-dots{display:flex;justify-content:center;gap:5px;margin-top:5px}.residents-stage-dots i{width:7px;height:7px;border:1px solid #63806b;border-radius:50%;background:#d4dbce}.residents-stage-dots i.done{background:#3a815b}
+.residents-map-site:focus-visible{outline:3px solid #f8ebbb;outline-offset:3px;border-radius:8px}
+.residents-proposals{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.resident-proposal,.resident-delivery{padding:16px;border:1px solid var(--line);border-radius:10px;background:#f7f6eb;margin:12px 0}
+.resident-proposal.selected{border:2px solid #4c8061}.resident-proposal h3,.resident-delivery h3{font:400 21px Georgia,serif;margin:8px 0}.resident-proposal p,.resident-delivery p{font-size:12px;line-height:1.65;color:var(--ink)}
+.resident-preview{background:#d8dfcc;border-radius:8px;overflow:hidden;margin-bottom:12px;padding:2px}.resident-preview .residents-illustration{display:block;max-height:130px}
+.resident-benefit{display:block;min-height:50px;margin:13px 0;color:#325c46;font-size:12px;line-height:1.5}
+.resident-proposal .button,.resident-delivery>.button,.residents-entry .button{width:100%;margin-top:12px}
+.resident-entry-status{display:block;font-size:11px;color:#437b5b;margin:10px 0}
+.resident-stage-track{display:flex;gap:7px;margin:15px 0}.resident-stage-track span{flex:1;text-align:center;border-radius:6px;border:1px solid #b8c6b5;background:#e5eadf;padding:10px;color:#657664;font-size:12px}.resident-stage-track span.done{background:#46785c;color:#fff}
+.resident-delivery.complete{background:#e7efe1}
+.unified-map .residents-map-label{transform:translateX(-50%) scale(var(--map-label-scale));transform-origin:center top}
+.world-overview .residents-map-site{visibility:hidden}.world-locked .residents-map-site{pointer-events:none;opacity:.45}
+html[data-theme=dark] .resident-proposal,html[data-theme=dark] .resident-delivery{background:#22332e;color:#e3e9df;border-color:#4a6054}
+html[data-theme=dark] .resident-benefit,html[data-theme=dark] .resident-entry-status{color:#a5d5b7}
+html[data-theme=dark] .residents-map-label{background:#20372fed;color:#edf2e2;border-color:#779280}
+html[data-theme=dark] .residents-map-label small{color:#c5d6c7}
+@media(max-width:740px){.residents-proposals{grid-template-columns:1fr}.resident-preview .residents-illustration{max-height:155px}.residents-map-label{min-width:115px;padding:5px 7px}.residents-map-label strong{font-size:10px}.residents-map-label small{font-size:9px}.map-fitted .residents-map-label small{display:none}}
