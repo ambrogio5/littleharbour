@@ -65,9 +65,10 @@ try{
   await page.locator('#map [data-camera="fit"]').click();
   await page.locator('#map [data-world-region="harbour"].world-region-label').click();
   assert((await page.locator('#v2MapPlace').innerText()).includes('harbour'),'district focus must update map title');
-  await page.locator('#map [data-action="v2-filter"][data-key="ready"]').click();
-  assert.equal(await page.locator('#map [data-action="v2-filter"][data-key="ready"]').getAttribute('aria-pressed'),'true');
-  await page.locator('#map [data-action="v2-filter"][data-key="all"]').click();
+  // V3 replaces the three small map filters with a clear district strip.
+  await page.locator('#v3ZoneNav [data-key="market"]').click();
+  assert.equal(await page.locator('#v3ZoneNav [data-key="market"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   // The first playable action must change real saved state.
   const initial=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-v1')).stock.wheat);
   await page.locator('#v2TaskCards [data-key="harvest"]').click();
@@ -85,7 +86,7 @@ try{
   await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
   assert.deepEqual(errors,[],'sample page browser errors: '+errors.join(' | '));
-  console.log('PASS '+device.name+': V2 initialized, navigated, zoomed, filtered, harvested, restored save and opened sample.');
+  console.log('PASS '+device.name+': V3 initialized, navigated, zoomed, focused districts, harvested, restored save and opened sample.');
   await context.close();
  }
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
