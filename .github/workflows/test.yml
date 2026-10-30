@@ -28,15 +28,15 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts playwright-core
       - name: Interactive browser smoke (mobile and desktop)
         run: node scripts/browser-smoke.mjs
-      - name: Build downloadable V2 playtest
+      - name: Build downloadable V3 playtest
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: npm run standalone -- ./Little-Harbour-V2-Playtest.html
-      - name: Upload standalone V2 HTML
+        run: npm run standalone -- ./Little-Harbour-V3-Playtest.html
+      - name: Upload standalone V3 HTML
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: Little-Harbour-V2-Playtest
-          path: Little-Harbour-V2-Playtest.html
+          name: Little-Harbour-V3-Playtest
+          path: Little-Harbour-V3-Playtest.html
           retention-days: 30
           compression-level: 6
           if-no-files-found: error
