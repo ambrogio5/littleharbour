@@ -47,7 +47,7 @@ try{
   await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   assert((await page.locator('#map .world-camera-tools button').count())>=4,'map camera buttons must exist');
   const cameraBound=await page.locator('#map .world-camera-tools').boundingBox(),mapBound=await page.locator('#map').boundingBox();
-  assert(cameraBound&&mapBound&&cameraBound.right<=mapBound.right+2,'Camera tools must fit inside map');
+  assert(cameraBound&&mapBound&&cameraBound.right<=mapBound.right+2,'Camera tools must fit inside map: '+JSON.stringify({camera:cameraBound,map:mapBound,device:device.name}));
   // Exercise the actual native click event chain and the V2 panel routing.
   const navigation=device.isMobile?'.mobile-nav ':'.v2-topnav ';
 
