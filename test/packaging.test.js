@@ -27,6 +27,10 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   assert(html.includes('id="v3ZoneNav"'));
   assert(html.includes('newWorldArt'));
   assert(!html.includes('href="v3.css?v=0.18.0"'));
+  assert(html.includes('v3-zone-nav'));
+  assert(html.includes('--v4-navy'));
+  assert(!html.includes('href="v4.css?v=0.19.0"'));
+
   assert(!html.includes('src="app.js?v=0.18.0"'));
 
   assert(!html.includes('href="v2.css"'));
