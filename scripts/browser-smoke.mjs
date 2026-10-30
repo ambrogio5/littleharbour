@@ -70,7 +70,8 @@ try{
   const after=await page.locator('#worldZoom').innerText();
   assert.notEqual(after,before,'map zoom must update');
   await page.locator('#map [data-camera="fit"]').click();
-  await page.locator('#map [data-world-region="harbour"].world-region-label').click();
+  if(device.isMobile)await page.locator('#v3ZoneNav [data-key="harbour"]').click();
+  else await page.locator('#map [data-world-region="harbour"].world-region-label').click();
   assert((await page.locator('#v2MapPlace').innerText()).includes('harbour'),'district focus must update map title');
   // V3 replaces the three small map filters with a clear district strip.
   await page.locator('#v3ZoneNav [data-key="market"]').click();
