@@ -1,10 +1,11 @@
-// One persistent camera; district coordinates are world pixels, never screen pixels.
+import {createWorldArt} from './world-art.js';
+// One persistent camera and one illustrated world. Locations use world pixels.
 export const WORLD_REGIONS={
- inland:{x:80,y:20,w:960,h:640,name:'Inland terraces'},
- market:{x:440,y:500,w:960,h:640,name:'Market quarter'},
- neighbourhood:{x:1380,y:140,w:960,h:640,name:'Neighbourhood'},
- harbour:{x:80,y:1020,w:1080,h:720,name:'Home harbour'},
- coast:{x:1360,y:890,w:1200,h:800,name:'Working coast'}
+ inland:{x:335,y:125,w:1210,h:670,name:'Hillside & fields'},
+ neighbourhood:{x:385,y:665,w:850,h:555,name:'Neighbourhood'},
+ market:{x:1230,y:640,w:800,h:520,name:'Market quarter'},
+ harbour:{x:965,y:1035,w:790,h:620,name:'Home harbour'},
+ coast:{x:1690,y:1000,w:900,h:680,name:'Working coast'}
 };
 export const WORLD_SIZE={w:2680,h:1840};
 export function cameraBounds(camera,width,height){
@@ -16,17 +17,34 @@ export function createWorldMap(root){
  const viewport=root.querySelector('.map-scroller'),track=root.querySelector('.district-track');
  root.classList.add('unified-map');viewport.tabIndex=0;viewport.setAttribute('aria-label','Town map. Drag to explore; use plus and minus to zoom, arrow keys to pan.');
  track.style.width=WORLD_SIZE.w+'px';track.style.height=WORLD_SIZE.h+'px';
- track.insertAdjacentHTML('afterbegin','<svg class="world-roads" viewBox="0 0 2680 1840" aria-hidden="true"><path class="world-land-path" d="M530 350 C700 470 740 650 860 800 C920 930 770 1160 650 1360 M900 800 C1220 660 1480 510 1820 460 M1720 490 C1810 650 1830 730 1940 880"/><path class="world-sea-path" d="M850 1470 C1100 1670 1490 1720 2000 1360"/></svg>');
+ track.insertAdjacentHTML('afterbegin',createWorldArt());
  for(const[id,r]of Object.entries(WORLD_REGIONS)){
   const el=document.getElementById(id+'Stage');el.dataset.region=id;
   Object.assign(el.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'});
   el.insertAdjacentHTML('beforeend',`<button class="world-region-label" data-world-region="${id}"><strong>${r.name}</strong><small></small></button>`);
  }
  root.insertAdjacentHTML('beforeend',`<div class="world-camera-tools" aria-label="Map camera"><button data-camera="in" aria-label="Zoom in">+</button><button data-camera="out" aria-label="Zoom out">−</button><button data-camera="home">Home</button><button data-camera="fit">Whole town</button><span id="worldZoom"></span></div><nav class="world-minimap" aria-label="Jump to an area"><svg viewBox="0 0 2680 1840" aria-hidden="true">${Object.entries(WORLD_REGIONS).map(([id,r])=>`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" class="mini-${id}"/>`).join('')}<rect class="mini-camera"/></svg>${Object.entries(WORLD_REGIONS).map(([id,r])=>`<button data-world-region="${id}" aria-label="Go to ${r.name}" style="left:${(r.x+r.w/2)/WORLD_SIZE.w*100}%;top:${(r.y+r.h/2)/WORLD_SIZE.h*100}%">${id==='harbour'?'H':id==='market'?'M':id==='inland'?'I':id==='coast'?'C':'N'}</button>`).join('')}</nav><p class="world-touch-hint">Drag to explore · Pinch or + / − to zoom · Tap a building</p>`);
- let camera={x:0,y:0,z:.6},drag=null,moved=false,suppressUntil=0;const pointers=new Map();let pinch=null;
- function draw(){camera=cameraBounds(camera,viewport.clientWidth,viewport.clientHeight);track.style.transform=`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;root.style.setProperty('--map-label-scale',String(Math.min(2.8,1/camera.z)));root.classList.toggle('world-overview',camera.z<.43);document.getElementById('worldZoom').textContent=Math.round(camera.z*100)+'%';const rect=root.querySelector('.mini-camera');rect.setAttribute('x',Math.max(0,-camera.x/camera.z));rect.setAttribute('y',Math.max(0,-camera.y/camera.z));rect.setAttribute('width',Math.min(WORLD_SIZE.w,viewport.clientWidth/camera.z));rect.setAttribute('height',Math.min(WORLD_SIZE.h,viewport.clientHeight/camera.z));}
- function focus(id){const r=WORLD_REGIONS[id];if(!r)return;const place=root.querySelector('#v2MapPlace');if(place)place.textContent=r.name;const z=Math.min(.9,Math.max(.44,Math.min(viewport.clientWidth/r.w,viewport.clientHeight/r.h)*.95));camera={z,x:viewport.clientWidth/2-(r.x+r.w/2)*z,y:viewport.clientHeight/2-(r.y+r.h/2)*z};draw();}
- function fit(){const place=root.querySelector('#v2MapPlace');if(place)place.textContent='Whole town';camera={z:Math.min(viewport.clientWidth/WORLD_SIZE.w,viewport.clientHeight/WORLD_SIZE.h)*.96,x:0,y:0};draw();}
+ let camera={x:0,y:0,z:.6},drag=null,moved=false,suppressUntil=0,activeRegion='harbour';const pointers=new Map();let pinch=null;
+ // Reparent existing buttons onto the unified world; all game actions stay bound.
+ const pins=[
+  ['.field-pin','inland',790,450],['.mill-pin','inland',1140,585],['.bakery-pin','inland',1655,675],
+  ['.expansion-pin','neighbourhood',1010,1050],['.fishing-pin','coast',360,1340],
+  ['.harbour-pin','harbour',1400,1430],['.specialist-pin','market',1455,880],
+  ['.waterfront-pin','coast',1945,1335]
+ ];
+ if(document.createElement&&track.appendChild){
+  const layer=document.createElement('div');layer.className='world-primary-hotspots';track.appendChild(layer);
+  for(const [selector,zone,x,y] of pins){
+   const button=root.querySelector(selector);if(!button)continue;
+   button.classList.add('world-hotspot');button.dataset.hotspotZone=zone;
+   button.style.left=x+'px';button.style.top=y+'px';layer.appendChild(button);
+  }
+ }
+ function draw(){camera=cameraBounds(camera,viewport.clientWidth,viewport.clientHeight);track.style.transform=`translate(${camera.x}px,${camera.y}px) scale(${camera.z})`;root.style.setProperty('--map-label-scale',String(Math.min(2.8,1/camera.z)));root.classList.toggle('world-overview',camera.z<.43);root.dataset.activeRegion=activeRegion;
+ for(const[id]of Object.entries(WORLD_REGIONS)){const el=document.getElementById(id+'Stage');el?.classList?.toggle('world-current',id===activeRegion);}
+ root.querySelectorAll?.('.world-hotspot')?.forEach?.(button=>button.classList.toggle('active-zone',button.dataset.hotspotZone===activeRegion));document.getElementById('worldZoom').textContent=Math.round(camera.z*100)+'%';const rect=root.querySelector('.mini-camera');rect.setAttribute('x',Math.max(0,-camera.x/camera.z));rect.setAttribute('y',Math.max(0,-camera.y/camera.z));rect.setAttribute('width',Math.min(WORLD_SIZE.w,viewport.clientWidth/camera.z));rect.setAttribute('height',Math.min(WORLD_SIZE.h,viewport.clientHeight/camera.z));}
+ function focus(id){const r=WORLD_REGIONS[id];if(!r)return;activeRegion=id;const place=root.querySelector('#v2MapPlace');if(place)place.textContent=r.name;const z=Math.min(.9,Math.max(.44,Math.min(viewport.clientWidth/r.w,viewport.clientHeight/r.h)*.95));camera={z,x:viewport.clientWidth/2-(r.x+r.w/2)*z,y:viewport.clientHeight/2-(r.y+r.h/2)*z};draw();}
+ function fit(){activeRegion='all';const place=root.querySelector('#v2MapPlace');if(place)place.textContent='Whole town';camera={z:Math.min(viewport.clientWidth/WORLD_SIZE.w,viewport.clientHeight/WORLD_SIZE.h)*.96,x:0,y:0};draw();}
  function zoom(factor,point={x:viewport.clientWidth/2,y:viewport.clientHeight/2}){camera=cameraZoom(camera,factor,point);draw();}
  function point(e){const r=viewport.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
  viewport.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;pointers.set(e.pointerId,point(e));drag={id:e.pointerId,start:point(e),camera:{...camera}};moved=false;pinch=null;if(pointers.size===2){const[a,b]=[...pointers.values()];pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),camera:{...camera},center:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}};}});
