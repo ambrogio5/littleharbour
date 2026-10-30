@@ -138,3 +138,15 @@ main{align-items:start;gap:15px}
  .unified-map,.unified-map.map-fitted{min-height:330px}
 }
 @media(prefers-reduced-motion:reduce){.unified-map .district-track{transition:none!important}}
+
+/* Whole-town view on narrow phones uses the district strip rather than
+   overlapping scaled badges over the same physical map. */
+@media(max-width:740px){
+ .unified-map.world-overview .world-region-label{display:none!important}
+ .unified-map.world-overview .v2-map-context{visibility:visible!important;top:12px!important}
+ .unified-map.world-overview #v2MapPlace{font-size:17px}
+}
+/* Keep map sheet, page and fixed footer from manufacturing horizontal scroll. */
+html,body{max-width:100%;overflow-x:clip}
+.management #panel button,.management #panel a{max-width:100%;overflow-wrap:anywhere}
+.v3-zone-nav{overscroll-behavior-x:contain}
