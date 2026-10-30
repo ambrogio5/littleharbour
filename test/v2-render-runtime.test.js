@@ -8,10 +8,10 @@ test('V2 rendering never iterates a single querySelector result',()=>{
  assert.deepEqual(broken,[],'List methods require $$ (querySelectorAll), not $ (querySelector)');
  for(const sel of ["$$('.v2-topnav [data-tab]').forEach","$$('.v2-map-rail button').forEach"])assert(code.includes(sel),sel);
 });
-test('Playtest V2.1 refreshes the root module URL on both mobile routes',()=>{
+test('Playtest V3 refreshes the root module URL on both mobile routes',()=>{
  for(const page of ['index.html','demo.html']){
   const html=readFileSync(new URL('../dist/'+page,import.meta.url),'utf8');
-  assert(html.includes('src="app.js?v=0.17.1"'));
+  assert(html.includes('src="app.js?v=0.18.0"'));
   assert(html.includes('href="v2.css?v=0.17.1"'));
  }
 });
