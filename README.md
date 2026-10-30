@@ -6,7 +6,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-V2-Playtest.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-V3-Playtest.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. Drag the unified map in any direction; pinch or use + / − to zoom. Whole town fits all areas, Home returns to the harbour, and the minimap jumps between districts. On phones, production controls sit below the map. The Back to map button returns to the settlement.
 
@@ -44,7 +44,7 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 - **Mobile-first controls:** compact two-row navigation, horizontal task rail, a large touch map, and existing mobile tab bar. Dark and light themes retain the same V2 composition.
 - **Resources on demand:** immediate top-bar coin/timber/stone/bread status on desktop with a toggle revealing the full interactive inventory. Save storage and the game economy are unchanged.
 - **Downloadable playtest:** after every successful push to main, the GitHub Actions test run offers a standalone HTML artifact, with image data included only once per distinct asset. It is a large offline file, separate from the normal multi-file hosted site.
-- The V2 artwork reuses the existing photographic district files and adds CSS/vector presentation; the large PNG assets remain individual repository files, not new Base64 sources. Browser/device visual acceptance testing is still needed.
+- The earlier V2 artwork reused the existing photographic district files and adds CSS/vector presentation; the large PNG assets remain individual repository files, not new Base64 sources. Browser/device visual acceptance testing is still needed.
 
 ## New in Playtest 16
 
