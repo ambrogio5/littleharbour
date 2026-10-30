@@ -1,6 +1,6 @@
 // One original, continuous SVG landscape shared by every district.
-// Geometry is in world coordinates (2680 x 1840), with no stitched map screenshots.
-export const WORLD_ART_SIZE={width:2680,height:1840};
+// Portrait geography uses shared coordinates and state-driven physical structures.
+export const WORLD_ART_SIZE={width:1800,height:2700};
 const f=n=>Math.round(n*10)/10;
 function rng(seed){let a=seed>>>0;return()=>{a=(1664525*a+1013904223)>>>0;return a/4294967296;};}
 let rand=rng(1373);const rr=(a,b)=>a+(b-a)*rand();
@@ -33,73 +33,44 @@ function lighthouse(x,y){
  return '<g transform="translate('+x+' '+y+')"><ellipse cx="10" cy="29" rx="58" ry="25" fill="#0f3036" opacity=".25"/><path d="M-19 21L-10 -79H10L21 21Z" fill="#ebdfc7" stroke="#978e80" stroke-width="3"/><path d="M-14 -38H14L17 -27H-17Z" fill="#a85b45"/><path d="M-21 -78H21V-65H-21Z" fill="#d1c4a6"/><path d="M-23 -89L0 -104 23 -89Z" fill="#b86b4b"/><path d="M-12 -91H13V-78H-12Z" fill="#ffda9c"/><path d="M-10 -92V-77M11 -92V-77" stroke="#675845" stroke-width="4"/><path d="M-5 -5v26h13V-5Z" fill="#587271"/><rect x="-9" y="-53" width="16" height="24" rx="5" fill="#6d8a82"/></g>';
 }
 export function createWorldArt(){
- rand=rng(1373); // same landscape every reload and in every test
- let svg='<svg id="newWorldArt" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2680 1840" preserveAspectRatio="xMidYMid meet" aria-hidden="true">';
- svg+='<defs><linearGradient id="sea" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#4d7b81"/><stop offset=".55" stop-color="#2d6876"/><stop offset="1" stop-color="#174859"/></linearGradient><linearGradient id="land" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#8f9b83"/><stop offset=".43" stop-color="#8e9a76"/><stop offset="1" stop-color="#b2a18b"/></linearGradient><linearGradient id="hills" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#5a7c5b"/><stop offset="1" stop-color="#a6a06f"/></linearGradient><linearGradient id="shallow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68b8a7" stop-opacity=".8"/><stop offset="1" stop-color="#58b6b2" stop-opacity="0"/></linearGradient><radialGradient id="meadow"><stop stop-color="#b5af70"/><stop offset="1" stop-color="#b3a268"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="13"/></filter><linearGradient id="cliff" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#c7c4ae"/><stop offset=".42" stop-color="#a0a49a"/><stop offset="1" stop-color="#777f7e"/></linearGradient><pattern id="paper" width="72" height="68" patternUnits="userSpaceOnUse"><path d="M4 17l14 -6M38 42l8 -3M23 57l7 -1" stroke="#f0e4cd" stroke-width="1" opacity=".35"/><circle cx="17" cy="39" r="1.2" fill="#ede1cb" opacity=".4"/></pattern><filter id="pigment" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".17" numOctaves="2" seed="14" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".10"/></feComponentTransfer></filter></defs>';
- svg+='<path fill="url(#sea)" d="M0 0H2680V1840H0Z"/>';
- // Variegated water bands and waves, without duplicated or stitched image tiles.
- for(let i=0;i<68;i++){const x=rr(60,2690),y=rr(550,1820),a=rr(12,45);svg+='<path d="M'+f(x)+' '+f(y)+'q'+f(a)+' -9 '+f(a*2)+' -2" fill="none" stroke="'+(i%4?'#9dd4c9':'#f4e1be')+'" opacity="'+f(rr(.06,.17))+'" stroke-width="'+f(rr(1.4,3.6))+'"/>';}
- const coast='M-80 -60H2180Q2350 120 2260 300Q2430 480 2240 630Q2350 850 2090 1020Q2010 1120 1890 1100Q1820 1270 1650 1230Q1480 1150 1300 1280Q1190 1440 990 1360Q620 1480 360 1390L-80 1470Z';
- svg+='<path d="'+coast+'" fill="#061f2d" opacity=".27" transform="translate(34 47)" filter="url(#shadow)"/>';
- svg+='<path d="'+coast+'" fill="#d6d0bd" stroke="#b4cfb1" stroke-width="26" opacity=".9"/>';
- svg+='<path d="'+coast+'" fill="url(#land)" stroke="#e2dac9" stroke-width="9"/>';
- svg+='<path d="'+coast+'" fill="url(#paper)" opacity=".56"/>';
- svg+='<path d="'+coast+'" fill="#c4bba4" filter="url(#pigment)" opacity=".18"/>';
- for(let i=0;i<24;i++){const x=f(rr(120,1850)),y=f(rr(160,1100)),w=f(rr(90,220));svg+='<path d="M'+x+' '+y+'q'+f(w/2)+' -18 '+w+' 9" fill="none" stroke="#d8d6bd" stroke-width="'+f(rr(2,5))+'" opacity=".17"/>';}
-
- svg+='<path d="M1690 1190Q1920 1220 1960 1100T2180 790L2260 650Q2230 910 2050 1160T1620 1290Z" fill="url(#shallow)"/>';
- svg+='<path d="M-60 -20Q750 140 1330 95T2220 60L2050 190Q1690 310 1180 225T-80 250Z" fill="#527653" opacity=".50"/>';
- svg+='<path d="M-40 75Q610 205 1050 270T2090 175L2130 305Q1560 465 1260 395T-80 420Z" fill="url(#hills)" opacity=".5"/>';
- svg+='<path d="M-40 590Q350 340 800 520Q1100 650 1390 540T2220 440L2180 690Q1840 880 1430 730T650 740L-40 920Z" fill="#708c5d" opacity=".37"/>';
- // Hills, terraces and fields. Strong paths share the same horizon/perspective.
- svg+='<path d="M175 492Q480 260 1080 310Q1390 330 1570 560" stroke="#ded2a8" stroke-width="37" fill="none" opacity=".6"/>';
- svg+='<path d="M80 690Q490 700 810 820T1510 920Q1700 960 1830 1100" stroke="#5a6a50" stroke-width="31" fill="none" opacity=".53"/>';
- svg+='<path d="M80 690Q490 700 810 820T1510 920Q1700 960 1830 1100" stroke="#d9c7a0" stroke-width="19" fill="none"/>';
- svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#755f48" stroke-width="31" fill="none" opacity=".55"/>';
- svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#e1ca9f" stroke-width="20" fill="none"/>';
- svg+='<path d="M580 370Q700 200 950 285L1170 480Q940 620 670 535Z" fill="#aeae65" stroke="#d6c78e" stroke-width="10"/>';
- svg+='<path d="M561 431Q607 351 742 334Q931 306 1043 408Q1062 460 970 514Q781 564 633 508Z" fill="url(#meadow)" stroke="#d3ba85" stroke-width="8"/>';
- for(let j=0;j<13;j++){const y=353+j*12;svg+='<path d="M'+f(616+j%3*7)+' '+y+'Q795 '+(y-37)+' '+f(990-j%4*12)+' '+f(y+36)+'" fill="none" stroke="'+(j%2?'#c7ad74':'#e6ce96')+'" stroke-width="6" opacity=".74"/>';}
- // Vineyards north-east.
- svg+='<path d="M1170 340Q1350 250 1590 365L1750 505Q1520 605 1220 500Z" fill="#8d9553" stroke="#c1bc7b" stroke-width="9"/>';
- for(let i=0;i<13;i++){svg+='<path d="M'+(1210+i*27)+' '+(338-i*2)+'q155 102 195 157" stroke="'+(i%2?'#4d6a42':'#667a45')+'" stroke-width="9" opacity=".88" fill="none"/>';}
- // Quarry and stone ridge, all integrated into the same terrain.
- svg+='<path d="M1470 360Q1550 155 1780 160Q1960 205 2030 410L1870 515 1590 460Z" fill="#8f9480" opacity=".88"/>';
- svg+='<path d="M1450 350Q1510 251 1608 220L1693 177 1791 185Q1917 248 1970 313L2010 399 1842 453 1695 380 1520 446Z" fill="url(#cliff)" stroke="#d4cbb4" stroke-width="6"/>';
- svg+='<path d="M1600 210 1730 310 1770 165 1930 290 1810 450 1700 365Z" fill="#7d8274" opacity=".82"/>';
- for(let i=0;i<25;i++)svg+=rock(rr(1500,1940),rr(210,460),rr(.35,.83));
- // Forrest and planted tree clusters: no separate rendered district rectangles.
- for(let i=0;i<115;i++){const x=rr(80,580),y=rr(100,650);svg+=tree(x,y,rr(.65,1.75),i);}
- for(let i=0;i<75;i++){let x=rr(500,2060),y=rr(70,1020);if(x>1460&&x<2000&&y<500)continue;svg+=tree(x,y,rr(.65,1.3),i+1);}
- // Urban hamlets in coherent compact neighbourhoods and the market district.
- for(let i=0;i<58;i++){let x=rr(420,1140),y=rr(775,1150);if((x-700)**2/190000+(y-920)**2/59000<.13)continue;svg+=house(x,y,rr(.63,1.35),i);}
- for(let i=0;i<28;i++)svg+=house(rr(1200,1810),rr(660,965),rr(.65,1.35),i+2);
- for(let i=0;i<22;i++)svg+=house(rr(800,1410),rr(1130,1350),rr(.65,1.25),i+1);
- // Civic garden and central street piazza.
- svg+='<ellipse cx="670" cy="952" rx="138" ry="80" fill="#d4c49b" stroke="#eee2b9" stroke-width="10"/><ellipse cx="670" cy="952" rx="73" ry="44" fill="#7c9c65" stroke="#f5e2b8" stroke-width="5"/>';
- svg+='<path d="M635 956q35 -42 68 0q-33 36 -68 0" fill="#5da6a1" stroke="#e9e3cc" stroke-width="6"/>';
- for(let i=0;i<16;i++)svg+=tree(560+rr(0,220),870+rr(0,166),rr(.48,.95),i+1);
- // Market square and coastal arcades.
- svg+='<path d="M1325 850 1650 774 1790 897 1463 1008Z" fill="#d9c7a3" stroke="#eee0b9" stroke-width="11"/>';
- for(let i=0;i<9;i++)svg+=stall(1395+(i%3)*116,850+Math.floor(i/3)*53,i);
- // Coastal rock ledges and integrated bay forms.
- svg+='<path d="M215 1270Q420 1150 650 1310L1050 1440Q650 1590 350 1460Z" fill="#a4a78c" stroke="#e7d8b5" stroke-width="13"/>';
- for(let i=0;i<25;i++)svg+=rock(rr(155,810),rr(1320,1480),rr(.5,1.35));
- // Grand harbour and ferry wharves, openly connected via shared water.
- svg+=pier(1015,1420,375)+pier(1210,1530,300)+pier(1760,1330,370);
- for(let i=0;i<12;i++)svg+=rock(rr(1650,2130),rr(1150,1390),rr(.5,1.3));
- svg+=lighthouse(1940,1275);
- for(let i=0;i<9;i++)svg+=house(rr(1720,2000),rr(1160,1320),rr(.57,1.08),i);
- // Offshore island and its small village.
- svg+='<path d="M2120 1468Q2300 1372 2520 1487L2635 1700Q2505 1820 2290 1760L2080 1640Z" fill="#17576a" opacity=".45" transform="translate(14 27)"/>';
- svg+='<path d="M2120 1468Q2300 1372 2520 1487L2635 1700Q2505 1820 2290 1760L2080 1640Z" fill="#b5b18b" stroke="#e5d9b4" stroke-width="13"/>';
- svg+='<path d="M2170 1510Q2370 1450 2510 1520L2570 1680Q2470 1740 2300 1680Z" fill="#7b9b64"/>';
- for(let i=0;i<25;i++)svg+=tree(rr(2170,2520),rr(1490,1690),rr(.55,1.16),i);
- for(let i=0;i<9;i++)svg+=house(rr(2230,2490),rr(1540,1690),rr(.72,1.06),i);
- svg+=pier(2140,1600,130);
- // Boats, fishing and sea routes.
- for(const [x,y,s] of [[1400,1470,1.1],[1130,1680,.85],[1630,1520,.78],[2060,1440,.9],[2250,1790,.67]])svg+=boat(x,y,s);
- svg+='<path d="M1320 1580Q1610 1720 1930 1430T2280 1580" stroke="#e1eacb" opacity=".55" stroke-width="6" stroke-dasharray="16 21" fill="none"/>';
- svg+='</svg>';
+ rand=rng(1373);
+ let svg='<svg id="newWorldArt" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 2700" aria-hidden="true"><defs><linearGradient id="sea" x2="1" y2="1"><stop stop-color="#7caeae"/><stop offset="1" stop-color="#275e71"/></linearGradient><linearGradient id="land" x2=".4" y2="1"><stop stop-color="#a7b28d"/><stop offset="1" stop-color="#c8bb95"/></linearGradient><pattern id="worldGrain" width="42" height="38" patternUnits="userSpaceOnUse"><path d="M4 7l9 -2m19 20 5 -2" stroke="#f5edda" opacity=".16"/></pattern></defs>';
+ svg+='<path d="M0 0H1800V2700H0Z" fill="url(#sea)"/>';
+ const shore='M0 0H1650Q1520 230 1640 470Q1730 700 1590 900Q1760 1150 1640 1460Q1530 1590 1580 1730L1410 1850Q1370 2020 1150 2110L1030 2330Q850 2440 700 2230L430 2190Q140 2130 0 2270Z';
+ svg+='<path d="'+shore+'" fill="#8ac2b2" stroke="#8ac2b2" stroke-width="90"/><path d="'+shore+'" fill="url(#land)" stroke="#e5d7b4" stroke-width="24"/>';
+ svg+='<path d="M30 60Q720 -140 1440 160L1310 340Q800 200 90 350Z" fill="#708b70"/><path d="M0 390Q350 230 710 370T1510 490L1530 650Q860 530 60 640Z" fill="#8f9e78" opacity=".6"/>';
+ for(let i=0;i<8;i++)svg+='<path d="M80 '+(120+i*28)+'Q490 '+(i*24)+' 1370 '+(250+i*20)+'" stroke="#d3ccb0" stroke-width="3" opacity=".25" fill="none"/>';
+ // One winding road joins the hillside, civic plots, market and working quay.
+ const road='M590 390Q1350 560 1160 850T550 1140Q560 1400 1160 1440Q1350 1620 1000 1870L870 2080';
+ svg+='<path d="'+road+'" stroke="#8f8b70" stroke-width="46" fill="none"/><path d="'+road+'" stroke="#e5d8b8" stroke-width="32" fill="none"/>';
+ svg+='<path d="M1000 1870Q1300 1680 1450 1920L1450 2270M560 1400 360 1520" stroke="#dfcba3" stroke-width="19" fill="none"/>';
+ // Trees remain scenery; every gameplay structure is rendered from state below.
+ for(let i=0;i<210;i++){let x=rr(45,1450),y=rr(70,1650);if(x>280&&x<1250&&y>310&&y<1530)continue;svg+=tree(x,y,rr(.65,1.3),i);}
+ for(let i=0;i<95;i++)svg+=tree(rr(20,250),rr(150,1950),rr(.7,1.4),i);
+ for(let i=0;i<20;i++)svg+=rock(rr(1300,1590),rr(1580,1790),rr(.6,1.1));
+ for(let i=0;i<55;i++){const x=rr(80,1750),y=rr(2340,2670);svg+='<path d="M'+f(x)+' '+f(y)+'q22 -8 46 0" stroke="#dbebdb" stroke-width="2" fill="none" opacity=".25"/>';}
+ svg+='<path d="M0 0H1800V2700H0Z" fill="url(#worldGrain)"/><g id="worldBuildings"></g></svg>';
  return svg;
+}
+
+export function renderWorldBuildings(entities){
+ return entities.map(e=>{
+  let art='';
+  if(e.stage==='unbuilt')art='<path d="M-65 0 0 -34 65 0 0 34Z" fill="#aea789" fill-opacity=".3" stroke="#e4d5af" stroke-width="3" stroke-dasharray="9 7"/>';
+  else if(e.stage==='building')art='<path d="M-65 10 0 -24 65 10 0 42Z" fill="#b9aa86"/><path d="M-48 5v-64M42 8v-65M-48 -44 42 -44M-48 -20 42 -20M-48 2 42 -44M-48 -44 42 2" fill="none" stroke="#816a4e" stroke-width="7"/>'+ (e.level?house(0,20,.7,1):'');
+  else if(['field','garden','orchard','olive','flaxgarden'].includes(e.kind)){
+   art='<path d="M-100 -30 40 -80 110 20 -30 70Z" fill="'+(e.ripe?'#d7ba6d':'#849762')+'" stroke="#ded0a3" stroke-width="5"/>';
+   for(let i=0;i<5;i++)art+='<path d="M'+(-65+i*25)+' '+(-15-i*9)+'l75 65" stroke="#e3ce8c" stroke-width="5"/>';
+   if(['orchard','olive'].includes(e.kind))for(let i=0;i<4;i++)art+=tree(-50+i*30,10-i%2*25,.7,i+1);
+  }
+  else if(e.kind==='lighthouse')art=e.level===3?lighthouse(0,0):house(0,0,e.level===2?1.4:.9,0);
+  else if(['pier','fishing','ferry','waterfront'].includes(e.kind)){
+   art=pier(-70,10,90+e.level*45);
+   if(e.level>1||e.kind==='fishing')art+=house(-40,-35,1+e.level*.15,1);
+   if(e.level===3)art+=stall(25,-28,0)+stall(90,-10,1);
+  }
+  else if(e.kind==='market'||e.kind==='square')art=stall(-20,0,0)+stall(40,35,1);
+  else art=house(0,0,1.2+Math.min(e.level,3)*.25,e.kind==='bakery'?2:1);
+  return '<g data-world-building="'+e.id+'" data-stage="'+e.stage+'" data-level="'+e.level+'" transform="translate('+e.x+' '+e.y+')"><title>'+e.label+' · '+e.stage+'</title>'+art+'</g>';
+ }).join('');
 }

@@ -1,3 +1,4 @@
+import {worldEntities} from './world-model.js';
 import {renderMarkup} from './ui-renderer.js';
 import {currentObjective} from './progression.js';
 import {createSaveStore} from './save-store.js';
@@ -216,7 +217,7 @@ function focusMap(key){showDistrict(['flaxgarden','carpenter','weaver','sailmake
 function townFocusPanel(){return `<div class="panel-eyebrow">YOUR TOWN, YOUR PRIORITIES</div><h2>What kind of place will this become?</h2><p class="description">One direction is active at a time. Your first choice is free after the quay is complete. Changing it costs 100 coins. Buildings, supplies and specialist paths remain yours.</p>${Object.entries(TOWN_FOCUSES).map(([key,f])=>{const active=state.townFocus===key,reason=townFocusBlocker(state,key);return `<article class="town-focus-card ${active?'active':''}"><span class="panel-eyebrow">${active?'ACTIVE DIRECTION':'DEVELOPMENT CHOICE'}</span><h3>${f.name}</h3><p><strong>${f.benefit}</strong></p><p>${f.description}</p><button class="button ${active?'secondary':''}" data-action="town-focus" data-key="${key}" ${reason?'disabled':''}>${active?'Active':state.townFocus?'Switch · 100 coins':'Choose this direction · free'}</button>${reason&&!active?`<p class="hint">${reason}</p>`:''}</article>`;}).join('')}<p class="hint">These bonuses apply to future deliveries only. Fleet cargo and passenger fares keep their listed rewards.</p>`;}
 function updateWorld(){
  if(!worldMap)return;
- worldMap.update({harbour:'',market:state.waterfront.stage===3?'':'Unlock: restore the waterfront',inland:inlandEligible(state)?'':'Unlock: supply a market shop 3 times',coast:fleetEligible(state)?'':'Unlock: complete your first inland shipment',neighbourhood:neighbourhoodEligible(state)?'':'Unlock: visit one coast destination 3 times'});
+ worldMap.update({harbour:'',market:state.waterfront.stage===3?'':'Unlock: restore the waterfront',inland:inlandEligible(state)?'':'Unlock: supply a market shop 3 times',coast:fleetEligible(state)?'':'Unlock: complete your first inland shipment',neighbourhood:neighbourhoodEligible(state)?'':'Unlock: visit one coast destination 3 times'},state);
  renderMarkup($('#townTasks'),townTaskView(state));$('#townDirection').textContent=state.townFocus?TOWN_FOCUSES[state.townFocus].name+' · Change':'Choose town direction';
  $$('.map-pin').forEach(pin=>{const st=pin.dataset.select||pin.dataset.station;pin.dataset.worldStatus=st==='field'&&state.ripe?'ready':st&&state.jobs.some(j=>RECIPES[j.key].station===st)?'working':'';});
  const o=order(state);if(!o.locked&&canAfford(state,o.cost,'trade:'+o.id))$('.harbour-pin').dataset.worldStatus='ready';
@@ -316,6 +317,12 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
  if(b.dataset.station){if(b.dataset.station==='kitchen'||tab==='planning')rememberReturn(tab==='planning'?planningGoal:null);if($('#dialog').open)$('#dialog').close();choose('produce',b.dataset.station,true);return;}
  if(b.dataset.select){const s=b.dataset.select;choose(['trade','build','waterfront','market','inland'].includes(s)?s:'produce',!['trade','build','waterfront','market','inland'].includes(s)?s:null,true);return;}
  const a=b.dataset.action;let success=false;
+ if(a==='world-site'){
+  const site=worldEntities(state).find(x=>x.id===b.dataset.key);if(!site)return;
+  if(site.plot!==undefined){neighbourhoodUI.plot=site.plot;neighbourhoodUI.section='overview';choose('neighbourhood',null,true);return;}
+  if(site.id==='lighthouse')fleetSection='lighthouse';
+  choose(site.tab||'build',null,true);return;
+ }
  if(a==='v2-inventory'){const showing=document.body.classList.toggle('v2-show-resources');b.setAttribute('aria-pressed',String(showing));b.setAttribute('aria-label',showing?'Hide all resources':'Show all resources');b.textContent=showing?'−':'＋';return;}
  if(a==='v2-filter'){if(!['all','ready','areas'].includes(b.dataset.key))return;v2MapFilter=b.dataset.key;$$('.v2-map-rail button').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.key===v2MapFilter)));render();return;}
  if(a==='v2-tasks-more'){choose('map',null,true);return;}

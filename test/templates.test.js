@@ -1,3 +1,4 @@
+import {worldEntities} from '../dist/world-model.js';
 import {renderMarkup} from '../dist/ui-renderer.js';
 import {currentObjective} from '../dist/progression.js';
 import {createSaveStore} from '../dist/save-store.js';
@@ -22,7 +23,7 @@ import * as districts from '../dist/districts.js';
 // Test text templates independently of browser rendering. This catches missing
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
-const context=vm.createContext({renderMarkup,currentObjective,createSaveStore,...worldGuide,...ferryUI,...ferryArt,...projectPlanning,...projectUI,...engine,...districts,...planning,...inlandMap,...neighbourhoodUIViews,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
+const context=vm.createContext({worldEntities,renderMarkup,currentObjective,createSaveStore,...worldGuide,...ferryUI,...ferryArt,...projectPlanning,...projectUI,...engine,...districts,...planning,...inlandMap,...neighbourhoodUIViews,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
 vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,fleetModes,fleetCircuits,neighbourhoodUI,return:returnPanel()};}',context);
 vm.runInContext('function ledgerSnapshot(s,query,presets=[null,null,null]){state=s;station="ledger";ledgerQuery=query;targetPresets=presets;return production();}',context);
 vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetModes=["single","single"];fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);

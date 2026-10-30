@@ -839,3 +839,16 @@ html,body{max-width:100%;overflow-x:clip}
  .management .back-to-map{width:44px!important;height:44px!important}
  .current-objective strong{font-size:13px;line-height:1.35}
 }
+
+/* Portrait state-driven world. Interaction targets stay at least 44 screen pixels. */
+.unified-map .district-track,.unified-map.map-fitted .district-track{height:2700px}
+.world-minimap{aspect-ratio:1800/2700!important;width:82px!important;max-height:150px}
+.unified-map #marketSites,.unified-map #inlandSites,.unified-map #coastSites,.unified-map #neighbourhoodSites,.unified-map #marketRoadGate,.unified-map #inlandRoadWorks,.unified-map #marketRoadWorks{display:none!important}
+.world-entity-hotspots{position:absolute;inset:0;z-index:8;pointer-events:none}
+.world-entity-button{position:absolute;transform:translate(-50%,-50%) scale(var(--map-label-scale));transform-origin:center;min-height:44px;min-width:70px;max-width:145px;padding:6px 10px;border:1px solid #b6ac89;border-radius:8px;background:#f6eedbdc;color:#23484c;font:600 11px system-ui;pointer-events:auto;box-shadow:0 2px 8px #183c3d25;touch-action:manipulation}
+.world-entity-button small{display:block;font:10px system-ui;margin-top:3px;color:#68746a}
+.world-entity-button:not(.active-zone),.world-overview .world-entity-hotspots{visibility:hidden;pointer-events:none}
+.unified-map .world-hotspot{min-height:44px!important}
+@media(max-width:740px){.world-minimap{display:none!important}.unified-map .world-hotspot{max-width:132px!important;font-size:10px!important}.world-entity-button{font-size:10px;max-width:112px}.world-entity-button small{font-size:9px}}
+
+.unified-map .v2-map-context{display:none!important}
