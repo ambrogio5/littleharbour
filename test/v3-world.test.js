@@ -24,14 +24,18 @@ test('The playable pages include a direct district selector and mobile game shee
  for(const file of ['index.html','demo.html']){
   const html=readFileSync(new URL('../dist/'+file,import.meta.url),'utf8');
   assert(html.includes('id="v3ZoneNav"'));
-  assert(html.includes('href="v3.css?v=0.18.0"'));
-  assert(html.includes('src="app.js?v=0.18.0"'));
+  assert(html.includes('href="v3.css?v=0.19.0"'));
+  assert(html.includes('src="app.js?v=0.19.0"'));
   for(const key of ['inland','neighbourhood','market','harbour','coast'])assert(html.includes('data-key="'+key+'"'));
  }
  const app=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');
  assert(app.includes("classList.toggle('v3-sheet-open',tab!=='map')"));
  assert(app.includes("worldMap.fit()"));
  const css=readFileSync(new URL('../dist/v3.css',import.meta.url),'utf8');
+ const premium=readFileSync(new URL('../dist/v4.css',import.meta.url),'utf8');
+ assert(premium.includes('map-label-scale'));
+ assert(premium.includes('max-width:740px'));
+ assert(premium.includes('v3-zone-nav'));
  assert(css.includes('background:none!important'));
  assert(css.includes('.world-primary-hotspots'));
  assert(css.includes('body.v3-sheet-open .management'));
