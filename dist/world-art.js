@@ -58,14 +58,14 @@ export function createWorldArt(){
  svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#755f48" stroke-width="31" fill="none" opacity=".55"/>';
  svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#e1ca9f" stroke-width="20" fill="none"/>';
  svg+='<path d="M580 370Q700 200 950 285L1170 480Q940 620 670 535Z" fill="#aeae65" stroke="#d6c78e" stroke-width="10"/>';
- svg+='<ellipse cx="790" cy="443" rx="246" ry="127" fill="url(#meadow)" stroke="#d9bc79" stroke-width="10"/>';
- for(let j=0;j<15;j++){const y=360+j*11;svg+='<path d="M'+f(590+j%4*9)+' '+y+'Q775 '+(y-53)+' '+f(985-j%3*8)+' '+(y+22)+'" fill="none" stroke="'+(j%2?'#e3be6f':'#eacb7e')+'" stroke-width="8" opacity=".84"/>';}
+ svg+='<path d="M561 431Q607 351 742 334Q931 306 1043 408Q1062 460 970 514Q781 564 633 508Z" fill="url(#meadow)" stroke="#d3ba85" stroke-width="8"/>';
+ for(let j=0;j<13;j++){const y=353+j*12;svg+='<path d="M'+f(616+j%3*7)+' '+y+'Q795 '+(y-37)+' '+f(990-j%4*12)+' '+f(y+36)+'" fill="none" stroke="'+(j%2?'#c7ad74':'#e6ce96')+'" stroke-width="6" opacity=".74"/>';}
  // Vineyards north-east.
  svg+='<path d="M1170 340Q1350 250 1590 365L1750 505Q1520 605 1220 500Z" fill="#8d9553" stroke="#c1bc7b" stroke-width="9"/>';
  for(let i=0;i<13;i++){svg+='<path d="M'+(1210+i*27)+' '+(338-i*2)+'q155 102 195 157" stroke="'+(i%2?'#4d6a42':'#667a45')+'" stroke-width="9" opacity=".88" fill="none"/>';}
  // Quarry and stone ridge, all integrated into the same terrain.
  svg+='<path d="M1470 360Q1550 155 1780 160Q1960 205 2030 410L1870 515 1590 460Z" fill="#8f9480" opacity=".88"/>';
- svg+='<path d="M1460 340L1600 210 1770 165 1930 290 2020 405 1810 450 1700 365 1520 460Z" fill="#b8b09d"/>';
+ svg+='<path d="M1450 350Q1510 251 1608 220L1693 177 1791 185Q1917 248 1970 313L2010 399 1842 453 1695 380 1520 446Z" fill="url(#cliff)" stroke="#d4cbb4" stroke-width="6"/>';
  svg+='<path d="M1600 210 1730 310 1770 165 1930 290 1810 450 1700 365Z" fill="#7d8274" opacity=".82"/>';
  for(let i=0;i<25;i++)svg+=rock(rr(1500,1940),rr(210,460),rr(.35,.83));
  // Forrest and planted tree clusters: no separate rendered district rectangles.
