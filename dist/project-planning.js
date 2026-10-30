@@ -1,4 +1,4 @@
-import {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start} from './engine.js';
+import {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start} from './engine.js?v=0.20.1';
 
 const itemName=item=>item==='coins'?'Coins':ITEMS[item]||item;
 const queuedStock=s=>s.jobs.reduce((pool,j)=>{for(const [item,n]of Object.entries(RECIPES[j.key].output))pool[item]=(pool[item]||0)+n;return pool;},{});

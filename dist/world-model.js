@@ -1,4 +1,4 @@
-import {underConstruction,neighbourhoodReady,residentsComplete} from './engine.js';
+import {underConstruction,neighbourhoodReady,residentsComplete} from './engine.js?v=0.20.1';
 
 export const WORLD_LAYOUT={
  size:{w:1800,h:2700},

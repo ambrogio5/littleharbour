@@ -32,7 +32,7 @@ const uiRendererBundle=fs.readFileSync(path.join(root,'dist/ui-renderer.js'),'ut
 const progressionBundle=fs.readFileSync(path.join(root,'dist/progression.js'),'utf8').replace(/^import .*\n/gm,'').replace(/^export /gm,'');
 const app=fs.readFileSync(path.join(root,'dist/app.js'),'utf8').replace(/^import .*\n/gm,'');
 html=html.replace(/<link rel="stylesheet" href="game\.css(?:\?v=[^"]+)?">/,()=>'<style>'+css+'</style>');
-html=html.replace('<script src="theme.js"></script>',()=>'<script>'+theme+'</script>');
+html=html.replace(/<script src="theme\.js(?:\?v=[^"]+)?"><\/script>/,()=>'<script>'+theme+'</script>');
 html=html.replace(/<script type="module" src="app\.js(?:\?v=[^"]+)?"><\/script>/,()=>'<script>'+catalog+'\n'+engine+'\n'+scene+'\n'+districts+'\n'+inlandMap+'\n'+coastMap+'\n'+boatArt+'\n'+fleetUI+'\n'+ferryArt+'\n'+coastView+'\n'+demo+'\n'+planning+'\n'+neighbourhoodUIBundle+'\n'+projectPlanning+'\n'+projectUI+'\n'+ferryUI+'\n'+worldModelBundle+'\n'+worldArt+'\n'+worldMap+'\n'+worldGuide+'\n'+progressionBundle+'\n'+v2UI+'\n'+uiRendererBundle+'\n'+saveStoreBundle+'\n'+app+'</script>');
 if(/(?:src|href)="https?:\/\//.test(html)||/@import/.test(html))throw new Error('External assets must not be present.');
 fs.writeFileSync(destination,html);

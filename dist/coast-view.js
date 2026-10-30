@@ -1,7 +1,7 @@
-import {FERRY_ART_STAGES} from './ferry-art.js';
-import {FLEET_BOATS,FLEET_ROUTES,LIGHTHOUSE_STAGES,berthCount} from './engine.js';
-import {COAST_PROJECT_CLIPS,COAST_BERTHS,COAST_DESTINATIONS,COAST_BERTH_ROUTES,LIGHTHOUSE_PLOT} from './coast-map.js';
-import {fleetHull} from './fleet-ui.js';
+import {FERRY_ART_STAGES} from './ferry-art.js?v=0.20.1';
+import {FLEET_BOATS,FLEET_ROUTES,LIGHTHOUSE_STAGES,berthCount} from './engine.js?v=0.20.1';
+import {COAST_PROJECT_CLIPS,COAST_BERTHS,COAST_DESTINATIONS,COAST_BERTH_ROUTES,LIGHTHOUSE_PLOT} from './coast-map.js?v=0.20.1';
+import {fleetHull} from './fleet-ui.js?v=0.20.1';
 
 // Interpolate by path length so ships keep a steady apparent speed.
 export function coastPosition(points,fraction){

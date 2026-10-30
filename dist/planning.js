@@ -1,4 +1,4 @@
-import {RECIPES,ITEMS,available,reserved,incoming,unlocked,capacity,setTarget} from './engine.js';
+import {RECIPES,ITEMS,available,reserved,incoming,unlocked,capacity,setTarget} from './engine.js?v=0.20.1';
 
 // Pure explanations use the same stock and queue rules as production.
 export function productionStatus(s,key){

@@ -1,5 +1,5 @@
-import {currentObjective} from './progression.js';
-import {order,canAfford,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,fleetEligible,inlandEligible,openingGuide,neighbourhoodGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide} from './engine.js';
+import {currentObjective} from './progression.js?v=0.20.1';
+import {order,canAfford,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,fleetEligible,inlandEligible,openingGuide,neighbourhoodGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide} from './engine.js?v=0.20.1';
 
 export const V2_SECTIONS=Object.freeze([
  {id:'map',label:'Map',icon:'⌖'},

@@ -1,4 +1,4 @@
-import {parseSave} from './engine.js';
+import {parseSave} from './engine.js?v=0.20.1';
 
 // Storage is injected so quota errors, private browsing and competing tabs are testable.
 // No failed read or parse ever authorizes a write to the player's slot.

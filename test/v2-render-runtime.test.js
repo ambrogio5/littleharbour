@@ -11,7 +11,7 @@ test('V2 rendering never iterates a single querySelector result',()=>{
 test('Playtest V3 refreshes the root module URL on both mobile routes',()=>{
  for(const page of ['index.html','demo.html']){
   const html=readFileSync(new URL('../dist/'+page,import.meta.url),'utf8');
-  assert(html.includes('src="app.js?v=0.20.0"'));
-  assert(html.includes('href="game.css?v=0.20.0"'));
+  assert(html.includes('src="app.js?v=0.20.1"'));
+  assert(html.includes('href="game.css?v=0.20.1"'));
  }
 });

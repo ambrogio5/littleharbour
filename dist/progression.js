@@ -1,4 +1,4 @@
-import {openingGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide,neighbourhoodGuide,ferryGuide,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,underConstruction} from './engine.js';
+import {openingGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide,neighbourhoodGuide,ferryGuide,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,underConstruction} from './engine.js?v=0.20.1';
 
 export const CHAPTERS=['A working harbour','A town of your own','From hillside to market','A living coast','Connect the harbour'];
 // One source for the persistent objective, overview and next-action routing.

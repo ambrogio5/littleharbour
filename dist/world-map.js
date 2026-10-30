@@ -1,5 +1,5 @@
-import {WORLD_LAYOUT,worldEntities} from './world-model.js';
-import {createWorldArt,renderWorldBuildings} from './world-art.js';
+import {WORLD_LAYOUT,worldEntities} from './world-model.js?v=0.20.1';
+import {createWorldArt,renderWorldBuildings} from './world-art.js?v=0.20.1';
 // One persistent camera and one illustrated world. Locations use world pixels.
 export const WORLD_REGIONS=WORLD_LAYOUT.regions;
 export const WORLD_SIZE=WORLD_LAYOUT.size;
