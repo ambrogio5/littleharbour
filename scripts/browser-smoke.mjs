@@ -32,9 +32,20 @@ try{
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null,{timeout:20000});
   if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
   assert((await page.locator('#v2TaskCards .v2-task-card').count())>=1,'task cards must render');
+  assert.equal(await page.locator('#newWorldArt').count(),1,'One continuous illustrated world must exist');
+  assert.equal(await page.locator('#map .world-roads').count(),0,'Old stitched-road overlay must be gone');
+  assert.equal(await page.locator('#v3ZoneNav [data-action="district"]').count(),5,'District navigation must list five accessible areas');
+  const collageHidden=await page.locator('#harbourStage .map-image').evaluate(el=>getComputedStyle(el).display==='none');
+  assert(collageHidden,'Old photographic map tiles must not render under the single world');
+  await page.locator('#v3ZoneNav [data-key="inland"]').click();
+  assert.equal(await page.locator('#v3ZoneNav [data-key="inland"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   assert((await page.locator('#map .world-camera-tools button').count())>=4,'map camera buttons must exist');
   // Exercise the actual native click event chain and the V2 panel routing.
   await page.locator('.v2-topnav [data-tab="produce"]').click();
+  if(device.isMobile){
+   assert(await page.locator('body').evaluate(el=>el.classList.contains('v3-sheet-open')),'Mobile management sheet opens on selection');
+  }
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Keep the town moving'));
   await page.locator('.v2-topnav [data-tab="trade"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
