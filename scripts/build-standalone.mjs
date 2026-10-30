@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V2-Playtest.html');
+const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V3-Playtest.html');
 const theme=fs.readFileSync(path.join(root,'dist/theme.js'),'utf8');
 let html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
 // Embed each image only once. Earlier standalone builds repeated multi-megabyte
