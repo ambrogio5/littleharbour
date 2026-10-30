@@ -34,14 +34,18 @@ function lighthouse(x,y){
 }
 export function createWorldArt(){
  let svg='<svg id="newWorldArt" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2680 1840" preserveAspectRatio="xMidYMid meet" aria-hidden="true">';
- svg+='<defs><linearGradient id="sea" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#286c76"/><stop offset=".55" stop-color="#155965"/><stop offset="1" stop-color="#083e53"/></linearGradient><linearGradient id="land" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#9ca974"/><stop offset=".43" stop-color="#819660"/><stop offset="1" stop-color="#b2a474"/></linearGradient><linearGradient id="hills" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#5a7c5b"/><stop offset="1" stop-color="#a6a06f"/></linearGradient><linearGradient id="shallow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68b8a7" stop-opacity=".8"/><stop offset="1" stop-color="#58b6b2" stop-opacity="0"/></linearGradient><radialGradient id="meadow"><stop stop-color="#b5af70"/><stop offset="1" stop-color="#b3a268"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="13"/></filter></defs>';
+ svg+='<defs><linearGradient id="sea" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#4d7b81"/><stop offset=".55" stop-color="#2d6876"/><stop offset="1" stop-color="#174859"/></linearGradient><linearGradient id="land" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#8f9b83"/><stop offset=".43" stop-color="#8e9a76"/><stop offset="1" stop-color="#b2a18b"/></linearGradient><linearGradient id="hills" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#5a7c5b"/><stop offset="1" stop-color="#a6a06f"/></linearGradient><linearGradient id="shallow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68b8a7" stop-opacity=".8"/><stop offset="1" stop-color="#58b6b2" stop-opacity="0"/></linearGradient><radialGradient id="meadow"><stop stop-color="#b5af70"/><stop offset="1" stop-color="#b3a268"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="13"/></filter><linearGradient id="cliff" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#c7c4ae"/><stop offset=".42" stop-color="#a0a49a"/><stop offset="1" stop-color="#777f7e"/></linearGradient><pattern id="paper" width="72" height="68" patternUnits="userSpaceOnUse"><path d="M4 17l14 -6M38 42l8 -3M23 57l7 -1" stroke="#f0e4cd" stroke-width="1" opacity=".35"/><circle cx="17" cy="39" r="1.2" fill="#ede1cb" opacity=".4"/></pattern><filter id="pigment" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".17" numOctaves="2" seed="14" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".10"/></feComponentTransfer></filter></defs>';
  svg+='<path fill="url(#sea)" d="M0 0H2680V1840H0Z"/>';
  // Variegated water bands and waves, without duplicated or stitched image tiles.
- for(let i=0;i<105;i++){const x=rr(60,2690),y=rr(550,1820),a=rr(12,45);svg+='<path d="M'+f(x)+' '+f(y)+'q'+f(a)+' -9 '+f(a*2)+' -2" fill="none" stroke="'+(i%4?'#9dd4c9':'#f4e1be')+'" opacity="'+f(rr(.09,.29))+'" stroke-width="'+f(rr(1.4,3.6))+'"/>';}
+ for(let i=0;i<68;i++){const x=rr(60,2690),y=rr(550,1820),a=rr(12,45);svg+='<path d="M'+f(x)+' '+f(y)+'q'+f(a)+' -9 '+f(a*2)+' -2" fill="none" stroke="'+(i%4?'#9dd4c9':'#f4e1be')+'" opacity="'+f(rr(.06,.17))+'" stroke-width="'+f(rr(1.4,3.6))+'"/>';}
  const coast='M-80 -60H2180Q2350 120 2260 300Q2430 480 2240 630Q2350 850 2090 1020Q2010 1120 1890 1100Q1820 1270 1650 1230Q1480 1150 1300 1280Q1190 1440 990 1360Q620 1480 360 1390L-80 1470Z';
  svg+='<path d="'+coast+'" fill="#061f2d" opacity=".27" transform="translate(34 47)" filter="url(#shadow)"/>';
- svg+='<path d="'+coast+'" fill="#d4d6b8" stroke="#b4cfb1" stroke-width="26" opacity=".9"/>';
- svg+='<path d="'+coast+'" fill="url(#land)" stroke="#e8e2bf" stroke-width="9"/>';
+ svg+='<path d="'+coast+'" fill="#d6d0bd" stroke="#b4cfb1" stroke-width="26" opacity=".9"/>';
+ svg+='<path d="'+coast+'" fill="url(#land)" stroke="#e2dac9" stroke-width="9"/>';
+ svg+='<path d="'+coast+'" fill="url(#paper)" opacity=".56"/>';
+ svg+='<path d="'+coast+'" fill="#c4bba4" filter="url(#pigment)" opacity=".18"/>';
+ for(let i=0;i<24;i++){const x=f(rr(120,1850)),y=f(rr(160,1100)),w=f(rr(90,220));svg+='<path d="M'+x+' '+y+'q'+f(w/2)+' -18 '+w+' 9" fill="none" stroke="#d8d6bd" stroke-width="'+f(rr(2,5))+'" opacity=".17"/>';}
+
  svg+='<path d="M1690 1190Q1920 1220 1960 1100T2180 790L2260 650Q2230 910 2050 1160T1620 1290Z" fill="url(#shallow)"/>';
  svg+='<path d="M-60 -20Q750 140 1330 95T2220 60L2050 190Q1690 310 1180 225T-80 250Z" fill="#527653" opacity=".50"/>';
  svg+='<path d="M-40 75Q610 205 1050 270T2090 175L2130 305Q1560 465 1260 395T-80 420Z" fill="url(#hills)" opacity=".5"/>';
@@ -60,12 +64,12 @@ export function createWorldArt(){
  for(let i=0;i<13;i++){svg+='<path d="M'+(1210+i*27)+' '+(338-i*2)+'q155 102 195 157" stroke="'+(i%2?'#4d6a42':'#667a45')+'" stroke-width="9" opacity=".88" fill="none"/>';}
  // Quarry and stone ridge, all integrated into the same terrain.
  svg+='<path d="M1470 360Q1550 155 1780 160Q1960 205 2030 410L1870 515 1590 460Z" fill="#8f9480" opacity=".88"/>';
- svg+='<path d="M1460 340L1600 210 1770 165 1930 290 2020 405 1810 450 1700 365 1520 460Z" fill="#b4ad92"/>';
+ svg+='<path d="M1460 340L1600 210 1770 165 1930 290 2020 405 1810 450 1700 365 1520 460Z" fill="#b8b09d"/>';
  svg+='<path d="M1600 210 1730 310 1770 165 1930 290 1810 450 1700 365Z" fill="#7d8274" opacity=".82"/>';
  for(let i=0;i<25;i++)svg+=rock(rr(1500,1940),rr(210,460),rr(.35,.83));
  // Forrest and planted tree clusters: no separate rendered district rectangles.
- for(let i=0;i<160;i++){const x=rr(80,580),y=rr(100,650);svg+=tree(x,y,rr(.65,1.75),i);}
- for(let i=0;i<93;i++){let x=rr(500,2060),y=rr(70,1020);if(x>1460&&x<2000&&y<500)continue;svg+=tree(x,y,rr(.65,1.3),i+1);}
+ for(let i=0;i<115;i++){const x=rr(80,580),y=rr(100,650);svg+=tree(x,y,rr(.65,1.75),i);}
+ for(let i=0;i<75;i++){let x=rr(500,2060),y=rr(70,1020);if(x>1460&&x<2000&&y<500)continue;svg+=tree(x,y,rr(.65,1.3),i+1);}
  // Urban hamlets in coherent compact neighbourhoods and the market district.
  for(let i=0;i<58;i++){let x=rr(420,1140),y=rr(775,1150);if((x-700)**2/190000+(y-920)**2/59000<.13)continue;svg+=house(x,y,rr(.63,1.35),i);}
  for(let i=0;i<28;i++)svg+=house(rr(1200,1810),rr(660,965),rr(.65,1.35),i+2);
