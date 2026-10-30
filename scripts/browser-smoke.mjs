@@ -53,7 +53,8 @@ try{
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
   await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
-  await page.locator(navigation+'[data-tab="map"]').click();
+  if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();
+  else await page.locator('.v2-topnav [data-tab="map"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
   // Verify map camera and focus controls are actual working buttons.
   await page.locator('#map [data-camera="home"]').click();
