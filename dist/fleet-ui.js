@@ -3,7 +3,7 @@ import {FLEET_BOATS,FLEET_ROUTES,FLEET_UPGRADES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SEC
 import {fleetHull} from './boat-art.js';
 export {fleetHull};
 
-export function fleetEntryView(s){return `<article class="build-card fleet-entry"><div class="panel-eyebrow">CHAPTER 06 · THE WORKING COAST</div><h3>Give your harvest a destination.</h3><p>Buy a boat, develop two coastal partnerships and restore the lighthouse. Your garden supplies voyages; your kiln supplies jars, island roofs and the headland.</p><button class="button" data-action="go-fleet">${fleetEligible(s)?'Manage the coastal fleet':'Preview the coastal fleet'}</button></article>`;}
+export function fleetEntryView(s){return `<article class="build-card fleet-entry"><div class="panel-eyebrow">CHAPTER 04 · THE WORKING COAST</div><h3>Give your harvest a destination.</h3><p>Buy a boat, develop two coastal partnerships and restore the lighthouse. Your garden supplies voyages; your kiln supplies jars, island roofs and the headland.</p><button class="button" data-action="go-fleet">${fleetEligible(s)?'Manage the coastal fleet':'Preview the coastal fleet'}</button></article>`;}
 
 export function lighthouseView(s,{costs,ingredients,goalTools}){
  const l=s.fleet.lighthouse;
@@ -26,7 +26,7 @@ function circuitPlanner(s,slot,stops,view){
 
 export function fleetPanelView(s,ui,view){
  const {costs,ingredients,goalTools}=view,slot=ui.slot===1?1:0,b=s.fleet.boats[slot],selection=ui.selections[slot],section=ui.section,mode=ui.modes?.[slot]||'single',stops=ui.circuits?.[slot]||[{route:'quarry',tier:1},{route:'island',tier:1}];
- let html=`<div class="panel-eyebrow">CHAPTER 06 · THE WORKING COAST</div><h2>A fleet with a purpose.</h2><p class="description">Send your harvest to the coast. Choose materials or earnings, develop partnerships and rebuild the lighthouse.</p><button class="text-button" data-action="district" data-key="coast">Explore the coast →</button>`;
+ let html=`<div class="panel-eyebrow">CHAPTER 04 · THE WORKING COAST</div><h2>A fleet with a purpose.</h2><p class="description">Send your harvest to the coast. Choose materials or earnings, develop partnerships and rebuild the lighthouse.</p><button class="text-button" data-action="district" data-key="coast">Explore the coast →</button>`;
  if(!fleetEligible(s))return html+`<article class="build-card"><h3>First, establish inland trade</h3><p>Complete your first preserves shipment to Valle Serena. Then you can buy a boat and supply the coastal settlements.</p><button class="button" data-action="go-inland">Continue the inland chain</button></article>`;
  html+=`<div class="fleet-navigation" aria-label="Fleet sections">${[['voyages','Boats & cargo'],['destinations','Destinations'],['lighthouse','Lighthouse']].map(([key,label])=>`<button data-action="fleet-view" data-key="${key}" aria-pressed="${section===key}">${label}</button>`).join('')}</div>`;
  if(section==='lighthouse')return html+lighthouseView(s,view);

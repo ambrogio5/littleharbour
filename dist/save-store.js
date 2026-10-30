@@ -17,7 +17,8 @@ export function createSaveStore(storage, key, now = Date.now) {
  }
  function archive(raw) {
   if (raw === null) return;
-  const id = `${key}-backup-${now()}-${sequence++}`;
+  let id;
+  do { id = `${key}-backup-${now()}-${sequence++}`; } while (backend().getItem(id) !== null);
   backend().setItem(id, raw);
   if (backend().getItem(id) !== raw) throw Error('The backup could not be verified. Your original save has been kept.');
  }

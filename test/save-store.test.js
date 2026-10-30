@@ -36,3 +36,9 @@ test('Every supported schema migrates idempotently; future versions fail explici
  for(let version=1;version<=13;version++){const state=parseSave(JSON.stringify({...fresh(),version}));assert.deepEqual(parseSave(JSON.stringify(state)),state);}
  assert.throws(()=>parseSave(JSON.stringify({...fresh(),version:14})),/newer version/);
 });
+
+test('Repeated recovery at the same timestamp cannot replace earlier backups',()=>{
+ const storage=memory('original'),a=createSaveStore(storage,'town',()=>1);a.read();assert(a.replace(fresh()));
+ const current=storage.getItem('town'),b=createSaveStore(storage,'town',()=>1);b.read();assert(b.replace({...fresh(),coins:90}));
+ assert.equal(b.backups().length,2);assert(b.backups().some(x=>x.raw==='original'));assert(b.backups().some(x=>x.raw===current));
+});

@@ -17,8 +17,10 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   assert.equal(scripts.length,2);
   for(const [,code]of scripts)assert.doesNotThrow(()=>new Script(code));
   assert(scripts[1][1].includes('$$=s=>[...document.querySelectorAll(s)]'));
-  assert(html.includes('data:image/png;base64,'));
-  assert(html.includes('--lh-art-'));
+  assert(!html.includes('data:image/png;base64,'),'No retired photographic assets should be embedded');
+  assert(html.length<1000000,'Standalone should stay below one megabyte');
+  assert(html.includes('current-objective'));
+  assert(!html.includes('href="game.css'));
   assert((html.match(/data:image\/png;base64,/g)||[]).length<=30,'Inline image data should be embedded once per asset, never per CSS use');
   assert(html.includes('id="v2TaskCards"'));
   assert(html.includes('v2-task-grid'));

@@ -27,12 +27,12 @@ test('Direction choice is gated, first choice free, switches paid and held coins
  const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.townFocus,'builders');delete s.townFocus;assert.equal(parseSave(JSON.stringify(s)).townFocus,null);s.townFocus='invalid';assert.throws(()=>parseSave(JSON.stringify(s)));
 });
 test('Trade direction previews and pays exact bonus, builders favours material returns',()=>{
- const s=sampleTown(),base=order(s);s.townFocus='trade';const boosted=order(s);assert.equal(boosted.coins,Math.round(base.coins*1.1));for(const[k,n]of Object.entries(boosted.cost))s.stock[k]+=n;const money=s.coins;assert(dispatch(s));assert.equal(s.coins-money,boosted.coins);
- s.townFocus='builders';const material=order(s);assert.equal(material.wood,Math.round(base.wood*1.2));assert.equal(material.stone,Math.round(base.stone*1.2));assert.equal(material.coins,base.coins);
+ const s=sampleTown(),base=order(s);s.townFocus='trade';const boosted=order(s);assert.equal(boosted.coins,Math.round(base.coins*1.35));for(const[k,n]of Object.entries(boosted.cost))s.stock[k]+=n;const money=s.coins;assert(dispatch(s));assert.equal(s.coins-money,boosted.coins);
+ s.townFocus='builders';const material=order(s);assert.equal(material.wood,Math.round(base.wood*1.5));assert.equal(material.stone,Math.round(base.stone*1.5));assert.equal(material.coins,base.coins);
 });
 test('Local life boosts local order previews without changing trade fares or requirements',()=>{
  const s=sampleTown();s.market.access=true;s.market.left=0;s.market.businesses.fishmonger={left:0,demand:3,deliveries:3,replenish:0};
- const m=marketOrder(s,'fishmonger'),n=neighbourhoodOrder(s),o=order(s);s.townFocus='community';assert.equal(marketOrder(s,'fishmonger').coins,Math.round(m.coins*1.2));assert.equal(neighbourhoodOrder(s).reward.coins,Math.round(n.reward.coins*1.2));assert.deepEqual(neighbourhoodOrder(s).cost,n.cost);assert.deepEqual(order(s),o);
+ const m=marketOrder(s,'fishmonger'),n=neighbourhoodOrder(s),o=order(s);s.townFocus='community';assert.equal(marketOrder(s,'fishmonger').coins,Math.round(m.coins*1.5));assert.equal(neighbourhoodOrder(s).reward.coins,Math.round(n.reward.coins*1.5));assert.deepEqual(neighbourhoodOrder(s).cost,n.cost);assert.deepEqual(order(s),o);
 });
 
 test('Camera controller preserves building taps, suppresses drag clicks and supports pinch zoom',async()=>{

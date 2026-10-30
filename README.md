@@ -1,5 +1,14 @@
 # Little Harbour — V4 / Playtest 19
 
+## Roadmap increment · v0.20.0
+
+This version protects unreadable/future saves with exact-byte export and verified device backups, requires passing Node/browser/packaging checks before Pages publication, and uses one runtime stylesheet. Autosave checkpoints are 15 seconds with immediate action and lifecycle flushes; rendering never writes saves.
+
+The interface groups progression into five chapters with one persistent objective. The portrait SVG world reads building state from the simulation: starter food workshops are built; other sites visibly change from empty plots through construction and later levels. Existing unlocks, stock, locations and remaining work are retained. There is no new rendering-library dependency.
+
+The first economy pass reduces post-quay coin rewards, distinguishes Cala Verde's coin yield from Porto Santo's materials, strengthens town focuses, speed refits and civic choices, and differentiates crop processing. This is **not yet a validated 2.5-hour slice**. Content pruning, longer playtests, final economy tuning and finished visual art remain. See [implementation evidence](docs/roadmap-implementation.md) and [browser profile](docs/performance-profile.json).
+
+
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
 ## Start playing
@@ -111,13 +120,13 @@ Resource counters and production recipes now use distinct illustrated SVG icons:
 - The first funding payment fixes the project's supply plan to your chosen boatyard or estate. Switching town direction later preserves paid progress and supply requirements. Ordinary trade and contracts remain available throughout.
 - Total funding is 900 coins, 52 timber and 48 stone. Supply goods are additional and shown before investing. The boatyard's landing supplies intentionally require both planks and fittings, so consuming one to make the other needs planning.
 - Each finished stage reveals its own part of the matching photographic waterfront. Construction crews mark the active site; progress, remaining time and missing-goods shortcuts are available from the map, chapter guide and Build.
-- Completing the arcade unlocks Porto Grande. Bulk shipments return 384 coins (including charter bonus), 22 timber and 12 stone. There is no free recurring reward or new currency.
+- Completing the arcade unlocks Porto Grande. Bulk shipments return 288 coins (including charter bonus), 22 timber and 12 stone. There is no free recurring reward or new currency.
 - Saves migrate from versions 1–5 to version 6. Current inventory, queues and refits are retained. Project funding, deliveries and construction resume without repeat charges; invalid project phases and premature route access are rejected.
 - This adds a bounded post-charter project. A balanced full-length campaign and physical-device testing remain future work.
 
 ## New in Playtest 07
 
-- The mill, bakery and fishing jetty can each be refitted after the first business is built. Choose **25% shorter batch times** or **two extra queue slots** per workshop. The extra slots combine with the storehouse upgrade.
+- The mill, bakery and fishing jetty can each be refitted after the first business is built. Choose **40% shorter batch times** or **two extra queue slots** per workshop. The extra slots combine with the storehouse upgrade.
 - Refits cost ordinary coins, timber and stone. Ingredient costs and output quantities remain unchanged, so the decision competes with expansion funds without introducing a second currency.
 - Workshops must be idle before a refit. Replacing a setup is explicitly confirmed, costs the new setup price, and does not refund the previous setup. Active jobs and waiting ingredients cannot be lost to a capacity reduction.
 - Build contains the comparison cards; individual production panels link straight to their workshop's choices.
@@ -222,7 +231,7 @@ Requires Node.js 20+ for tests and packaging. No application dependencies are re
 - `npm run standalone` — generate the self-contained HTML next to the project folder.
 - Serve `dist/` with a static server where allowed to develop the module version.
 
-`dist/engine.js` owns state and simulation. `dist/app.js` owns interface rendering, events and saving. `dist/style.css` and `dist/index.html` own presentation. `scripts/build-standalone.mjs` packages the same source into the offline deliverable.
+`dist/engine.js` owns state and simulation. `dist/app.js` owns interface rendering, events and saving. `dist/game.css` and `dist/index.html` own presentation. `scripts/build-standalone.mjs` packages the same source into the offline deliverable.
 
 ## Playtest 11: The working coast
 

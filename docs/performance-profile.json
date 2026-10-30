@@ -1,0 +1,25 @@
+{
+  "scenario": "Same established town, every unlocked stock target 12, 3x speed, 390x844 Chromium, 20 seconds, no player input",
+  "results": [
+    {
+      "revision": "cf9fa15",
+      "durationSeconds": 20,
+      "writes": 21,
+      "panelReplacements": 15,
+      "active": true,
+      "pngBytes": 11698085,
+      "documentOverflow": false,
+      "errors": []
+    },
+    {
+      "revision": "working-tree",
+      "durationSeconds": 20,
+      "writes": 1,
+      "panelReplacements": 0,
+      "active": true,
+      "pngBytes": 0,
+      "documentOverflow": false,
+      "errors": []
+    }
+  ]
+}

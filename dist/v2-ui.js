@@ -1,3 +1,4 @@
+import {currentObjective} from './progression.js';
 import {order,canAfford,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,fleetEligible,inlandEligible,openingGuide,neighbourhoodGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide} from './engine.js';
 
 export const V2_SECTIONS=Object.freeze([
@@ -41,7 +42,7 @@ const HERO={
  fleet:['THE WORKING COAST','Your coastal fleet','Manage voyages, upgrades and destinations.','coast'],
  neighbourhood:['A LIVING TOWN','Your neighbourhood','Six plots, new crafts, homes and the civic square.','neighbourhood'],
  residents:['THE RESIDENTS’ PLOT','A place for everyone','Choose a public garden or commercial square. The first supply delivery makes your choice final.','neighbourhood'],
- ferry:['CHAPTER 08','The ferry terminal','Build passenger infrastructure in three stages and connect the coast.','coast'],
+ ferry:['CHAPTER 05','The ferry terminal','Build passenger infrastructure in three stages and connect the coast.','coast'],
  direction:['TOWN DIRECTION','Your long-term vision','Choose the economic direction of Porto Lume.','market'],
  waterfront:['RESTORE THE WATERFRONT','The town by the sea','Fund the next restoration phase and deliver the needed materials.','harbour'],
  inland:['INLAND TERRACES','The productive hillside','Grow harvests and craft goods for the harbour.','inland'],
@@ -60,21 +61,7 @@ export function v2ContextHero(s,tab){
   +'<h2>'+title+'</h2><p>'+description+'</p></div>';
 }
 export function v2OverviewPanel(s){
- let name,detail,action;
- if(neighbourhoodReady(s)&&!residentsComplete(s)){name='Give residents a choice';detail='Compare a public garden with a commercial square. Deliver supplies in three stages to finish the project.';action='Open the residents’ plot';}
- else if(ferryEligible(s)&&s.ferry.stage<3){name='Connect the coast';detail='Build the ferry terminal. Supply each phase to open passenger connections.';action='Manage ferry project';}
- else if(neighbourhoodEligible(s)&&!neighbourhoodReady(s)){name='Make room for a growing town';detail='Open the new neighbourhood, choose plots and create furniture and cloth.';action='Open neighbourhood plan';}
- else {
-  const g=s.neighbourhood.access?neighbourhoodGuide(s):
-   fleetEligible(s)?fleetGuide(s):
-   inlandEligible(s)?inlandGuide(s):
-   s.waterfront.stage===3?marketGuide(s):
-   s.charter?chapterThree(s):
-   s.pier?chapterTwo(s):openingGuide(s);
-  name=g.title||'Continue developing the harbour';
-  detail=g.description||'Choose a meaningful task to advance your town.';
-  action=g.label||'Show next step';
- }
+ const objective=currentObjective(s),name=objective.title,detail=objective.description,action=objective.label||'Show next step';
  return '<div class="v2-overview-panel"><div class="panel-eyebrow">YOUR NEXT MOVE</div><h2>'+name+'</h2><p class="description">'+detail+'</p>'
   +'<button class="button" data-action="v2-next">'+action+' →</button>'
   +'<div class="v2-overview-links"><button data-tab="produce"><span>⚒</span><strong>Production</strong><small>'+s.jobs.length+' queued jobs</small></button>'

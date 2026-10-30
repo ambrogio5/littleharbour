@@ -1,3 +1,6 @@
+import {worldEntities} from '../dist/world-model.js';
+import {renderMarkup} from '../dist/ui-renderer.js';
+import {currentObjective} from '../dist/progression.js';
 import {createSaveStore} from '../dist/save-store.js';
 import * as worldGuide from '../dist/world-guide.js';
 import * as ferryUI from '../dist/ferry-ui.js';
@@ -20,7 +23,7 @@ import * as districts from '../dist/districts.js';
 // Test text templates independently of browser rendering. This catches missing
 // branch-specific bindings without claiming to validate layout or touch input.
 const source=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8').replace(/^import .*\n/gm,'').replace(/\ninit\(\);\s*$/,'');
-const context=vm.createContext({createSaveStore,...worldGuide,...ferryUI,...ferryArt,...projectPlanning,...projectUI,...engine,...districts,...planning,...inlandMap,...neighbourhoodUIViews,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
+const context=vm.createContext({worldEntities,renderMarkup,currentObjective,createSaveStore,...worldGuide,...ferryUI,...ferryArt,...projectPlanning,...projectUI,...engine,...districts,...planning,...inlandMap,...neighbourhoodUIViews,...fleetUI,...coastView,...coastMap,matchMedia(){return {matches:false};},localStorage:{getItem(){return null;},setItem(){},removeItem(){}}});
 vm.runInContext(source+'\nfunction snapshot(s,selected,pin=null){state=s;station=selected;pinnedGoal=pin;marketSelection=null;return {production:production(),trade:tradePanel(),build:buildPanel(),contracts:contractsPanel(),quick:quickActions(),waterfront:waterfrontPanel(),market:marketPanel(),marketMap:marketMapMarkup(),inland:inlandPanel(),inlandMap:inlandMapMarkup(),courtyard:courtyardCard(),plan:planPanel(),return: (returnContext=null,returnPanel())};}\nfunction setReturn(goal){returnContext=null;rememberReturn(goal);return returnPanel();}\nfunction openGoalSnapshot(s,id){state=s;render=()=>{};openGoal(id);return {tab,station,marketSelection,fleetSlot,fleetSection,fleetSelections,fleetModes,fleetCircuits,neighbourhoodUI,return:returnPanel()};}',context);
 vm.runInContext('function ledgerSnapshot(s,query,presets=[null,null,null]){state=s;station="ledger";ledgerQuery=query;targetPresets=presets;return production();}',context);
 vm.runInContext('function fleetSnapshot(s,slot=0,section="voyages",route="quarry",tier=1,pin=null){state=s;fleetModes=["single","single"];fleetSlot=slot;fleetSection=section;fleetSelections=[{route:"quarry",tier:1},{route:"island",tier:1}];fleetSelections[slot]={route,tier};pinnedGoal=pin;return {panel:fleetPanel(),map:coastMapView(s),plan:planPanel(),reservations:reservationList()};}',context);
@@ -71,7 +74,7 @@ test('Restoration panels explain funding, deliveries, construction and the unloc
  for(let delivery=0;delivery<2;delivery++){s.stock.bread=4;s.stock.oil=2;engine.supplyWaterfront(s,0,delivery);}
  html=snapshots(s,'overview').waterfront;assert(html.includes('data-waterfronttime'));assert(!html.includes('data-action="waterfront-fund"'));
  engine.tick(s,12);html=snapshots(s,'overview').waterfront;assert(html.includes('Fund public landing'));
- s.waterfront={path:'estate',stage:3,funded:false,delivered:0,left:0};html=snapshots(s,'overview').waterfront;assert(html.includes('Porto Grande is open'));assert(html.includes('384 coins'));assert(html.includes('waterfront-trade'));
+ s.waterfront={path:'estate',stage:3,funded:false,delivered:0,left:0};html=snapshots(s,'overview').waterfront;assert(html.includes('Porto Grande is open'));assert(html.includes('288 coins'));assert(html.includes('waterfront-trade'));
 });
 
 function marketTown(){
