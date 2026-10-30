@@ -4,6 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright-core';
+import {fresh} from '../dist/engine.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../dist');
 const mime={'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png','.svg':'image/svg+xml','.webp':'image/webp'};
@@ -25,7 +26,7 @@ try{
  for(const raw of ['', '{broken', JSON.stringify({version:999,payload:'future town'})]){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
   await context.addInitScript(raw=>{if(localStorage.getItem('seeded')===null){localStorage.setItem('little-harbour-v1',raw);localStorage.setItem('seeded','yes');}},raw);
-  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage();const errors=[],pngRequests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('.png'))pngRequests.push(r.url());});
   await page.goto(base+'/');await page.waitForSelector('#dialog[open]');
   assert((await page.locator('#dialogContent').innerText()).includes('original town is protected'));
   assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),raw);
@@ -42,18 +43,42 @@ try{
   await context.close();
  }
  console.log('PASS save recovery: malformed, empty and future saves survive export, clicks, lifecycle and reload; explicit reset keeps exact backups.');
+ {
+  const seed=fresh();seed.deliveries=1;seed.coins=1000;seed.onboarded=true;
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await context.addInitScript(raw=>localStorage.setItem('little-harbour-v1',raw),JSON.stringify(seed));
+  const page=await context.newPage();await page.goto(base+'/');
+  await page.locator('.mobile-nav [data-tab="build"]').click();
+  await page.locator('#panel [data-action="build"][data-key="olive"]').click();
+  await page.waitForSelector('[data-world-building="olive"][data-stage="building"]',{state:'attached'});
+  await page.waitForSelector('[data-world-building="olive"][data-stage="built"]',{state:'attached',timeout:12000});
+  await context.close();console.log('PASS physical construction: paid olive workshop changes from empty plot to construction to completed building.');
+ }
+
  for(const device of [
+  {name:'small phone touch',viewport:{width:320,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:2},
   {name:'iPhone-sized touch',viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:3},
   {name:'tablet browser',viewport:{width:1024,height:768},isMobile:false,hasTouch:true,deviceScaleFactor:2},
   {name:'desktop',viewport:{width:1440,height:900},isMobile:false,hasTouch:false,deviceScaleFactor:1}
  ]){
   const context=await browser.newContext({viewport:device.viewport,isMobile:device.isMobile,hasTouch:device.hasTouch,deviceScaleFactor:device.deviceScaleFactor});
   const page=await context.newPage();
-  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const errors=[],pngRequests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('.png'))pngRequests.push(r.url());});
   await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:25000});
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null,{timeout:20000});
   if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
   assert((await page.locator('#v2TaskCards .v2-task-card').count())>=1,'task cards must render');
+  assert.equal(await page.locator('link[rel="stylesheet"]').count(),1,'One runtime stylesheet');
+  assert.equal(await page.locator('#worldBuildings [data-stage="built"]').count(),3,'Only starter structures are built in a new town');
+  assert((await page.locator('.current-objective').innerText()).includes('CHAPTER 1 OF 5'));
+  if(device.isMobile){
+   await page.locator('.field-pin').tap();
+   await page.waitForFunction(()=>document.querySelector('body').classList.contains('v3-sheet-open'));
+   assert((await page.locator('#panel').innerText()).includes('Wheat'));
+   await page.locator('.mobile-nav [data-action="map"]').click();
+   const size=await page.locator('.field-pin').boundingBox();assert(size.height>=43.5&&size.width>=43.5,'Field touch target must be at least 44 pixels');
+  }
+
   assert.equal(await page.locator('#newWorldArt').count(),1,'One continuous illustrated world must exist');
   assert(await page.locator('#newWorldArt').evaluate(el=>getComputedStyle(el).display!=='none'),'The world must be visible');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+6),'No page horizontal overflow');
@@ -81,6 +106,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
   await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
+  assert.equal(await page.locator('#panel .ferry-entry').count(),0,'Ferry construction is gated');
   if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();
   else await page.locator('.v2-topnav [data-tab="map"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
@@ -119,7 +145,8 @@ try{
   await page.locator(navigation+'[data-tab="trade"]').click();
   const dispatch=page.locator('#panel [data-action="dispatch"]');
   if(await dispatch.count()){assert(await dispatch.isEnabled(),'Sample town trade is actionable');await dispatch.click();const newCoins=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-sample-v1')).coins);assert(newCoins>oldCoins,'Trade action must pay its genuine coin reward');}
-  console.log('PASS '+device.name+': V4 initialized, navigated, zoomed, focused districts, harvested, restored save and opened sample.');
+  assert.deepEqual(pngRequests,[],'No retired PNG assets should download');
+  console.log('PASS '+device.name+': portrait world initialized, navigated, zoomed, focused districts, harvested, restored save and opened sample.');
   await context.close();
  }
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
