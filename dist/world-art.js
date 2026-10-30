@@ -62,7 +62,10 @@ export function renderWorldBuildings(entities){
    art='<path d="M-100 -30 40 -80 110 20 -30 70Z" fill="'+(e.ripe?'#d7ba6d':'#849762')+'" stroke="#ded0a3" stroke-width="5"/>';
    for(let i=0;i<5;i++)art+='<path d="M'+(-65+i*25)+' '+(-15-i*9)+'l75 65" stroke="#e3ce8c" stroke-width="5"/>';
    if(['orchard','olive'].includes(e.kind))for(let i=0;i<4;i++)art+=tree(-50+i*30,10-i%2*25,.7,i+1);
+   if(e.kind==='olive')art+=house(65,20,.85,0);
   }
+  else if(e.kind==='clay')art=rock(0,0,1.7);
+  else if(e.kind==='boat')art=boat(0,0,2+e.level*.3);
   else if(e.kind==='lighthouse')art=e.level===3?lighthouse(0,0):house(0,0,e.level===2?1.4:.9,0);
   else if(['pier','fishing','ferry','waterfront'].includes(e.kind)){
    art=pier(-70,10,90+e.level*45);

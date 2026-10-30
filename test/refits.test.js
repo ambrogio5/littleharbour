@@ -7,7 +7,7 @@ test('Speed refits charge once, shorten time, and keep input and output unchange
   const s=town(),item={mill:'flour',bakery:'bread',fishing:'fish'}[st],before=s.stock[item];
   assert(installRefit(s,st,'speed'));assert.equal(s.coins,1000-REFITS[st].speed.cost.coins);
   assert(!installRefit(s,st,'speed'));assert(start(s,st));
-  const duration=recipeDuration(s,st);assert.equal(duration,{mill:6,bakery:9,fishing:10.5}[st]);
+  const duration=recipeDuration(s,st);assert.equal(duration,{mill:4.8,bakery:7.2,fishing:8.4}[st]);
   tick(s,duration-.5);assert.equal(s.stock[item],before);tick(s,.5);assert.equal(s.stock[item],before+2);
   assert.deepEqual(parseSave(JSON.stringify(s)),s);
  }
@@ -18,7 +18,7 @@ test('Queue refits combine with the storehouse, refund waiting work and preserve
  assert.equal(s.stock.wheat,88);assert.equal(queueBatch(s,'mill',1),0);assert(cancel(s,5));assert.equal(s.stock.wheat,90);
  assert(!installRefit(s,'mill','speed'));assert.match(refitBlocker(s,'mill','speed'),/active work/);
  assert.deepEqual(parseSave(JSON.stringify(s)),s);
- tick(s,40);assert.equal(s.jobs.length,0);assert(installRefit(s,'mill','speed'));assert.equal(capacity(s,'mill'),4);assert.equal(recipeDuration(s,'mill'),6);
+ tick(s,40);assert.equal(s.jobs.length,0);assert(installRefit(s,'mill','speed'));assert.equal(capacity(s,'mill'),4);assert.equal(recipeDuration(s,'mill'),4.8);
 });
 test('Refits cannot strand the first expansion or purchase an unowned business improvement',()=>{
  const s=fresh();s.coins=1000;s.deliveries=1;
@@ -33,7 +33,7 @@ test('Refit saves migrate old towns and reject malformed or inconsistent upgrade
  const s=fresh();s.refits={mill:'speed'};assert.throws(()=>parseSave(JSON.stringify(s)));
 });
 test('Speed refits preserve pause and serial queue carryover',()=>{
- const s=town();installRefit(s,'bakery','speed');queueBatch(s,'bakery',2);s.speed=0;tick(s,60);assert.equal(s.jobs[0].left,9);
- s.speed=1;tick(s,12);assert.equal(s.stock.bread,2);assert.equal(s.jobs[0].left,6);
- const loaded=parseSave(JSON.stringify(s));tick(loaded,6);assert.equal(loaded.stock.bread,4);assert.equal(loaded.jobs.length,0);
+ const s=town();installRefit(s,'bakery','speed');queueBatch(s,'bakery',2);const duration=recipeDuration(s,'bakery');s.speed=0;tick(s,60);assert.equal(s.jobs[0].left,duration);
+ s.speed=1;tick(s,duration+3);assert.equal(s.stock.bread,2);assert(Math.abs(s.jobs[0].left-(duration-3))<1e-9);
+ const loaded=parseSave(JSON.stringify(s));tick(loaded,duration);assert.equal(loaded.stock.bread,4);assert.equal(loaded.jobs.length,0);
 });

@@ -23,7 +23,7 @@ function neighbourhoodPlotView(s,ui,view){const index=Number.isInteger(ui.plot)&
  const keys=neighbourhoodRecipes.filter(k=>RECIPES[k].station===p.type);html+=keys.map(k=>neighbourhoodRecipeView(s,k,view)).join('');
  return html+`<div class="neigh-building-tools"><button class="button secondary" data-action="neigh-move-start" data-slot="${index}">Move or swap building</button><button class="text-button" data-action="neigh-remove" data-slot="${index}" ${removeReason?'disabled':''}>Redevelop this plot…</button><p class="hint">Redevelopment removes this building, returns half its original coin cost and keeps the land. Materials and furnishing costs are not refunded.${removeReason?' '+removeReason:''}</p></div>`;
 }
-export function neighbourhoodPanelView(s,ui,view){let html=`<div class="panel-eyebrow">CHAPTER 07 · THE NEW NEIGHBOURHOOD</div><button class="text-button" data-action="district" data-key="neighbourhood">Explore the neighbourhood →</button>`;
+export function neighbourhoodPanelView(s,ui,view){let html=`<div class="panel-eyebrow">CHAPTER 04 · THE NEW NEIGHBOURHOOD</div><button class="text-button" data-action="district" data-key="neighbourhood">Explore the neighbourhood →</button>`;
  if(!neighbourhoodReady(s)){const reason=neighbourhoodAccessBlocker(s);return html+`<h2>A new part of town.</h2><p class="description">Turn coastal trade into a place to live and work. Purchase six plots, build a textile chain and furnish homes, then supply your neighbours and refit your fleet.</p>${neighbourhoodEligible(s)?neighbourhoodFunding(NEIGHBOURHOOD_ACCESS_COST,'neighbourhood:access',view):''}<button class="button" data-action="neigh-open" ${reason?'disabled':''}>Open the neighbourhood</button>${reason?`<p class="hint">${reason}</p>`:''}`;}
  html+=`<div class="neigh-navigation" aria-label="Neighbourhood sections">${[['overview','Plots & homes'],['production','Workshops'],['orders','Orders & refits']].map(([key,label])=>`<button data-action="neigh-section" data-key="${key}" aria-pressed="${ui.section===key}">${label}</button>`).join('')}</div>`;
  html+='<button class="text-button" data-action="residents-open">Visit the residents’ plot →</button>';
@@ -67,13 +67,13 @@ export function residentsMapView(s){
 export function residentsEntryView(s){
  if(!neighbourhoodReady(s))return '';
  const r=s.residents,done=residentsComplete(s),name=r.proposal?RESIDENT_PROPOSALS[r.proposal].name:'Choose a civic project';
- return '<article class="build-card residents-entry"><div class="panel-eyebrow">CHAPTER 07 · RESIDENTS’ PLOT</div><h3>'+name+'</h3><p>Two proposals. Three deliveries. Your first delivery commits the plot; the finished project changes town life permanently.</p>'
+ return '<article class="build-card residents-entry"><div class="panel-eyebrow">CHAPTER 04 · RESIDENTS’ PLOT</div><h3>'+name+'</h3><p>Two proposals. Three deliveries. Your first delivery commits the plot; the finished project changes town life permanently.</p>'
   +'<span class="resident-entry-status">'+(done?'Completed · benefit active':r.delivered?r.delivered+' / 3 deliveries made':r.proposal?'Selected · not yet committed':'Ready for your decision')+'</span>'
   +'<button class="button secondary" data-action="residents-open">'+(!r.proposal?'Compare the proposals':done?'Visit the completed plot':'Manage the residents’ project')+' →</button></article>';
 }
 export function residentsPanelView(s,view){
  const r=s.residents;
- let html='<button class="text-button" data-action="go-build">← Town development</button><div class="panel-eyebrow">CHAPTER 07 · THE RESIDENTS’ PLOT</div><h2>A place chosen by its residents.</h2>';
+ let html='<button class="text-button" data-action="go-build">← Town development</button><div class="panel-eyebrow">CHAPTER 04 · THE RESIDENTS’ PLOT</div><h2>A place chosen by its residents.</h2>';
  if(!neighbourhoodReady(s))return html+'<p class="description">Open the new neighbourhood to unlock the civic plot.</p><button class="button" data-action="go-neighbourhood">Open neighbourhood plan →</button>';
  const locked=r.delivered>0;
  html+='<p class="description">Compare two permanent town improvements. Changing proposals is free until you make the first supply delivery. Once supplies are delivered, your choice is final.</p>'

@@ -42,6 +42,10 @@ export function worldEntities(s){
  }
  for(const [type,b]of Object.entries(s.market.businesses))entities.push({id:type,x:type==='kitchen'?1450:1150,y:1150,zone:'market',kind:'market',label:type==='kitchen'?'Harbour kitchen':'Fishmonger',tab:'market',stage:b.left?'building':'built',level:1});
  for(let i=0;i<2;i++){const t=s.inland.terraces[i];entities.push({id:'terrace'+i,x:550+i*380,y:200,zone:'inland',kind:t?.type||'field',label:t?.type==='garden'?'Kitchen garden':'Fruit terrace',tab:'inland',stage:t?(t.left?'building':'built'):'unbuilt',level:t?1:0});}
+ entities.push({id:'kiln',x:1350,y:360,zone:'inland',kind:'workshop',label:'Kiln & preserving room',tab:'inland',stage:s.inland.kiln?(s.inland.kiln.left?'building':'built'):'unbuilt',level:s.inland.kiln?1:0});
+ entities.push({id:'claypit',x:280,y:170,zone:'inland',kind:'clay',label:'Clay bank',tab:'inland',stage:s.inland.access&&!s.inland.left?'built':'unbuilt',level:s.inland.access?1:0});
+ entities.push({id:'courtyard',x:1500,y:1450,zone:'market',kind:'square',label:'Market courtyard',tab:'inland',stage:s.inland.courtyard?(s.inland.courtyardLeft?'building':'built'):'unbuilt',level:s.inland.courtyard?1:0});
+ for(let slot=0;slot<2;slot++){const b=s.fleet.boats[slot];if(b)entities.push({id:'boat'+slot,x:1630,y:2100+slot*240,zone:'coast',kind:'boat',label:b.trip?'Boat at sea':'Berth '+(slot+1),tab:'fleet',stage:'built',level:b.upgrade?2:1});}
  entities.push({id:'civic',x:690,y:1510,zone:'neighbourhood',kind:s.residents.proposal||'garden',label:'Residents’ plot',tab:'residents',stage:residentsComplete(s)?'built':s.residents.delivered?'building':'unbuilt',level:s.residents.delivered});
  return entities;
 }

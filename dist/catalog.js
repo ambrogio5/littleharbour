@@ -11,7 +11,7 @@ export const RECIPES={
  garden1:{name:'Harvest lower garden',station:'terrace1',cost:{},output:{vegetables:6},duration:20},
  jars:{name:'Fire jars',station:'kiln',cost:{clay:2,wood:1},output:{jars:2},duration:18},
  tiles:{name:'Fire tiles',station:'kiln',cost:{clay:4,wood:2},output:{tiles:4},duration:22},
- fruitPreserves:{name:'Preserve fruit',station:'preserving',cost:{fruit:4,jars:2},output:{preserves:4},duration:24},
+ fruitPreserves:{name:'Preserve fruit',station:'preserving',cost:{fruit:4,jars:2},output:{preserves:6},duration:24},
  vegetablePreserves:{name:'Preserve vegetables',station:'preserving',cost:{vegetables:6,jars:2},output:{preserves:4},duration:12},
  field:{name:'Grow wheat',station:'field',cost:{},output:{wheat:6},duration:12},
  mill:{name:'Mill flour',station:'mill',cost:{wheat:2},output:{flour:2},duration:8},
@@ -63,8 +63,8 @@ export const MARKET_BUSINESSES={
 export const INLAND_ACCESS_COST={coins:240,wood:16,stone:16};
 export const INLAND_SECONDS={access:12,terrace:10,kiln:12,courtyard:12};
 export const TERRACE_TYPES={
- orchard:{name:'Fruit orchard',recipePrefix:'orchard',cost:{coins:140,wood:10,stone:4},description:'Frequent fruit harvests; slower preserving. Four fruit fill a batch of jars.'},
- garden:{name:'Kitchen garden',recipePrefix:'garden',cost:{coins:140,wood:6,stone:8},description:'Slower, larger harvests; quick preserving. Six vegetables fill a batch of jars.'}
+ orchard:{name:'Fruit orchard',recipePrefix:'orchard',cost:{coins:140,wood:10,stone:4},description:'Frequent fruit harvests; slower preserving yields six preserves per batch. Uses fewer jars per exported preserve.'},
+ garden:{name:'Kitchen garden',recipePrefix:'garden',cost:{coins:140,wood:6,stone:8},description:'Slower, larger harvests; quick preserving yields four preserves per batch. Frees preserving-room time for other work.'}
 };
 export const KILN_COST={coins:200,wood:10,stone:16};
 export const COURTYARD_COST={coins:240,tiles:12,stone:8};
@@ -151,12 +151,12 @@ export const FERRY_SERVICES={
 
 /* Branching community project. Supplies are delivered in three distinct stages. */
 export const RESIDENT_PROPOSALS=Object.freeze({
- garden:{name:'Public garden',description:'Create a shaded meeting place with paths, trees and a shared garden.',benefit:'One permanent extra queue slot at every neighbourhood workshop.',stages:[
+ garden:{name:'Public garden',description:'Create a shaded meeting place with paths, trees and a shared garden.',benefit:'One extra neighbourhood queue slot, plus 20% faster new crops and neighbourhood batches.',stages:[
   {name:'Prepare the ground',cost:{wood:10,stone:6,tiles:4}},
   {name:'Lay paths and borders',cost:{preserves:6,cloth:4,clay:6}},
   {name:'Plant and furnish',cost:{furniture:4,tiles:8,preserves:8}}
  ]},
- square:{name:'Commercial square',description:'Build a lively covered square where residents trade locally made goods.',benefit:'Market and neighbourhood orders pay 20% more coins, permanently.',stages:[
+ square:{name:'Commercial square',description:'Build a lively covered square where residents trade locally made goods.',benefit:'Market and neighbourhood orders pay 35% more coins, permanently.',stages:[
   {name:'Lay the foundations',cost:{wood:10,stone:8,tiles:6}},
   {name:'Build covered stalls',cost:{furniture:4,cloth:6,stone:6}},
   {name:'Open for trade',cost:{tiles:10,preserves:8,furniture:4}}
