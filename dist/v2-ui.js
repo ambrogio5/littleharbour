@@ -1,4 +1,4 @@
-import {order,canAfford,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,openingGuide,neighbourhoodGuide,chapterTwo} from './engine.js';
+import {order,canAfford,neighbourhoodEligible,neighbourhoodReady,residentsComplete,ferryEligible,fleetEligible,inlandEligible,openingGuide,neighbourhoodGuide,chapterTwo,chapterThree,marketGuide,inlandGuide,fleetGuide} from './engine.js';
 
 export const V2_SECTIONS=Object.freeze([
  {id:'map',label:'Map',icon:'⌖'},
@@ -64,8 +64,17 @@ export function v2OverviewPanel(s){
  if(neighbourhoodReady(s)&&!residentsComplete(s)){name='Give residents a choice';detail='Compare a public garden with a commercial square. Deliver supplies in three stages to finish the project.';action='Open the residents’ plot';}
  else if(ferryEligible(s)&&s.ferry.stage<3){name='Connect the coast';detail='Build the ferry terminal. Supply each phase to open passenger connections.';action='Manage ferry project';}
  else if(neighbourhoodEligible(s)&&!neighbourhoodReady(s)){name='Make room for a growing town';detail='Open the new neighbourhood, choose plots and create furniture and cloth.';action='Open neighbourhood plan';}
- else if(s.pier){const g=chapterTwo(s);name=g.title||'Grow your harbour';detail=g.description||'Choose another town investment.';action='Continue chapter';}
- else {const g=openingGuide(s);name=g.title||'Start a working harbour';detail=g.description||'Harvest wheat and begin making bread.';action=g.label||'Show next step';}
+ else {
+  const g=s.neighbourhood.access?neighbourhoodGuide(s):
+   fleetEligible(s)?fleetGuide(s):
+   inlandEligible(s)?inlandGuide(s):
+   s.waterfront.stage===3?marketGuide(s):
+   s.charter?chapterThree(s):
+   s.pier?chapterTwo(s):openingGuide(s);
+  name=g.title||'Continue developing the harbour';
+  detail=g.description||'Choose a meaningful task to advance your town.';
+  action=g.label||'Show next step';
+ }
  return '<div class="v2-overview-panel"><div class="panel-eyebrow">YOUR NEXT MOVE</div><h2>'+name+'</h2><p class="description">'+detail+'</p>'
   +'<button class="button" data-action="v2-next">'+action+' →</button>'
   +'<div class="v2-overview-links"><button data-tab="produce"><span>⚒</span><strong>Production</strong><small>'+s.jobs.length+' queued jobs</small></button>'

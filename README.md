@@ -1,4 +1,4 @@
-# Little Harbour — V3 / Playtest 18
+# Little Harbour — V4 / Playtest 19
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -24,6 +24,16 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
 14. Compare the residents' proposals, then deliver supplies in three stages for a lasting civic improvement.
+
+## V4 — the premium map and navigation pass
+
+- Reworked the town's original SVG illustration with shaded naturalistic olive trees and cypress, detailed stone façades, textured hills and restrained sea colours; no external image dependencies or stitched imagery.
+- Set a more legible district-view default on phones, while Whole town remains available instantly.
+- Increased camera label readability, synchronized district selection with map focus and avoided temporarily swallowing camera-button taps after dragging.
+- Applied a calmer, denser visual language and fixed crowding in the header, camera controls and mobile management sheet; constrained horizontal overflow and removed confusing overview labels on narrow screens.
+- The context card now follows the player's actual unlocked chapter instead of falling back to early-game goals.
+- Added browser checks for phone, tablet and desktop layout, navigation, loading, gameplay payouts and save persistence.
+- Game simulation and user save format remain unchanged. V4 remains an illustrated vector map; native, photorealistic raster artwork is not claimed.
 
 ## New in V3 / Playtest 18
 

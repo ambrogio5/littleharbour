@@ -3,17 +3,19 @@
 export const WORLD_ART_SIZE={width:2680,height:1840};
 const f=n=>Math.round(n*10)/10;
 function rng(seed){let a=seed>>>0;return()=>{a=(1664525*a+1013904223)>>>0;return a/4294967296;};}
-const rand=rng(1373),rr=(a,b)=>a+(b-a)*rand();
+let rand=rng(1373);const rr=(a,b)=>a+(b-a)*rand();
 function tree(x,y,s=1,t=0){
- const dark=['#244936','#365940','#2b5141','#54704d'][t%4],light=['#658451','#718b56','#527962','#879b60'][t%4];
- return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(s)+')"><ellipse cx="4" cy="15" rx="18" ry="6" fill="#102d28" opacity=".22"/><path d="M0 -1V16" stroke="#6d5740" stroke-width="4"/><ellipse cy="-13" rx="15" ry="21" fill="'+dark+'"/><ellipse cx="-4" cy="-18" rx="8" ry="14" fill="'+light+'" opacity=".72"/><ellipse cx="9" cy="-7" rx="8" ry="12" fill="'+dark+'"/></g>';
+ const species=t%9,dark=['#30483a','#405842','#344b3f','#506349'][t%4],light=['#71806a','#859176','#677e67','#93977a'][t%4];
+ if(species===0||species===5) return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><ellipse cy="8" rx="9" ry="4" fill="#23352e" opacity=".25"/><path d="M0 4 1 -37" stroke="#685e47" stroke-width="3"/><path d="M-7 -13Q-11 -29 -4 -51Q0 -66 4 -51Q12 -28 7 -14L2 5Z" fill="${dark}" stroke="#36493c" stroke-width="1.5"/><path d="M-2 -48Q-6 -30 -3 -12" stroke="${light}" opacity=".6" stroke-width="3" fill="none"/></g>`;
+ const lobes=Array.from({length:7},(_,i)=>{const a=i*Math.PI*2/7;return `<ellipse cx="${f(Math.cos(a)*12)}" cy="${f(Math.sin(a)*7-15)}" rx="${10+i%3*2}" ry="${8+i%2*3}" fill="${i%2?dark:light}" opacity=".92"/>`;}).join('');
+ return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><ellipse cx="8" cy="10" rx="24" ry="9" fill="#1d302a" opacity=".27"/><path d="M0 5v-25M0 -12l-14 -10M0 -17L11 -26" stroke="#78674e" stroke-width="3" fill="none"/>${lobes}<path d="M-17 -17Q0 -31 16 -17" fill="none" stroke="#abb092" opacity=".37" stroke-width="3"/></g>`;
 }
 function house(x,y,s=1,variant=0){
- const wall=['#f3e0b8','#e9d0a9','#eee0c6','#dac39e'][variant%4],roof=['#b76443','#9f523e','#c77d4e','#b66c4a'][variant%4];
- return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(s)+')"><ellipse cx="10" cy="21" rx="37" ry="16" fill="#1a392f" opacity=".28"/><path d="M-26 -6L5 -24 31 -8 1 9Z" fill="'+roof+'" stroke="#81503b" stroke-width="2"/><path d="M-26 -6L1 9V30L-26 13Z" fill="'+wall+'"/><path d="M1 9L31 -8V14L1 30Z" fill="#c4a882"/><path d="M-18 1L-11 5V12L-18 8M9 12L16 8V15L9 19" fill="#305856"/><path d="M-3 15L5 11V30L-3 30Z" fill="#8c684e"/><path d="M-25 -6L5 -24 31 -8" fill="none" stroke="#e1a16a" stroke-width="2"/></g>';
+ const wall=['#d9c9ae','#e7d7be','#cbbba4','#e4d6bf','#cfc5ae'][variant%5],roof=['#b07150','#975c45','#bd7a54','#a65c44'][variant%4],shade=['#a69d8c','#b1a58d','#a79a85'][variant%3];
+ return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><path d="M-30 16 3 35 40 14 9 -7Z" fill="#24392e" opacity=".22" transform="translate(9 8)"/><path d="M-29 -11L4 -30 40 -9 7 9Z" fill="${roof}" stroke="#865a46" stroke-width="2"/><path d="M-29 -11 7 9v27l-36 -19Z" fill="${wall}"/><path d="M7 9 40 -9v26L7 36Z" fill="${shade}"/><path d="M-29 -11 4 -30 40 -9M-29 -4 7 16 40 -1" fill="none" stroke="#e8ad7e" stroke-width="2" opacity=".7"/><path d="M-22 6 -12 11v12l-10 -5ZM18 17l9 -5v11l-9 4Z" fill="#385653"/><path d="M-21 6 -13 10M18 17l8 -4" stroke="#c9b499" stroke-width="1.5"/><path d="M-2 15 6 19v17l-8 -3Z" fill="#85694f"/><path d="M20 -23v-10h7v15" fill="#c8b79a" stroke="#a0785e" stroke-width="2"/><path d="M-33 18Q-24 13 -21 23M35 19Q41 12 47 25" stroke="#6d805f" stroke-width="3" fill="none"/></g>`;
 }
 function rock(x,y,s=1){
- return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(s)+')"><ellipse cx="6" cy="15" rx="27" ry="9" fill="#233c38" opacity=".25"/><path d="M-24 13L-11 -20 3 -27 24 -5 32 14Z" fill="#8c9180"/><path d="M-11 -20L3 -27 3 12 -24 13Z" fill="#c0bba3"/><path d="M3 -27L24 -5 32 14 3 12Z" fill="#666e67"/><path d="M-10 -9L1 -19" stroke="#f1e4c3" stroke-width="3" opacity=".6"/></g>';
+ return `<g transform="translate(${f(x)} ${f(y)}) scale(${f(s)})"><ellipse cy="18" rx="29" ry="9" fill="#17313a" opacity=".19"/><path d="M-27 13 -14 -17 2 -29 19 -16 29 10 11 22Z" fill="#868d86"/><path d="M-27 13 -14 -17 2 -29 0 16Z" fill="#bbb7a3"/><path d="M2 -29 19 -16 29 10 0 16Z" fill="#747f7c"/><path d="M-18 -4 -5 -18 1 -18M8 -20l7 12" fill="none" stroke="#e0d6be" opacity=".6" stroke-width="2.5"/><path d="M-12 17Q-1 7 10 19" stroke="#a0aa93" opacity=".6" fill="none" stroke-width="4"/></g>`;
 }
 function boat(x,y,s=1){
  return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(s)+')"><ellipse cy="17" rx="42" ry="12" fill="#d7eee1" opacity=".20"/><path d="M-43 9Q-7 30 37 9L25 21Q-3 37 -33 22Z" fill="#704e39" stroke="#d8b990" stroke-width="2"/><path d="M-5 -36V16" stroke="#634e38" stroke-width="4"/><path d="M-9 -31L-9 8 -34 9Z" fill="#f2e5c5"/><path d="M-1 -28L24 9 -1 9Z" fill="#e7cfa9"/></g>';
@@ -31,15 +33,20 @@ function lighthouse(x,y){
  return '<g transform="translate('+x+' '+y+')"><ellipse cx="10" cy="29" rx="58" ry="25" fill="#0f3036" opacity=".25"/><path d="M-19 21L-10 -79H10L21 21Z" fill="#ebdfc7" stroke="#978e80" stroke-width="3"/><path d="M-14 -38H14L17 -27H-17Z" fill="#a85b45"/><path d="M-21 -78H21V-65H-21Z" fill="#d1c4a6"/><path d="M-23 -89L0 -104 23 -89Z" fill="#b86b4b"/><path d="M-12 -91H13V-78H-12Z" fill="#ffda9c"/><path d="M-10 -92V-77M11 -92V-77" stroke="#675845" stroke-width="4"/><path d="M-5 -5v26h13V-5Z" fill="#587271"/><rect x="-9" y="-53" width="16" height="24" rx="5" fill="#6d8a82"/></g>';
 }
 export function createWorldArt(){
+ rand=rng(1373); // same landscape every reload and in every test
  let svg='<svg id="newWorldArt" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2680 1840" preserveAspectRatio="xMidYMid meet" aria-hidden="true">';
- svg+='<defs><linearGradient id="sea" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#286c76"/><stop offset=".55" stop-color="#155965"/><stop offset="1" stop-color="#083e53"/></linearGradient><linearGradient id="land" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#9ca974"/><stop offset=".43" stop-color="#819660"/><stop offset="1" stop-color="#b2a474"/></linearGradient><linearGradient id="hills" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#5a7c5b"/><stop offset="1" stop-color="#a6a06f"/></linearGradient><linearGradient id="shallow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68b8a7" stop-opacity=".8"/><stop offset="1" stop-color="#58b6b2" stop-opacity="0"/></linearGradient><radialGradient id="meadow"><stop stop-color="#b5af70"/><stop offset="1" stop-color="#b3a268"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="13"/></filter></defs>';
+ svg+='<defs><linearGradient id="sea" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#4d7b81"/><stop offset=".55" stop-color="#2d6876"/><stop offset="1" stop-color="#174859"/></linearGradient><linearGradient id="land" x1="0" y1="0" x2=".4" y2="1"><stop stop-color="#8f9b83"/><stop offset=".43" stop-color="#8e9a76"/><stop offset="1" stop-color="#b2a18b"/></linearGradient><linearGradient id="hills" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#5a7c5b"/><stop offset="1" stop-color="#a6a06f"/></linearGradient><linearGradient id="shallow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68b8a7" stop-opacity=".8"/><stop offset="1" stop-color="#58b6b2" stop-opacity="0"/></linearGradient><radialGradient id="meadow"><stop stop-color="#b5af70"/><stop offset="1" stop-color="#b3a268"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="13"/></filter><linearGradient id="cliff" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#c7c4ae"/><stop offset=".42" stop-color="#a0a49a"/><stop offset="1" stop-color="#777f7e"/></linearGradient><pattern id="paper" width="72" height="68" patternUnits="userSpaceOnUse"><path d="M4 17l14 -6M38 42l8 -3M23 57l7 -1" stroke="#f0e4cd" stroke-width="1" opacity=".35"/><circle cx="17" cy="39" r="1.2" fill="#ede1cb" opacity=".4"/></pattern><filter id="pigment" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".17" numOctaves="2" seed="14" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".10"/></feComponentTransfer></filter></defs>';
  svg+='<path fill="url(#sea)" d="M0 0H2680V1840H0Z"/>';
  // Variegated water bands and waves, without duplicated or stitched image tiles.
- for(let i=0;i<105;i++){const x=rr(60,2690),y=rr(550,1820),a=rr(12,45);svg+='<path d="M'+f(x)+' '+f(y)+'q'+f(a)+' -9 '+f(a*2)+' -2" fill="none" stroke="'+(i%4?'#9dd4c9':'#f4e1be')+'" opacity="'+f(rr(.09,.29))+'" stroke-width="'+f(rr(1.4,3.6))+'"/>';}
+ for(let i=0;i<68;i++){const x=rr(60,2690),y=rr(550,1820),a=rr(12,45);svg+='<path d="M'+f(x)+' '+f(y)+'q'+f(a)+' -9 '+f(a*2)+' -2" fill="none" stroke="'+(i%4?'#9dd4c9':'#f4e1be')+'" opacity="'+f(rr(.06,.17))+'" stroke-width="'+f(rr(1.4,3.6))+'"/>';}
  const coast='M-80 -60H2180Q2350 120 2260 300Q2430 480 2240 630Q2350 850 2090 1020Q2010 1120 1890 1100Q1820 1270 1650 1230Q1480 1150 1300 1280Q1190 1440 990 1360Q620 1480 360 1390L-80 1470Z';
  svg+='<path d="'+coast+'" fill="#061f2d" opacity=".27" transform="translate(34 47)" filter="url(#shadow)"/>';
- svg+='<path d="'+coast+'" fill="#d4d6b8" stroke="#b4cfb1" stroke-width="26" opacity=".9"/>';
- svg+='<path d="'+coast+'" fill="url(#land)" stroke="#e8e2bf" stroke-width="9"/>';
+ svg+='<path d="'+coast+'" fill="#d6d0bd" stroke="#b4cfb1" stroke-width="26" opacity=".9"/>';
+ svg+='<path d="'+coast+'" fill="url(#land)" stroke="#e2dac9" stroke-width="9"/>';
+ svg+='<path d="'+coast+'" fill="url(#paper)" opacity=".56"/>';
+ svg+='<path d="'+coast+'" fill="#c4bba4" filter="url(#pigment)" opacity=".18"/>';
+ for(let i=0;i<24;i++){const x=f(rr(120,1850)),y=f(rr(160,1100)),w=f(rr(90,220));svg+='<path d="M'+x+' '+y+'q'+f(w/2)+' -18 '+w+' 9" fill="none" stroke="#d8d6bd" stroke-width="'+f(rr(2,5))+'" opacity=".17"/>';}
+
  svg+='<path d="M1690 1190Q1920 1220 1960 1100T2180 790L2260 650Q2230 910 2050 1160T1620 1290Z" fill="url(#shallow)"/>';
  svg+='<path d="M-60 -20Q750 140 1330 95T2220 60L2050 190Q1690 310 1180 225T-80 250Z" fill="#527653" opacity=".50"/>';
  svg+='<path d="M-40 75Q610 205 1050 270T2090 175L2130 305Q1560 465 1260 395T-80 420Z" fill="url(#hills)" opacity=".5"/>';
@@ -51,19 +58,19 @@ export function createWorldArt(){
  svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#755f48" stroke-width="31" fill="none" opacity=".55"/>';
  svg+='<path d="M400 1280Q720 1070 1060 1140Q1340 1140 1540 1270" stroke="#e1ca9f" stroke-width="20" fill="none"/>';
  svg+='<path d="M580 370Q700 200 950 285L1170 480Q940 620 670 535Z" fill="#aeae65" stroke="#d6c78e" stroke-width="10"/>';
- svg+='<ellipse cx="790" cy="443" rx="246" ry="127" fill="url(#meadow)" stroke="#d9bc79" stroke-width="10"/>';
- for(let j=0;j<15;j++){const y=360+j*11;svg+='<path d="M'+f(590+j%4*9)+' '+y+'Q775 '+(y-53)+' '+f(985-j%3*8)+' '+(y+22)+'" fill="none" stroke="'+(j%2?'#e3be6f':'#eacb7e')+'" stroke-width="8" opacity=".84"/>';}
+ svg+='<path d="M561 431Q607 351 742 334Q931 306 1043 408Q1062 460 970 514Q781 564 633 508Z" fill="url(#meadow)" stroke="#d3ba85" stroke-width="8"/>';
+ for(let j=0;j<13;j++){const y=353+j*12;svg+='<path d="M'+f(616+j%3*7)+' '+y+'Q795 '+(y-37)+' '+f(990-j%4*12)+' '+f(y+36)+'" fill="none" stroke="'+(j%2?'#c7ad74':'#e6ce96')+'" stroke-width="6" opacity=".74"/>';}
  // Vineyards north-east.
  svg+='<path d="M1170 340Q1350 250 1590 365L1750 505Q1520 605 1220 500Z" fill="#8d9553" stroke="#c1bc7b" stroke-width="9"/>';
  for(let i=0;i<13;i++){svg+='<path d="M'+(1210+i*27)+' '+(338-i*2)+'q155 102 195 157" stroke="'+(i%2?'#4d6a42':'#667a45')+'" stroke-width="9" opacity=".88" fill="none"/>';}
  // Quarry and stone ridge, all integrated into the same terrain.
  svg+='<path d="M1470 360Q1550 155 1780 160Q1960 205 2030 410L1870 515 1590 460Z" fill="#8f9480" opacity=".88"/>';
- svg+='<path d="M1460 340L1600 210 1770 165 1930 290 2020 405 1810 450 1700 365 1520 460Z" fill="#b4ad92"/>';
+ svg+='<path d="M1450 350Q1510 251 1608 220L1693 177 1791 185Q1917 248 1970 313L2010 399 1842 453 1695 380 1520 446Z" fill="url(#cliff)" stroke="#d4cbb4" stroke-width="6"/>';
  svg+='<path d="M1600 210 1730 310 1770 165 1930 290 1810 450 1700 365Z" fill="#7d8274" opacity=".82"/>';
  for(let i=0;i<25;i++)svg+=rock(rr(1500,1940),rr(210,460),rr(.35,.83));
  // Forrest and planted tree clusters: no separate rendered district rectangles.
- for(let i=0;i<160;i++){const x=rr(80,580),y=rr(100,650);svg+=tree(x,y,rr(.65,1.75),i);}
- for(let i=0;i<93;i++){let x=rr(500,2060),y=rr(70,1020);if(x>1460&&x<2000&&y<500)continue;svg+=tree(x,y,rr(.65,1.3),i+1);}
+ for(let i=0;i<115;i++){const x=rr(80,580),y=rr(100,650);svg+=tree(x,y,rr(.65,1.75),i);}
+ for(let i=0;i<75;i++){let x=rr(500,2060),y=rr(70,1020);if(x>1460&&x<2000&&y<500)continue;svg+=tree(x,y,rr(.65,1.3),i+1);}
  // Urban hamlets in coherent compact neighbourhoods and the market district.
  for(let i=0;i<58;i++){let x=rr(420,1140),y=rr(775,1150);if((x-700)**2/190000+(y-920)**2/59000<.13)continue;svg+=house(x,y,rr(.63,1.35),i);}
  for(let i=0;i<28;i++)svg+=house(rr(1200,1810),rr(660,965),rr(.65,1.35),i+2);
