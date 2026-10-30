@@ -12,7 +12,10 @@ concurrency:
   group: little-harbour-pages
   cancel-in-progress: true
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
   publish:
+    needs: test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
