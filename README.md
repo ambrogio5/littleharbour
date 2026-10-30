@@ -1,4 +1,4 @@
-# Little Harbour — V2 / Playtest 17
+# Little Harbour — V3 / Playtest 18
 
 A solo browser prototype for an original premium Mediterranean town-building game. Township is the main reference for the farming, production and delivery loop; Hay Day informs tactile production; Pocket City informs premium pacing. The selected art direction is grounded, photographic and understated.
 
@@ -24,6 +24,15 @@ The opening panel explains the loop. Follow “Show next step” below the map w
 12. Restore the waterfront in three stages, then open the Porto Grande bulk route.
 13. Continue developing both specialist plots in open play.
 14. Compare the residents' proposals, then deliver supplies in three stages for a lasting civic improvement.
+
+## New in V3 / Playtest 18
+
+- **Redrawn as one world:** the town is now one original 2680 × 1840 illustrated SVG landscape. Its coastline, water, forest, terraces, quarry, neighbourhood, market, harbour, roads, ferries and island belong to the same landscape and perspective, rather than five masked photographic screenshots.
+- **All existing gameplay retained:** production buildings, civic choices, harbour trade, boats, neighbourhood plots, market stalls, saves and exports still use the existing engine. The interactive markers have been repositioned to their actual locations on the new shared terrain.
+- **Purposeful exploration:** Whole town shows five clear district labels; selecting one zooms into its playable area. A visible, scrollable district strip makes jumping between districts possible without fiddly minimap taps. Home, Whole town, pinch, drag and zoom remain available.
+- **Mobile management sheet:** selecting Production, Trade, Build, Fleet or a map location opens a scrollable bottom sheet above persistent navigation. The × control returns to the map. Overlapping old photo layers no longer intercept interaction.
+- **Safe transition:** this is a visual and navigation rebuild only. Existing local saves and the economic simulation remain unchanged. New artwork is vector code, not Base64 or new collage files.
+- **Validation:** Node regression checks and Chromium phone-size/desktop interaction smoke tests are required before publishing. Verify the appearance on physical iPhone Safari separately.
 
 ## New in V2 / Playtest 17
 
