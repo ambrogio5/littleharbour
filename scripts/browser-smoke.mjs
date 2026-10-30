@@ -32,15 +32,29 @@ try{
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null,{timeout:20000});
   if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
   assert((await page.locator('#v2TaskCards .v2-task-card').count())>=1,'task cards must render');
+  assert.equal(await page.locator('#newWorldArt').count(),1,'One continuous illustrated world must exist');
+  assert.equal(await page.locator('#map .world-roads').count(),0,'Old stitched-road overlay must be gone');
+  assert.equal(await page.locator('#v3ZoneNav [data-action="district"]').count(),5,'District navigation must list five accessible areas');
+  const collageHidden=await page.locator('#harbourStage .map-image').evaluate(el=>getComputedStyle(el).display==='none');
+  assert(collageHidden,'Old photographic map tiles must not render under the single world');
+  await page.locator('#v3ZoneNav [data-key="inland"]').click();
+  assert.equal(await page.locator('#v3ZoneNav [data-key="inland"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   assert((await page.locator('#map .world-camera-tools button').count())>=4,'map camera buttons must exist');
   // Exercise the actual native click event chain and the V2 panel routing.
-  await page.locator('.v2-topnav [data-tab="produce"]').click();
+  const navigation=device.isMobile?'.mobile-nav ':'.v2-topnav ';
+
+  await page.locator(navigation+'[data-tab="produce"]').click();
+  if(device.isMobile){
+   assert(await page.locator('body').evaluate(el=>el.classList.contains('v3-sheet-open')),'Mobile management sheet opens on selection');
+  }
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Keep the town moving'));
-  await page.locator('.v2-topnav [data-tab="trade"]').click();
+  await page.locator(navigation+'[data-tab="trade"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
-  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
-  await page.locator('.v2-topnav [data-tab="map"]').click();
+  if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();
+  else await page.locator('.v2-topnav [data-tab="map"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
   // Verify map camera and focus controls are actual working buttons.
   await page.locator('#map [data-camera="home"]').click();
@@ -51,9 +65,10 @@ try{
   await page.locator('#map [data-camera="fit"]').click();
   await page.locator('#map [data-world-region="harbour"].world-region-label').click();
   assert((await page.locator('#v2MapPlace').innerText()).includes('harbour'),'district focus must update map title');
-  await page.locator('#map [data-action="v2-filter"][data-key="ready"]').click();
-  assert.equal(await page.locator('#map [data-action="v2-filter"][data-key="ready"]').getAttribute('aria-pressed'),'true');
-  await page.locator('#map [data-action="v2-filter"][data-key="all"]').click();
+  // V3 replaces the three small map filters with a clear district strip.
+  await page.locator('#v3ZoneNav [data-key="market"]').click();
+  assert.equal(await page.locator('#v3ZoneNav [data-key="market"]').getAttribute('aria-pressed'),'true');
+  await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   // The first playable action must change real saved state.
   const initial=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-v1')).stock.wheat);
   await page.locator('#v2TaskCards [data-key="harvest"]').click();
@@ -68,10 +83,10 @@ try{
   await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
   if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
-  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
   assert.deepEqual(errors,[],'sample page browser errors: '+errors.join(' | '));
-  console.log('PASS '+device.name+': V2 initialized, navigated, zoomed, filtered, harvested, restored save and opened sample.');
+  console.log('PASS '+device.name+': V3 initialized, navigated, zoomed, focused districts, harvested, restored save and opened sample.');
   await context.close();
  }
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}
