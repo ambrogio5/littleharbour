@@ -2,12 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V3-Playtest.html');
+const destination=process.argv[2]||path.resolve(root,'../Little-Harbour-V4-Playtest.html');
 const theme=fs.readFileSync(path.join(root,'dist/theme.js'),'utf8');
 let html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
 // Embed each image only once. Earlier standalone builds repeated multi-megabyte
 // Base64 PNGs for every CSS selector and inflated the HTML unnecessarily.
-const styleSource=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','ferry.css','project-planning.css','dark.css','world-map.css','v2.css','v3.css']
+const styleSource=['style.css','fleet-depth.css','boat-art.css','neighbourhood.css','ferry.css','project-planning.css','dark.css','world-map.css','v2.css','v3.css','v4.css']
  .map(file=>fs.readFileSync(path.join(root,'dist',file),'utf8')).join('\n');
 const assetFiles=[...new Set([...styleSource.matchAll(/url\('assets\/([^']+)'\)/g)].map(match=>match[1]))];
 const assetVars=new Map(assetFiles.map((file,index)=>[file,'--lh-art-'+index]));
@@ -38,6 +38,7 @@ html=html.replace('<link rel="stylesheet" href="style.css">',()=>'<style>'+css+'
 html=html.replace('<link rel="stylesheet" href="fleet-depth.css">','').replace('<link rel="stylesheet" href="boat-art.css">','').replace('<link rel="stylesheet" href="neighbourhood.css">','');
 html=html.replace(/<link rel="stylesheet" href="v2\.css(?:\?v=[^"]+)?">/,'');
 html=html.replace(/<link rel="stylesheet" href="v3\.css(?:\?v=[^"]+)?">/,'');
+html=html.replace(/<link rel="stylesheet" href="v4\.css(?:\?v=[^"]+)?">/,'');
 html=html.replace('<link rel="stylesheet" href="world-map.css">','').replace('<link rel="stylesheet" href="dark.css">','').replace('<link rel="stylesheet" href="ferry.css">','').replace('<link rel="stylesheet" href="project-planning.css">','').replace('<script src="theme.js"></script>',()=>'<script>'+theme+'</script>');
 html=html.replace(/<script type="module" src="app\.js(?:\?v=[^"]+)?"><\/script>/,()=>'<script>'+catalog+'\n'+engine+'\n'+scene+'\n'+districts+'\n'+inlandMap+'\n'+coastMap+'\n'+boatArt+'\n'+fleetUI+'\n'+ferryArt+'\n'+coastView+'\n'+demo+'\n'+planning+'\n'+neighbourhoodUIBundle+'\n'+projectPlanning+'\n'+projectUI+'\n'+ferryUI+'\n'+worldArt+'\n'+worldMap+'\n'+worldGuide+'\n'+v2UI+'\n'+app+'</script>');
 if(/(?:src|href)="https?:\/\//.test(html)||/@import/.test(html))throw new Error('External assets must not be present.');
