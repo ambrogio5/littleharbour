@@ -25,9 +25,9 @@ test('The playable pages include a direct district selector and mobile game shee
  for(const file of ['index.html','demo.html']){
   const html=readFileSync(new URL('../dist/'+file,import.meta.url),'utf8');
   assert(html.includes('id="v3ZoneNav"'));
-  assert(html.includes('href="game.css?v=0.20.0"'));
-  assert(html.includes('href="game.css?v=0.20.0"'))
-  assert(html.includes('src="app.js?v=0.20.0"'));
+  assert(html.includes('href="game.css?v=0.20.1"'));
+  assert(html.includes('href="game.css?v=0.20.1"'))
+  assert(html.includes('src="app.js?v=0.20.1"'));
   for(const key of ['inland','neighbourhood','market','harbour','coast'])assert(html.includes('data-key="'+key+'"'));
  }
  const app=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');

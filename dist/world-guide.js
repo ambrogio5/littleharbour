@@ -1,4 +1,4 @@
-import {RECIPES,available,order,maxBatches,unlocked,openingGuide,neighbourhoodReady,residentsComplete,fleetEligible,inlandEligible} from './engine.js';
+import {RECIPES,available,order,maxBatches,unlocked,openingGuide,neighbourhoodReady,residentsComplete,fleetEligible,inlandEligible} from './engine.js?v=0.20.1';
 export function townTasks(s){
  const tasks=[],o=order(s),goal='trade:'+o.id;
  if(s.ripe)tasks.push({id:'harvest',district:'harbour',title:'Wheat is ready',detail:'Harvest and replant to keep the food chain moving.',kind:'Ready',station:'field'});

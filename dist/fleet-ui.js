@@ -1,6 +1,6 @@
-import {FLEET_BOATS,FLEET_ROUTES,FLEET_UPGRADES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,fleetEligible,berthCount,boatBlocker,voyagePlan,voyageBlocker,repeatVoyageBlocker,boatUpgradeBlocker,lighthouseBlocker,boatCargoCapacity,circuitPlan,circuitBlocker,COASTAL_PROJECTS,coastalProjectBlocker,commissionPlan,commissionBlocker} from './engine.js';
+import {FLEET_BOATS,FLEET_ROUTES,FLEET_UPGRADES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,fleetEligible,berthCount,boatBlocker,voyagePlan,voyageBlocker,repeatVoyageBlocker,boatUpgradeBlocker,lighthouseBlocker,boatCargoCapacity,circuitPlan,circuitBlocker,COASTAL_PROJECTS,coastalProjectBlocker,commissionPlan,commissionBlocker} from './engine.js?v=0.20.1';
 
-import {fleetHull} from './boat-art.js';
+import {fleetHull} from './boat-art.js?v=0.20.1';
 export {fleetHull};
 
 export function fleetEntryView(s){return `<article class="build-card fleet-entry"><div class="panel-eyebrow">CHAPTER 04 · THE WORKING COAST</div><h3>Give your harvest a destination.</h3><p>Buy a boat, develop two coastal partnerships and restore the lighthouse. Your garden supplies voyages; your kiln supplies jars, island roofs and the headland.</p><button class="button" data-action="go-fleet">${fleetEligible(s)?'Manage the coastal fleet':'Preview the coastal fleet'}</button></article>`;}

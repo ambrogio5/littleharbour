@@ -1,4 +1,4 @@
-import {fresh,parseSave} from './engine.js';
+import {fresh,parseSave} from './engine.js?v=0.20.1';
 
 // An explicitly separate sample town for exploring later chapters.
 // The application stores this under its own key, never the player's town key.

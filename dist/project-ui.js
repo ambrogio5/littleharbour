@@ -1,5 +1,5 @@
-import {ITEMS,RECIPES} from './engine.js';
-import {projectPlan} from './project-planning.js';
+import {ITEMS,RECIPES} from './engine.js?v=0.20.1';
+import {projectPlan} from './project-planning.js?v=0.20.1';
 export function projectPanelView(s,goal,{costs,resourceIcon}){
  const p=projectPlan(s,goal);
  if(!p.valid)return '<h2>This project has moved on.</h2><p class="description">Open its current stage to plan the next delivery.</p><button class="button secondary" data-tab="build">View town projects</button>';
