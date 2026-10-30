@@ -148,3 +148,13 @@
  .v3-zone-nav button{font-size:10px;padding:7px 10px}
  .unified-map,.unified-map.map-fitted{height:calc(100svh - 235px)!important;min-height:330px}
 }
+
+/* Never expose stale district imagery, even when a district is selected. */
+.unified-map .market-built,
+.unified-map .inland-built,
+.unified-map .inland-crop,
+.unified-map .coast-developed,
+.unified-map .coast-restored,
+.unified-map .coast-ferry,
+.unified-map .neighbourhood-buildings,
+.unified-map .market-work .work-frame{display:none!important}
