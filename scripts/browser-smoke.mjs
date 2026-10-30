@@ -42,16 +42,18 @@ try{
   await page.locator('#v3ZoneNav [data-key="harbour"]').click();
   assert((await page.locator('#map .world-camera-tools button').count())>=4,'map camera buttons must exist');
   // Exercise the actual native click event chain and the V2 panel routing.
-  await page.locator('.v2-topnav [data-tab="produce"]').click();
+  const navigation=device.isMobile?'.mobile-nav ':'.v2-topnav ';
+
+  await page.locator(navigation+'[data-tab="produce"]').click();
   if(device.isMobile){
    assert(await page.locator('body').evaluate(el=>el.classList.contains('v3-sheet-open')),'Mobile management sheet opens on selection');
   }
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Keep the town moving'));
-  await page.locator('.v2-topnav [data-tab="trade"]').click();
+  await page.locator(navigation+'[data-tab="trade"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.toLowerCase().includes('coastal trade'));
-  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
-  await page.locator('.v2-topnav [data-tab="map"]').click();
+  await page.locator(navigation+'[data-tab="map"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
   // Verify map camera and focus controls are actual working buttons.
   await page.locator('#map [data-camera="home"]').click();
