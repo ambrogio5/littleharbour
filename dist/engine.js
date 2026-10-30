@@ -61,10 +61,13 @@ export function build(s,type){const previousOrders=orders(s),cost=buildCost(s);i
 export function upgrade(s){const previousOrders=orders(s);if(!s.expansion||s.deliveries<2||s.pier||!canAfford(s,PIER_COST))return false;spend(s,PIER_COST);s.pier=true;s.construction.push({type:'pier',left:CONSTRUCTION_SECONDS});note(s,'Quay extended · choose routes and automate production');pruneReservations(s,previousOrders);return true;}
 export function upgradeWorkshops(s){if(!s.pier||s.workshopUpgrade||!canAfford(s,WORKSHOP_COST))return false;spend(s,WORKSHOP_COST);s.workshopUpgrade=true;s.construction.push({type:'storehouse',left:CONSTRUCTION_SECONDS});note(s,'Storehouse organised · four queue slots per workshop');return true;}
 export function milestone(s){if(!s.harvests)return 0;if(!s.milled)return 1;if(!s.baked)return 2;if(!s.deliveries)return 3;if(!s.expansion)return 4;if(!s.pier)return 5;return 6;}
+// Timers are persisted work, not a validation against today's balance table.
+const MAX_SAVE_TIMER=86400;
 export function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
+ if(x&&Number.isInteger(x.version)&&x.version>13)throw Error('This town was saved by a newer version. Open it in that version or export it for later.');
  if(!x||![1,2,3,4,5,6,7,8,9,10,11,12,13].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  if(x.townFocus!==undefined&&x.townFocus!==null&&!Object.hasOwn(TOWN_FOCUSES,x.townFocus))invalid();s.townFocus=x.townFocus||null;if(s.townFocus&&!x.pier)invalid();
@@ -84,14 +87,14 @@ export function parseSave(raw){
   if((s.specialisation&&!s.pier)||(s.specialists.length&&!s.specialisation)||(s.charter&&s.contractsDone.length<2)||s.specialists.some(st=>!has(s,st==='boatyard'?'fishing':'olive')))invalid();
   if(x.contract!==null){const c=x.contract,definition=c&&Object.hasOwn(CONTRACTS,c.id)?CONTRACTS[c.id]:null;if(!definition||!Number.isSafeInteger(c.shipped)||c.shipped<0||c.shipped>=definition.shipments||definition.path!==s.specialisation||!s.specialists.includes(PATHS[definition.path].station))invalid();s.contract={id:c.id,shipped:c.shipped};}
  }
- if(x.version>=3){if(!Array.isArray(x.construction)||x.construction.length>7)invalid();const seen=new Set();for(const p of x.construction){if(!p||!['olive','fishing','pier','storehouse','boatyard','estate','charter'].includes(p.type)||seen.has(p.type)||!Number.isFinite(p.left)||p.left<=0||p.left>CONSTRUCTION_SECONDS)invalid();if((['olive','fishing'].includes(p.type)&&!has(s,p.type))||(p.type==='pier'&&!s.pier)||(p.type==='storehouse'&&!s.workshopUpgrade)||(['boatyard','estate'].includes(p.type)&&!s.specialists.includes(p.type))||(p.type==='charter'&&!s.charter))invalid();seen.add(p.type);s.construction.push({type:p.type,left:p.left});}}
+ if(x.version>=3){if(!Array.isArray(x.construction)||x.construction.length>7)invalid();const seen=new Set();for(const p of x.construction){if(!p||!['olive','fishing','pier','storehouse','boatyard','estate','charter'].includes(p.type)||seen.has(p.type)||!Number.isFinite(p.left)||p.left<=0||p.left>MAX_SAVE_TIMER)invalid();if((['olive','fishing'].includes(p.type)&&!has(s,p.type))||(p.type==='pier'&&!s.pier)||(p.type==='storehouse'&&!s.workshopUpgrade)||(['boatyard','estate'].includes(p.type)&&!s.specialists.includes(p.type))||(p.type==='charter'&&!s.charter))invalid();seen.add(p.type);s.construction.push({type:p.type,left:p.left});}}
  if(x.version>=5){
   if(!x.refits||typeof x.refits!=='object'||Array.isArray(x.refits))invalid();
   for(const[st,mode]of Object.entries(x.refits)){if(!Object.hasOwn(REFITS,st)||!['speed','queue'].includes(mode)||!s.expansion||(st==='fishing'&&!has(s,'fishing')))invalid();s.refits[st]=mode;}
  }
  if(x.version>=6){
   const w=x.waterfront;
-  if(!w||typeof w!=='object'||Array.isArray(w)||![null,'maritime','estate'].includes(w.path)||!Number.isInteger(w.stage)||w.stage<0||w.stage>3||typeof w.funded!=='boolean'||!Number.isInteger(w.delivered)||w.delivered<0||w.delivered>2||!Number.isFinite(w.left)||w.left<0||w.left>WATERFRONT_SECONDS)invalid();
+  if(!w||typeof w!=='object'||Array.isArray(w)||![null,'maritime','estate'].includes(w.path)||!Number.isInteger(w.stage)||w.stage<0||w.stage>3||typeof w.funded!=='boolean'||!Number.isInteger(w.delivered)||w.delivered<0||w.delivered>2||!Number.isFinite(w.left)||w.left<0||w.left>MAX_SAVE_TIMER)invalid();
   if(w.path===null){if(w.stage||w.funded||w.delivered||w.left)invalid();}
   else if(!s.charter||underConstruction(s,'charter')||!s.specialists.includes(PATHS[w.path].station)||underConstruction(s,PATHS[w.path].station)||(!w.stage&&!w.funded))invalid();
   if((!w.funded&&(w.delivered||w.left))||(w.stage===3&&w.funded)||(w.funded&&((w.delivered===2)!==(w.left>0))))invalid();
@@ -106,7 +109,7 @@ export function parseSave(raw){
  if(x.version>=12)validateFerry(s,x.ferry,invalid);
   if(x.version>=13)validateResidents(s,x.residents,invalid);
  if(s.selectedOrder==='inland'&&!inlandTradeReady(s))invalid();
- for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>(['flax','cloth','furniture','sails'].includes(j.key)?RECIPES[j.key].duration:recipeDuration(s,j.key)))invalid();s.jobs.push({key:j.key,left:j.left});}
+ for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>MAX_SAVE_TIMER)invalid();s.jobs.push({key:j.key,left:j.left});}
  for(const station of new Set(Object.values(RECIPES).map(r=>r.station)))if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
  if(s.ripe&&s.jobs.some(j=>j.key==='field'))invalid();
  if(x.log.length>5||x.log.some(t=>typeof t!=='string'||t.length>250))invalid();s.log=x.log.map(t=>t.replace(/[<>]/g,''));
@@ -293,12 +296,12 @@ function tickMarket(s,elapsed){
  return changed;
 }
 function validateMarket(s,m,invalid){
- if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MARKET_SECONDS.access||!Array.isArray(m.plots)||m.plots.length!==3||m.plots[2]!==null||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
+ if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MAX_SAVE_TIMER||!Array.isArray(m.plots)||m.plots.length!==3||m.plots[2]!==null||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
  if((m.access&&s.waterfront.stage!==3)||(!m.access&&(m.left||m.plots.some(Boolean)||Object.keys(m.businesses).length))||(m.left&&Object.keys(m.businesses).length))invalid();
  const out={access:m.access,left:m.left,plots:[...m.plots],businesses:{}};
  for(const [type,b]of Object.entries(m.businesses)){
   const definition=Object.hasOwn(MARKET_BUSINESSES,type)?MARKET_BUSINESSES[type]:null;
-  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||!has(s,definition.requires)||underConstruction(s,definition.requires)||!Number.isFinite(b.left)||b.left<0||b.left>MARKET_SECONDS.business||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>=MARKET_SECONDS.demand||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
+  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||!has(s,definition.requires)||underConstruction(s,definition.requires)||!Number.isFinite(b.left)||b.left<0||b.left>MAX_SAVE_TIMER||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>MAX_SAVE_TIMER||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
   out.businesses[type]={plot:b.plot,left:b.left,demand:b.demand,replenish:b.replenish,auto:b.auto,deliveries:b.deliveries};
  }
  for(let i=0;i<2;i++)if(m.plots[i]!==null&&(!Object.hasOwn(out.businesses,m.plots[i])||out.businesses[m.plots[i]].plot!==i))invalid();
@@ -335,7 +338,7 @@ export function inlandGuide(s){
  return {step:5,title:'From terrace to market',description:'Your inland chain is established. Balance kiln time between jars and tiles, grow your second terrace and supply town or export orders.',label:'Manage the terraces',target:'inland'};
 }
 function validateInland(s,i,invalid){
- const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),time=(x,max)=>Number.isFinite(x)&&x>=0&&x<=max;
+ const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),time=(x,max)=>Number.isFinite(x)&&x>=0&&x<=MAX_SAVE_TIMER;
  if(!obj(i)||typeof i.access!=='boolean'||!time(i.left,INLAND_SECONDS.access)||!Array.isArray(i.terraces)||i.terraces.length!==2||typeof i.courtyard!=='boolean'||!time(i.courtyardLeft,INLAND_SECONDS.courtyard)||!Number.isSafeInteger(i.shipments)||i.shipments<0||i.shipments>1e9)invalid();
  if((i.access&&!inlandEligible(s))||(!i.access&&(i.left||i.terraces.some(t=>t!==null)||i.kiln!==null||i.courtyard||i.courtyardLeft||i.shipments))||(i.left&&(i.terraces.some(t=>t!==null)||i.kiln!==null||i.courtyard||i.shipments)))invalid();
  const out={access:i.access,left:i.left,terraces:[],kiln:null,courtyard:i.courtyard,courtyardLeft:i.courtyardLeft,shipments:i.shipments};
@@ -427,7 +430,7 @@ export function fleetGuide(s){
 function validateFleet(s,f,invalid,version){
  const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),count=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
  if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==2||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
- const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>LIGHTHOUSE_SECONDS||(l.stage===3&&l.left))invalid();
+ const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>MAX_SAVE_TIMER||(l.stage===3&&l.left))invalid();
  const out={development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
  if(version>=10){
   if(!obj(f.development)||!obj(f.commissions)||Object.keys(f.development).length!==2||Object.keys(f.commissions).length!==2)invalid();

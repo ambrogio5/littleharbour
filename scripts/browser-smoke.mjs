@@ -21,6 +21,27 @@ const base='http://127.0.0.1:'+server.address().port;
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',headless:true,args:['--disable-dev-shm-usage','--no-sandbox']});
+ // Run recovery against the real application, including close, reload and lifecycle saves.
+ for(const raw of ['', '{broken', JSON.stringify({version:999,payload:'future town'})]){
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  await context.addInitScript(raw=>{if(localStorage.getItem('seeded')===null){localStorage.setItem('little-harbour-v1',raw);localStorage.setItem('seeded','yes');}},raw);
+  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'/');await page.waitForSelector('#dialog[open]');
+  assert((await page.locator('#dialogContent').innerText()).includes('original town is protected'));
+  assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),raw);
+  const downloadEvent=page.waitForEvent('download');await page.locator('[data-action="export-original"]').click();
+  const download=await downloadEvent;assert.equal(fs.readFileSync(await download.path(),'utf8'),raw,'Export preserves original bytes');
+  await page.locator('#closeDialog').click();await page.locator('#v2TaskCards button').first().click();
+  await page.evaluate(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('pagehide'));});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),raw);
+  await page.reload();await page.waitForSelector('#dialog[open]');
+  await page.locator('[data-action="confirm-reset"]').click();await page.locator('[data-action="reset"]').click();
+  const stored=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));
+  assert(Object.entries(stored).some(([k,v])=>k.startsWith('little-harbour-v1-backup-')&&v===raw),'Reset archives original bytes');
+  assert.equal(JSON.parse(stored['little-harbour-v1']).version,13);assert.deepEqual(errors,[]);
+  await context.close();
+ }
+ console.log('PASS save recovery: malformed, empty and future saves survive export, clicks, lifecycle and reload; explicit reset keeps exact backups.');
  for(const device of [
   {name:'iPhone-sized touch',viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:3},
   {name:'tablet browser',viewport:{width:1024,height:768},isMobile:false,hasTouch:true,deviceScaleFactor:2},

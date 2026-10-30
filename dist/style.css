@@ -100,3 +100,7 @@
 @media(max-width:740px){.mobile-nav{grid-template-columns:repeat(6,minmax(0,1fr))}.mobile-nav button{font-size:10px;padding-left:2px;padding-right:2px}.fleet-navigation button{font-size:11px;padding:8px 5px}.boat-choice,.voyage-card,.destination-card,.lighthouse-step,.repeat-card,.boat-upgrade{padding:16px}.coast-boat{width:46px;height:44px}.district-nav{gap:5px}.district-nav button{padding:8px 10px}}
 
 .coast-developed{position:absolute;inset:0;z-index:1;background:url('assets/coast-developed.png') center/100% 100% no-repeat;pointer-events:none}
+
+/* Save protection is visible even when the recovery dialog is dismissed. */
+.save-recovery-banner{position:sticky;top:0;z-index:100;width:100%;min-height:44px;border:0;background:#78462d;color:#fff6e5;padding:10px;font:inherit;cursor:pointer}
+.save-recovery-banner[hidden]{display:none}

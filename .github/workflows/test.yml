@@ -1,7 +1,8 @@
 name: Little Harbour tests
 on:
+  workflow_call:
   push:
-    branches: [main, 'recovery/**']
+    branches: ['recovery/**']
   pull_request:
     branches: [main]
 permissions:
@@ -29,7 +30,6 @@ jobs:
       - name: Interactive browser smoke (mobile and desktop)
         run: node scripts/browser-smoke.mjs
       - name: Build downloadable V4 playtest
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run standalone -- ./Little-Harbour-V4-Playtest.html
       - name: Upload standalone V4 HTML
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
