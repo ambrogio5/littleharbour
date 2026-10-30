@@ -150,3 +150,12 @@ main{align-items:start;gap:15px}
 html,body{max-width:100%;overflow-x:clip}
 .management #panel button,.management #panel a{max-width:100%;overflow-wrap:anywhere}
 .v3-zone-nav{overscroll-behavior-x:contain}
+
+/* Physical safe bounds: camera toolbar is anchored to the right only, never
+   stretched by inherited left/right positioning on narrow web views. */
+.unified-map .world-camera-tools{
+ left:auto!important;right:8px!important;inset-inline-start:auto!important;
+ inset-inline-end:8px!important;width:max-content!important;
+ max-width:calc(100% - 16px)!important;
+}
+.unified-map .world-camera-tools button{flex-shrink:0}
