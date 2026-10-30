@@ -81,7 +81,7 @@ try{
   await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#panel .v2-overview-panel')!==null);
   if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
-  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.locator(navigation+'[data-tab="build"]').click();
   await page.waitForFunction(()=>document.querySelector('#panel')?.textContent?.includes('Room to grow'));
   assert.deepEqual(errors,[],'sample page browser errors: '+errors.join(' | '));
   console.log('PASS '+device.name+': V2 initialized, navigated, zoomed, filtered, harvested, restored save and opened sample.');
