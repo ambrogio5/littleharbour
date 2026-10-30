@@ -28,8 +28,6 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts playwright-core
       - name: Interactive browser smoke (mobile and desktop)
         run: node scripts/browser-smoke.mjs
-      - name: Temporary V4 visual review captures
-        run: node scripts/visual-review.mjs
       - name: Build downloadable V4 playtest
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm run standalone -- ./Little-Harbour-V4-Playtest.html
