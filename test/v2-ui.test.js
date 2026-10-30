@@ -55,11 +55,11 @@ test('V2 management hero and navigation produce structured, complete text',()=>{
 test('V2 visual shell is shipped on game and sample routes and portable builder',()=>{
  const index=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
  const demo=readFileSync(new URL('../dist/demo.html',import.meta.url),'utf8');
- const css=readFileSync(new URL('../dist/v2.css',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../dist/game.css',import.meta.url),'utf8');
  const app=readFileSync(new URL('../dist/app.js',import.meta.url),'utf8');
  const bundle=readFileSync(new URL('../scripts/build-standalone.mjs',import.meta.url),'utf8');
  for(const html of [index,demo]){
-  for(const token of ['v2.css','id="v2Coins"','id="v2Stock"','id="v2TaskCards"','id="v2Hero"','v2-map-rail','data-tab="map"','data-action="v2-inventory"'])assert(html.includes(token),token);
+  for(const token of ['game.css','id="v2Coins"','id="v2Stock"','id="v2TaskCards"','id="v2Hero"','v2-map-rail','data-tab="map"','data-action="v2-inventory"'])assert(html.includes(token),token);
   assert.equal((html.match(/id="v2TaskCards"/g)||[]).length,1);
  }
  assert(css.includes('@media(max-width:740px)'));
@@ -67,6 +67,6 @@ test('V2 visual shell is shipped on game and sample routes and portable builder'
  assert(app.includes("v2TaskCards(state)"));
  assert(app.includes("v2OverviewPanel(state)"));
  assert(app.includes("if(a==='v2-filter')"));
- assert(bundle.includes("'v2.css'"));
+ assert(bundle.includes("dist/game.css"));
  assert(bundle.includes("dist/v2-ui.js"));
 });
