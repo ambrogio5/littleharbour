@@ -23,6 +23,12 @@ test('Standalone packaging preserves JavaScript dollar signs and produces valid 
   assert(html.includes('id="v2TaskCards"'));
   assert(html.includes('v2-task-grid'));
   assert(html.includes('function v2Tasks('));
+  assert(html.includes('function createWorldArt('));
+  assert(html.includes('id="v3ZoneNav"'));
+  assert(html.includes('newWorldArt'));
+  assert(!html.includes('href="v3.css?v=0.18.0"'));
+  assert(!html.includes('src="app.js?v=0.18.0"'));
+
   assert(!html.includes('href="v2.css"'));
   assert(!html.includes('src="v2-ui.js"'));
   assert(!html.includes('src="app.js"'));
