@@ -404,7 +404,7 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
  if(success)render();else if(a&&!['prioritize'].includes(a))toast('That action is not available yet.');
 }
 function init(){
- worldMap=createWorldMap($('#map'));
+ worldMap=createWorldMap($('#map'),id=>{currentDistrict=id;});
  if(matchMedia('(max-width:740px)').matches)worldMap.focus(state.harvests?'harbour':'inland');else worldMap.fit();
  scene=createHarbourScene($('#activityCanvas'),()=>state,()=>document.hidden||$('#dialog').open,recipeDuration);
  marketScene=createMarketScene($('#marketCanvas'),()=>state,()=>document.hidden||$('#dialog').open,MARKET_PLOTS);
