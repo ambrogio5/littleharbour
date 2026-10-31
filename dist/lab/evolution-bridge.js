@@ -30,7 +30,7 @@ function worldOrnaments(model){
 export function createLivingHarbour(slot){
  const key=slot+'-living-v1';
  const initial=()=>createEvolution(6187);
- let model=initial(),blocked=false,error='';
+ let model=initial(),blocked=false,error='',lastRendered='';
  try{
   const raw=localStorage.getItem(key);
   if(raw!==null)model=restoreEvolution(raw);
@@ -41,6 +41,9 @@ export function createLivingHarbour(slot){
   catch(e){blocked=true;error='Evolution data protected: '+(e.message||'Storage unavailable');return false;}
  }
  function render(){
+  const signature=serializeEvolution(model)+'|'+blocked;
+  if(signature===lastRendered&&document.getElementById('livingWorldLayer'))return;
+  lastRendered=signature;
   const el=document.getElementById('livingHarbourStatus');
   const v=deriveWorldStyle(model),event=currentEvent(model);
   if(el){
