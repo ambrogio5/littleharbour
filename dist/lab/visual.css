@@ -30,3 +30,8 @@
  .management #panel{padding-bottom:15px}
 }
 @media(prefers-reduced-motion:reduce){#newWorldArt [data-world-building]{transition:none!important}}
+
+/* Transparent district stages must not block illustrated building taps. */
+.unified-map .map-stage{pointer-events:none!important}
+.unified-map .map-stage button,.unified-map .map-stage a{pointer-events:auto!important}
+#newWorldArt [data-world-building]{pointer-events:visiblePainted}
