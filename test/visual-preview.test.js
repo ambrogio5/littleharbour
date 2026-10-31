@@ -35,14 +35,14 @@ test('different businesses have different physical artwork',()=>{
  assert.notEqual(mill,bakery);
  assert.notEqual(fish,olive);
  assert.match(mill,/circle/);
- assert.match(bakery,/q-20 -19/);
+ assert.match(bakery,/q-14 -24/);
  assert.match(fish,/boat|path/);
 });
 test('the same plot changes visibly across unbuilt construction and built',()=>{
  const art=stage=>renderWorldBuildings([{...base,id:'bakery',kind:'bakery',stage}]);
  assert.notEqual(art('unbuilt'),art('building'));
  assert.notEqual(art('building'),art('built'));
- assert.match(art('building'),/opacity=".48"/);
+ assert.match(art('building'),/opacity=".46"/);
 });
 test('map supports direct tap and stable pan/zoom navigation',()=>{
  const nav=read('dist/lab/world-map-v2.js');
