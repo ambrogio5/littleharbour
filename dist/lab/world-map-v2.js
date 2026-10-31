@@ -27,6 +27,11 @@ export function createWorldMap(root,onRegionChange=()=>{}){
   ['.specialist-pin','specialist'],['.waterfront-pin','waterfront']
  ].map(([selector,id])=>{const site=WORLD_LAYOUT.sites[id];return [selector,site.zone,site.x,site.y+95];});
  if(document.createElement&&track.appendChild){
+  // A positioned HTML hit layer sits directly above the world illustration.
+  // SVG paint and transparent stage overlays cannot swallow building taps.
+  const hitLayer=document.createElement('div');
+  hitLayer.className='world-art-hit-layer';
+  track.appendChild(hitLayer);
   const layer=document.createElement('div');layer.className='world-primary-hotspots';track.appendChild(layer);const extra=document.createElement('div');extra.className='world-entity-hotspots';track.appendChild(extra);
   for(const [selector,zone,x,y] of pins){
    const button=root.querySelector(selector);if(!button)continue;
@@ -144,6 +149,8 @@ export function createWorldMap(root,onRegionChange=()=>{}){
  new ResizeObserver(draw).observe(viewport);focus('harbour');
  return {focus,fit,zoom,update(locks,state){
  if(state){const entities=worldEntities(state),snapshot=JSON.stringify(entities);if(snapshot!==lastEntitySnapshot){const layer=document.getElementById('worldBuildings');if(layer)layer.innerHTML=renderWorldBuildings(entities);
+ const artHits=root.querySelector('.world-art-hit-layer');
+ if(artHits)artHits.innerHTML=entities.map(e=>`<button class="world-art-hit" data-action="world-site" data-key="${e.id}" data-hotspot-zone="${e.zone}" style="left:${e.x}px;top:${e.y}px" aria-label="Open ${e.label}"></button>`).join('');
  const extra=root.querySelector('.world-entity-hotspots');
  if(extra)extra.innerHTML=entities.filter(e=>!['field','mill','bakery','olive','fishing','pier','specialist','waterfront'].includes(e.id)&&(!['terrace0','terrace1','claypit','kiln'].includes(e.id)||state.inland.access)).map(e=>`<button class="world-entity-button" data-hotspot-zone="${e.zone}" data-action="world-site" data-key="${e.id}" style="left:${e.x}px;top:${e.y+80}px" aria-label="${e.label} · ${e.stage}">${e.label}<small>${e.stage==='unbuilt'?'Plan construction':e.stage==='building'?'Work in progress':'Open'}</small></button>`).join('');
  lastEntitySnapshot=snapshot;}}
