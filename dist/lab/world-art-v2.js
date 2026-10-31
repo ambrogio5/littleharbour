@@ -127,6 +127,6 @@ export function renderWorldBuildings(entities){
    art=`<g opacity=".48">${base}</g><path d="M-80 30v-105M77 31v-101M-80 -55H77M-80 -18H77M-80 20H77M-80 -75L77 19M77 -70L-80 26" stroke="#896f4e" stroke-width="7" fill="none"/><path d="M-92 -82h38l-19 -31Z" fill="#d5a25f"/><path d="M-72 -75h132" stroke="#e9cda4" stroke-width="7"/>`;
   }
   const safeLabel=String(e.label).replaceAll('&','&amp;').replaceAll('<','&lt;');
-  return `<g data-world-building="${e.id}" data-stage="${e.stage}" data-level="${e.level}" transform="translate(${e.x} ${e.y})"><title>${safeLabel} — ${e.stage}</title>${art}</g>`;
+  return `<g data-world-building="${e.id}" data-stage="${e.stage}" data-level="${e.level}" transform="translate(${e.x} ${e.y})"><title>${safeLabel} — ${e.stage}</title>${art}<ellipse cx="0" cy="0" rx="90" ry="82" fill="transparent" pointer-events="all"/></g>`;
  }).join('');
 }
