@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const base={x:250,y:750,stage:'built',level:1,ripe:false,label:'Test building'};
 test('playable visual preview is an actual game entrypoint',()=>{
  const html=read('dist/preview-map.html');
- assert.ok(html.includes('src="lab/app-v2.js?v=0.2"'));
+ assert.ok(html.includes('src="lab/app-v2.js?v=0.3"'));
  assert.match(html,/data-tab="trade"/);
  assert.match(html,/data-tab="build"/);
  assert.match(html,/data-tab="produce"/);
@@ -16,7 +16,7 @@ test('visual preview uses isolated saves and the production engine',()=>{
  assert.match(app,/from '\.\.\/engine\.js\?v=0\.20\.1'/);
  assert.match(app,/little-harbour-visual-preview-v1/);
  assert.doesNotMatch(app,/const KEY=DEMO\?'little-harbour-sample-v1':'little-harbour-v1'/);
- assert.ok(app.includes("from './world-map-v2.js?v=0.2'"));
+ assert.ok(app.includes("from './world-map-v2.js?v=0.3'"));
  assert.match(app,/if\(a==='dispatch'\)/);
  assert.match(app,/if\(a==='build'\)/);
 });
