@@ -128,6 +128,17 @@ export function createWorldMap(root,onRegionChange=()=>{}){
   const region=e.target.closest('[data-region]');
   if(region&&camera.z<.22){focus(region.dataset.region);e.preventDefault();e.stopPropagation();}
  },true);
+
+ // Artwork is itself a hit target: tapping a mill, bakery, or other rendered
+ // building performs the same validated action as its accessible map pin.
+ root.addEventListener('click',e=>{
+  const sprite=e.target.closest?.('[data-world-building]');
+  if(!sprite||performance.now()<suppressUntil)return;
+  const id=sprite.dataset.worldBuilding;
+  const primary={field:'.field-pin',mill:'.mill-pin',bakery:'.bakery-pin',olive:'.expansion-pin',fishing:'.fishing-pin',pier:'.harbour-pin',specialist:'.specialist-pin',waterfront:'.waterfront-pin'};
+  const button=primary[id]?root.querySelector(primary[id]):root.querySelector('.world-entity-button[data-key="'+id+'"]');
+  if(button){e.preventDefault();button.click();}
+ });
  viewport.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey){camera.x-=e.deltaX||e.deltaY;camera.y-=e.deltaY;draw();}else zoom(Math.exp(-e.deltaY*.0025),point(e));},{passive:false});
  viewport.addEventListener('keydown',e=>{if(e.target!==viewport)return;const shifts={ArrowLeft:[80,0],ArrowRight:[-80,0],ArrowUp:[0,80],ArrowDown:[0,-80]};if(shifts[e.key]){e.preventDefault();camera.x+=shifts[e.key][0];camera.y+=shifts[e.key][1];draw();}else if(['+','=','-','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home')focus('harbour');else zoom(e.key==='-'?1/1.35:1.35);}});
  new ResizeObserver(draw).observe(viewport);focus('harbour');
