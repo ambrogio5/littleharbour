@@ -71,3 +71,7 @@
  border-radius:6px;
  padding:3px 9px!important;
 }
+
+/* Production styling deliberately makes the world illustration untouchable; the preview reverses that. */
+.unified-map #newWorldArt{pointer-events:auto!important}
+.unified-map #newWorldArt [data-world-building]{pointer-events:all!important}
