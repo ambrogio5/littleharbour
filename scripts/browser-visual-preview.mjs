@@ -58,6 +58,11 @@ try{
   await page.locator('#v3ZoneNav [data-key="inland"]').click();
   await page.waitForTimeout(350);
   assert.equal(await page.locator('#v3ZoneNav [data-key="inland"]').getAttribute('aria-pressed'),'true');
+  // Tap the drawn mill itself, not its separate caption, and require the
+  // actual production panel to open.
+  await page.locator('#newWorldArt [data-world-building="mill"]').click({timeout:7000});
+  assert((await page.locator('#panel').innerText()).toLowerCase().includes('mill'),'Physical mill should open real production');
+  if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();else await page.locator('.v2-topnav [data-tab="map"]').click();
   const zoomBefore=await page.locator('#worldZoom').innerText();
   await page.locator('#map [data-camera="in"]').click();
   const zoomAfter=await page.locator('#worldZoom').innerText();
