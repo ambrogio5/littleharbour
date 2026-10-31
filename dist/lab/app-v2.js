@@ -1,8 +1,9 @@
 import {worldEntities} from '../world-model.js?v=0.20.1';
+import {createLivingHarbour} from './evolution-bridge.js?v=0.2';
 import {renderMarkup} from '../ui-renderer.js?v=0.20.1';
 import {currentObjective} from '../progression.js?v=0.20.1';
 import {createSaveStore} from '../save-store.js?v=0.20.1';
-import {createWorldMap} from './world-map-v2.js';
+import {createWorldMap} from './world-map-v2.js?v=0.2';
 import {v2TaskCards,v2TopStock,v2ContextHero,v2OverviewPanel,v2Tasks} from '../v2-ui.js?v=0.20.1';
 import {townTasks,townTaskView} from '../world-guide.js?v=0.20.1';
 import {TOWN_FOCUSES,townFocusBlocker,setTownFocus} from '../engine.js?v=0.20.1';
@@ -27,7 +28,26 @@ import {DISTRICTS,MARKET_PLOTS} from '../districts.js?v=0.20.1';
 import {createHarbourScene,createMarketScene} from '../scene.js?v=0.20.1';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const DEMO=typeof document!=='undefined'&&document.body?.dataset.demo==='true';
-const KEY=DEMO?'little-harbour-visual-sample-v1':'little-harbour-visual-preview-v1';let state=DEMO?sampleTown():fresh(),storageOK=true,saveWarning='';
+const KEY=DEMO?'little-harbour-visual-sample-v1':'little-harbour-visual-preview-v1';
+const livingHarbour=createLivingHarbour(KEY);
+function recordLivingAction(action,value){
+ const straightforward={
+  'dispatch':'ship-cargo','contract-dispatch':'ship-cargo','market-deliver':'ship-cargo',
+  'upgrade':'expand-quay','ferry-fund':'expand-quay',
+  'neigh-build':'fund-festival','residents-deliver':'fund-festival',
+  'residents-select':'fund-festival','neigh-open':'fund-festival',
+  'waterfront-fund':'repair-waterfront','waterfront-supply':'repair-waterfront',
+  'workshops':'train-artisans','invest':'train-artisans',
+  'market-build':'train-artisans','kiln-build':'train-artisans',
+  'terrace-build':'restore-grove','inland-access':'restore-grove'
+ };
+ let selected=straightforward[action]||null;
+ if(action==='build')selected=value==='olive'?'restore-grove':'expand-quay';
+ if(action==='town-focus')selected=value==='trade'?'ship-cargo':value==='builders'?'train-artisans':'fund-festival';
+ if(action==='specialise')selected=value==='estate'?'restore-grove':'train-artisans';
+ if(selected)livingHarbour.record(selected);
+}
+let state=DEMO?sampleTown():fresh(),storageOK=true,saveWarning='';
 const saveStore=createSaveStore(()=>localStorage,KEY),loadedSave=saveStore.read();
 if(loadedSave.state)state=loadedSave.state;
 if(loadedSave.error){storageOK=false;saveWarning=loadedSave.error;}
@@ -272,7 +292,7 @@ function render(){
  $('#mapState').textContent=state.speed===0?'Paused':state.waterfront.left?'Waterfront crew on site':state.construction.length?'Crew on site · '+state.construction.length+' project'+(state.construction.length===1?'':'s'):state.jobs.length?state.jobs.length+' active / queued':'Tap a building · Drag to explore';
  $('#autosaveWarning').hidden=storageOK;
  $('#pauseLabel').textContent=state.speed===0?'Paused — choose a speed to resume':'Simulation speed';
- updateGuide();checkMilestones();updateProgress();updateWorld();updateSaveStatus();
+ updateGuide();checkMilestones();updateProgress();updateWorld();livingHarbour.render();updateSaveStatus();
 }
 function updateProgress(){updateFleetProgress();updateInlandProgress();updateMarketProgress();const w=state.waterfront,wt=$('[data-waterfronttime]'),wb=$('[data-waterfrontbar]');if(wt)wt.textContent=Math.ceil(w.left)+' simulation seconds'+(state.speed===0?' · paused':' remaining');if(wb)wb.style.width=(1-w.left/WATERFRONT_SECONDS)*100+'%';const crop=state.jobs.find(j=>j.key==='field'),growth=state.ripe?1:crop?Math.max(0,1-crop.left/RECIPES.field.duration):0;$('#fieldSoil').style.opacity=String(1-Math.max(0,(growth-.3)/.7));$$('[data-stationtime]').forEach(el=>{const j=state.jobs.find(j=>RECIPES[j.key].station===el.dataset.stationtime);el.textContent=j?RECIPES[j.key].name+' · '+Math.ceil(j.left)+'s'+(state.speed===0?' · paused':' remaining'):'';});for(const p of state.construction){const text=$(`[data-buildtime="${p.type}"]`),bar=$(`[data-buildbar="${p.type}"]`);if(text)text.textContent=Math.ceil(p.left)+'s'+(state.speed===0?' · paused':' remaining');if(bar)bar.style.width=(1-p.left/CONSTRUCTION_SECONDS)*100+'%';}const seen=new Set();state.jobs.forEach((j,i)=>{const r=RECIPES[j.key],queued=seen.has(r.station);seen.add(r.station);const label=$(`[data-jobtime="${i}"]`),bar=$(`[data-jobbar="${i}"]`);if(label)label.textContent=queued?'Queued':Math.ceil(j.left)+'s'+(state.speed===0?' · paused':'');if(bar)bar.style.width=Math.max(0,(1-j.left/recipeDuration(state,j.key))*100)+'%';});}
 function neighbourhoodEntry(){return neighbourhoodEligible(state)?`<article class="build-card neighbourhood-entry"><div class="panel-eyebrow">CHAPTER 04 · A LIVING TOWN</div><h3>Make room for a growing town.</h3><p>Choose six plots, develop furniture and textiles, and decide what to invest in next.</p><button class="button secondary" data-action="go-neighbourhood">${neighbourhoodReady(state)?'Manage neighbourhood':'Plan the new neighbourhood'} →</button></article>`:'';}
@@ -338,7 +358,7 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
  if(a==='v2-next'){nextStep();return;}
  if(a==='v2-task'){const task=v2Tasks(state).find(t=>t.id===b.dataset.key);if(!task)return;if(task.id==='harvest'){if(harvestReplant(state)){scene?.emit('harvest');toast('Wheat harvested and next crop planted.');render();save();}else choose('produce','field',true);return;}if(task.id==='next'){nextStep();return;}if(task.id==='production'){choose('produce','overview',true);return;}worldMap?.focus(task.district);choose(task.tab,null,true);return;}
  if(a==='town-direction'){choose('direction',null,true);return;}
- if(a==='town-focus'){success=setTownFocus(state,b.dataset.key);if(!success){toast(townFocusBlocker(state,b.dataset.key));return;}toast('Town direction: '+TOWN_FOCUSES[state.townFocus].name);render();return;}
+ if(a==='town-focus'){success=setTownFocus(state,b.dataset.key);if(!success){toast(townFocusBlocker(state,b.dataset.key));return;}toast('Town direction: '+TOWN_FOCUSES[state.townFocus].name);recordLivingAction(a,b.dataset.key);render();return;}
  if(a==='world-task'){const task=townTasks(state).find(t=>t.id===b.dataset.key);if(!task){render();return;}worldMap?.focus(task.district);if(task.next)nextStep();else choose(task.tab||'produce',task.station||null,true);return;}
 
  if(a==='go-ferry'){choose('ferry',null,true);return;}
@@ -452,10 +472,10 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
  if(a==='go-contracts'){choose('contracts',null,true);return;}
  if(a==='export'){downloadSave();return;}
  if(a==='import'){$('#importSave').click();return;}
- if(a==='apply-import'&&pendingImport){if(!saveStore.replace(pendingImport)){recovery();return;}state=pendingImport;neighbourhoodUI={plot:0,section:'overview',moveFrom:null};currentDistrict='harbour';fleetModes=['single','single'];fleetSlot=0;fleetSection='voyages';pinnedGoal=null;returnContext=null;savePin();marketScene?.reset();scene?.reset();resetMilestones();pendingImport=null;tab='produce';station='field';$('#dialog').close();success=true;toast('Town imported successfully.');}
- if(a==='reset'){const replacement=DEMO?sampleTown():fresh();if(!saveStore.replace(replacement)){recovery();return;}state=replacement;neighbourhoodUI={plot:0,section:'overview',moveFrom:null};currentDistrict='harbour';fleetModes=['single','single'];fleetSlot=0;fleetSection='voyages';pinnedGoal=null;returnContext=null;savePin();marketScene?.reset();scene?.reset();resetMilestones();state.onboarded=true;tab='produce';station='field';$('#dialog').close();success=true;toast('A new harbour is ready.');}
+ if(a==='apply-import'&&pendingImport){if(!saveStore.replace(pendingImport)){recovery();return;}state=pendingImport;neighbourhoodUI={plot:0,section:'overview',moveFrom:null};currentDistrict='harbour';fleetModes=['single','single'];fleetSlot=0;fleetSection='voyages';pinnedGoal=null;returnContext=null;savePin();marketScene?.reset();scene?.reset();resetMilestones();pendingImport=null;tab='produce';station='field';$('#dialog').close();livingHarbour.reset();success=true;toast('Town imported successfully.');}
+ if(a==='reset'){const replacement=DEMO?sampleTown():fresh();if(!saveStore.replace(replacement)){recovery();return;}state=replacement;neighbourhoodUI={plot:0,section:'overview',moveFrom:null};currentDistrict='harbour';fleetModes=['single','single'];fleetSlot=0;fleetSection='voyages';pinnedGoal=null;returnContext=null;savePin();marketScene?.reset();scene?.reset();resetMilestones();state.onboarded=true;tab='produce';station='field';$('#dialog').close();livingHarbour.reset();success=true;toast('A new harbour is ready.');}
  if(a==='confirm-reset'){showDialog('<div class="panel-eyebrow">START AGAIN</div><h2>Start a new town?</h2><p>Your existing save will be kept byte for byte in a verified device backup before the new town is saved. You can also export a copy first.</p><button class="button secondary" data-action="export">Export current town</button><button class="button" data-action="reset">Start a new town</button>');return;}
- if(success){render();save();}else if(a&&!['prioritize'].includes(a))toast('That action is not available yet.');
+ if(success){recordLivingAction(a,b.dataset.key);render();save();}else if(a&&!['prioritize'].includes(a))toast('That action is not available yet.');
 }
 function init(){
  worldMap=createWorldMap($('#map'),id=>{currentDistrict=id;});
@@ -464,7 +484,7 @@ function init(){
  marketScene=createMarketScene($('#marketCanvas'),()=>state,()=>document.hidden||$('#dialog').open,MARKET_PLOTS);
  resetMilestones();
  document.addEventListener('input',e=>{if(e.target.id==='ledgerSearch'){ledgerQuery=e.target.value;filterLedger();}});
- document.addEventListener('click',e=>{handleClick(e);if(e.target.closest('button'))save();});$('#help').onclick=help;$('#settings').onclick=settings;
+ document.addEventListener('click',e=>{const eventButton=e.target.closest('[data-evolution-event]');if(eventButton){livingHarbour.resolve(eventButton.dataset.evolutionEvent);return;}handleClick(e);if(e.target.closest('button'))save();});$('#help').onclick=help;$('#settings').onclick=settings;
  $('#closeDialog').onclick=()=>{if(!saveStore.blocked)state.onboarded=true;pendingImport=null;$('#dialog').close();save();};
  $('#dialog').addEventListener('cancel',()=>{if(!saveStore.blocked)state.onboarded=true;pendingImport=null;save();});
  $('#importSave').addEventListener('change',async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{if(file.size>100000)throw Error('Choose a Little Harbour JSON save under 100 KB.');pendingImport=parseSave(await file.text());showDialog(`<div class="panel-eyebrow">IMPORT TOWN</div><h2>Replace this town?</h2><p>The imported town has ${pendingImport.deliveries} deliveries, ${pendingImport.coins} coins and ${pendingImport.businesses.length} new businesses.</p><p>It will replace the current town in this browser.</p><button class="button secondary" data-action="export">Export current town first</button><button class="button" data-action="apply-import">Import this town</button>`);}catch(error){pendingImport=null;toast(error.message||'That save could not be imported.');}});
