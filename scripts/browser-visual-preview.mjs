@@ -71,6 +71,13 @@ try{
   await page.waitForFunction(()=>document.querySelector('#worldBuildings [data-world-building="olive"]')!==null);
   const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1')));
   assert(restored.businesses.includes('olive'),'Preview game persists construction after reload');
+  // Developed-town entry point reuses the game engine without touching the
+  // player's current town or the new-town preview save.
+  await page.locator('.preview-info a').click();
+  await page.waitForFunction(()=>document.querySelector('#newWorldArt')!==null&&document.querySelector('#worldBuildings [data-world-building="bakery"]')!==null,{timeout:15000});
+  assert.equal(await page.locator('body').getAttribute('data-demo'),'true');
+  assert((await page.locator('#worldBuildings [data-stage="built"]').count())>=3,'Developed sample should render actual structures');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),'must-stay-untouched');
   assert.deepEqual(errors,[],'Browser errors: '+errors.join(' | '));
   console.log('PASS '+device.name+': distinct map art, real trade, construction, safe save, camera and reload');
   await context.close();
