@@ -75,3 +75,15 @@
 /* Production styling deliberately makes the world illustration untouchable; the preview reverses that. */
 .unified-map #newWorldArt{pointer-events:auto!important}
 .unified-map #newWorldArt [data-world-building]{pointer-events:all!important}
+
+/* Tappable 2.5D footprints. Drawn structures remain visually independent. */
+.unified-map .world-art-hit-layer{position:absolute;inset:0;z-index:6;pointer-events:none}
+.unified-map .world-art-hit{
+ position:absolute;transform:translate(-50%,-50%);
+ width:172px;height:154px;
+ background:transparent;border:0;border-radius:40%;
+ pointer-events:auto;touch-action:manipulation;
+ cursor:pointer;appearance:none;-webkit-appearance:none;padding:0;
+}
+.unified-map .world-art-hit:focus-visible{outline:7px solid #f3d48a;outline-offset:1px}
+.unified-map.world-overview .world-art-hit-layer{visibility:hidden;pointer-events:none}
