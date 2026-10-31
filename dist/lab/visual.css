@@ -38,3 +38,36 @@
 
 .preview-info{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:7px 4vw;min-height:35px;background:#e6d9bd;color:#364c47;font:700 10px system-ui;letter-spacing:.04em}.preview-info a{color:#2e655b;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;font-weight:750}
 @media(max-width:740px){.preview-info{font-size:9px;padding:6px 11px;gap:7px}.preview-info span{max-width:56%;line-height:1.3}.preview-info a{font-size:10px}}
+
+/* Camera control box must never mask the drawn town. Only actual buttons
+   accept pointer events; the surrounding transparent area passes taps through. */
+.unified-map .world-camera-tools{
+ display:grid!important;
+ grid-template-columns:repeat(2,44px)!important;
+ gap:5px!important;
+ left:auto!important;right:7px!important;
+ bottom:10px!important;
+ width:93px!important;max-width:93px!important;
+ height:auto!important;min-width:0!important;
+ padding:0!important;
+ background:none!important;border:none!important;
+ pointer-events:none!important;
+}
+.unified-map .world-camera-tools button{
+ pointer-events:auto!important;
+ width:44px!important;min-width:44px!important;
+ max-width:44px!important;min-height:44px!important;
+ height:44px!important;margin:0!important;
+ padding:3px!important;font-size:10px!important;
+ line-height:1.1!important;white-space:normal!important;
+ border-radius:11px!important;
+}
+.unified-map .world-camera-tools #worldZoom{
+ pointer-events:none!important;
+ grid-column:1/-1!important;
+ justify-self:center!important;
+ background:#fff5e2e0;color:#315751;
+ font:600 10px system-ui!important;
+ border-radius:6px;
+ padding:3px 9px!important;
+}
