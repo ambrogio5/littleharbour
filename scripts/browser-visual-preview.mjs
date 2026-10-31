@@ -61,7 +61,9 @@ try{
   // Tap the drawn mill itself, not its separate caption, and require the
   // actual production panel to open.
   await page.locator('#newWorldArt [data-world-building="mill"]').click({timeout:7000});
-  assert((await page.locator('#panel').innerText()).toLowerCase().includes('mill'),'Physical mill should open real production');
+  const millPanel=await page.locator('#panel').innerText();
+  const activeSection=await page.locator('.v2-topnav [aria-current="page"]').first().getAttribute('data-tab');
+  assert(millPanel.toLowerCase().includes('mill'),'Physical mill should open real production; active section='+activeSection+' panel='+millPanel.slice(0,220));
   if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();else await page.locator('.v2-topnav [data-tab="map"]').click();
   const zoomBefore=await page.locator('#worldZoom').innerText();
   await page.locator('#map [data-camera="in"]').click();
