@@ -1,30 +1,30 @@
-import {worldEntities} from '..//world-model.js?v=0.20.1';
-import {renderMarkup} from '..//ui-renderer.js?v=0.20.1';
-import {currentObjective} from '..//progression.js?v=0.20.1';
-import {createSaveStore} from '..//save-store.js?v=0.20.1';
-import {createWorldMap} from '..//world-map.js?v=0.20.1';
-import {v2TaskCards,v2TopStock,v2ContextHero,v2OverviewPanel,v2Tasks} from '..//v2-ui.js?v=0.20.1';
-import {townTasks,townTaskView} from '..//world-guide.js?v=0.20.1';
-import {TOWN_FOCUSES,townFocusBlocker,setTownFocus} from '..//engine.js?v=0.20.1';
-import {projectPlan,queueProject} from '..//project-planning.js?v=0.20.1';
-import {projectPanelView} from '..//project-ui.js?v=0.20.1';
-import {ferryEntryView,ferryPanelView} from '..//ferry-ui.js?v=0.20.1';
-import {ferryEligible,ferryFundingBlocker,fundFerryStage,ferryDeliveryBlocker,deliverFerrySupplies,ferryServiceBlocker,startFerryService,ferryGuide} from '..//engine.js?v=0.20.1';
-import {chooseResidentsProposal,deliverResidentsSupplies,residentsDeliveryBlocker,residentsComplete} from '..//engine.js?v=0.20.1';
-import {neighbourhoodPanelView,neighbourhoodMapView,residentsPanelView,residentsEntryView} from '..//neighbourhood-ui.js?v=0.20.1';
-import {NEIGHBOURHOOD_BUILDINGS,neighbourhoodEligible,neighbourhoodReady,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,neighbourhoodMoveBlocker,moveNeighbourhoodBuilding,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,sailRefitBlocker,refitBoatSails,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,neighbourhoodGuide} from '..//engine.js?v=0.20.1';
-import {boatCargoCapacity,circuitPlan,circuitBlocker,startCircuit,coastalProjectBlocker,fundCoastalProject,commissionBlocker,completeCommission} from '..//engine.js?v=0.20.1';
-import {fleetEntryView,fleetPanelView} from '..//fleet-ui.js?v=0.20.1';
-import {coastMapView,coastPosition,coastTripPath} from '..//coast-view.js?v=0.20.1';
-import {COAST_BERTHS,COAST_BERTH_ROUTES} from '..//coast-map.js?v=0.20.1';
-import {FLEET_BOATS,FLEET_ROUTES,FLEET_UPGRADES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,fleetEligible,berthCount,boatBlocker,buyBoat,voyagePlan,voyageBlocker,startVoyage,cancelVoyage,setRepeatVoyage,repeatVoyageBlocker,boatUpgradeBlocker,installBoatUpgrade,lighthouseBlocker,buildLighthouseStage,fleetGuide} from '..//engine.js?v=0.20.1';
-import {sampleTown} from '..//demo-town.js?v=0.20.1';
-import {INLAND_PLOTS,INLAND_KILN,INLAND_CLAY,INLAND_PRESERVING,INLAND_ROADS} from '..//inland-map.js?v=0.20.1';
-import {inlandEligible,inlandReady,inlandTradeReady,inlandAccessBlocker,inlandAccess,terraceBlocker,buildTerrace,kilnBlocker,buildKiln,courtyardBlocker,buildCourtyard,inlandGuide,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST} from '..//engine.js?v=0.20.1';
-import {productionStatus,captureTargets,parseTargetPresets,applyTargetPreset} from '..//planning.js?v=0.20.1';
-import {ITEMS,RECIPES,fresh,parseSave,has,canAfford,harvest,start,tick,orders,order,selectOrder,dispatch,build,buildCost,upgrade,upgradeWorkshops,milestone,canCancel,cancel,prioritize,capacity,setTarget,PIER_COST,WORKSHOP_COST,underConstruction,CONSTRUCTION_SECONDS,unlocked,PATHS,CONTRACTS,CHARTER_COST,pathBlocker,specialise,invest,availableContracts,acceptContract,contractReady,dispatchContract,abandonContract,establishCharter,chapterTwo,maxBatches,queueBatch,harvestReplant,incoming,openingGuide,REFITS,recipeDuration,refitBlocker,installRefit,WATERFRONT_STAGES,WATERFRONT_SECONDS,waterfrontBlocker,fundWaterfront,waterfrontSupplies,supplyWaterfront,chapterThree,available,reserved,reserveFor,releaseReservation,goalCost,goalTitle,marketAccess,marketReady,marketBusiness,marketOrder,dispatchMarket,setMarketAuto,buildMarketBusiness,marketAccessBlocker,marketBlocker,marketGuide,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES} from '..//engine.js?v=0.20.1';
-import {DISTRICTS,MARKET_PLOTS} from '..//districts.js?v=0.20.1';
-import {createHarbourScene,createMarketScene} from '..//scene.js?v=0.20.1';
+import {worldEntities} from '../world-model.js?v=0.20.1';
+import {renderMarkup} from '../ui-renderer.js?v=0.20.1';
+import {currentObjective} from '../progression.js?v=0.20.1';
+import {createSaveStore} from '../save-store.js?v=0.20.1';
+import {createWorldMap} from './world-map-v2.js';
+import {v2TaskCards,v2TopStock,v2ContextHero,v2OverviewPanel,v2Tasks} from '../v2-ui.js?v=0.20.1';
+import {townTasks,townTaskView} from '../world-guide.js?v=0.20.1';
+import {TOWN_FOCUSES,townFocusBlocker,setTownFocus} from '../engine.js?v=0.20.1';
+import {projectPlan,queueProject} from '../project-planning.js?v=0.20.1';
+import {projectPanelView} from '../project-ui.js?v=0.20.1';
+import {ferryEntryView,ferryPanelView} from '../ferry-ui.js?v=0.20.1';
+import {ferryEligible,ferryFundingBlocker,fundFerryStage,ferryDeliveryBlocker,deliverFerrySupplies,ferryServiceBlocker,startFerryService,ferryGuide} from '../engine.js?v=0.20.1';
+import {chooseResidentsProposal,deliverResidentsSupplies,residentsDeliveryBlocker,residentsComplete} from '../engine.js?v=0.20.1';
+import {neighbourhoodPanelView,neighbourhoodMapView,residentsPanelView,residentsEntryView} from '../neighbourhood-ui.js?v=0.20.1';
+import {NEIGHBOURHOOD_BUILDINGS,neighbourhoodEligible,neighbourhoodReady,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,neighbourhoodMoveBlocker,moveNeighbourhoodBuilding,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,sailRefitBlocker,refitBoatSails,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,neighbourhoodGuide} from '../engine.js?v=0.20.1';
+import {boatCargoCapacity,circuitPlan,circuitBlocker,startCircuit,coastalProjectBlocker,fundCoastalProject,commissionBlocker,completeCommission} from '../engine.js?v=0.20.1';
+import {fleetEntryView,fleetPanelView} from '../fleet-ui.js?v=0.20.1';
+import {coastMapView,coastPosition,coastTripPath} from '../coast-view.js?v=0.20.1';
+import {COAST_BERTHS,COAST_BERTH_ROUTES} from '../coast-map.js?v=0.20.1';
+import {FLEET_BOATS,FLEET_ROUTES,FLEET_UPGRADES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,fleetEligible,berthCount,boatBlocker,buyBoat,voyagePlan,voyageBlocker,startVoyage,cancelVoyage,setRepeatVoyage,repeatVoyageBlocker,boatUpgradeBlocker,installBoatUpgrade,lighthouseBlocker,buildLighthouseStage,fleetGuide} from '../engine.js?v=0.20.1';
+import {sampleTown} from '../demo-town.js?v=0.20.1';
+import {INLAND_PLOTS,INLAND_KILN,INLAND_CLAY,INLAND_PRESERVING,INLAND_ROADS} from '../inland-map.js?v=0.20.1';
+import {inlandEligible,inlandReady,inlandTradeReady,inlandAccessBlocker,inlandAccess,terraceBlocker,buildTerrace,kilnBlocker,buildKiln,courtyardBlocker,buildCourtyard,inlandGuide,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST} from '../engine.js?v=0.20.1';
+import {productionStatus,captureTargets,parseTargetPresets,applyTargetPreset} from '../planning.js?v=0.20.1';
+import {ITEMS,RECIPES,fresh,parseSave,has,canAfford,harvest,start,tick,orders,order,selectOrder,dispatch,build,buildCost,upgrade,upgradeWorkshops,milestone,canCancel,cancel,prioritize,capacity,setTarget,PIER_COST,WORKSHOP_COST,underConstruction,CONSTRUCTION_SECONDS,unlocked,PATHS,CONTRACTS,CHARTER_COST,pathBlocker,specialise,invest,availableContracts,acceptContract,contractReady,dispatchContract,abandonContract,establishCharter,chapterTwo,maxBatches,queueBatch,harvestReplant,incoming,openingGuide,REFITS,recipeDuration,refitBlocker,installRefit,WATERFRONT_STAGES,WATERFRONT_SECONDS,waterfrontBlocker,fundWaterfront,waterfrontSupplies,supplyWaterfront,chapterThree,available,reserved,reserveFor,releaseReservation,goalCost,goalTitle,marketAccess,marketReady,marketBusiness,marketOrder,dispatchMarket,setMarketAuto,buildMarketBusiness,marketAccessBlocker,marketBlocker,marketGuide,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES} from '../engine.js?v=0.20.1';
+import {DISTRICTS,MARKET_PLOTS} from '../districts.js?v=0.20.1';
+import {createHarbourScene,createMarketScene} from '../scene.js?v=0.20.1';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const DEMO=typeof document!=='undefined'&&document.body?.dataset.demo==='true';
 const KEY=DEMO?'little-harbour-visual-sample-v1':'little-harbour-visual-preview-v1';let state=DEMO?sampleTown():fresh(),storageOK=true,saveWarning='';
@@ -326,8 +326,8 @@ function handleClick(e){const b=e.target.closest('button');if(!b||b.disabled)ret
   if(site.id.startsWith('boat')){fleetSection='voyages';choose('fleet',null,true);return;}
   if(site.id==='kiln'||site.id==='claypit'||site.id.startsWith('terrace')||site.id==='courtyard'){choose('inland',null,true);return;}
   if(['kitchen','fishmonger'].includes(site.id)||site.kind==='market'){choose('market',null,true);return;}
-  if(site.id==='field'||site.id==='mill'||site.id==='bakery'){choose('produce',site.id,true);return;}
-  if(site.id==='fishing'||site.id==='olive'){choose(state.businesses.includes(site.id)?'produce':'build',state.businesses.includes(site.id)?site.id:null,true);return;}
+  if(['field','mill','bakery'].includes(site.id)){choose('produce',site.id,true);return;}
+  if(['fishing','olive'].includes(site.id)){const hasSite=state.businesses.includes(site.id);choose(hasSite?'produce':'build',hasSite?site.id:null,true);return;}
   if(site.id==='pier'){choose('trade',null,true);return;}
   if(site.id==='waterfront'){choose('waterfront',null,true);return;}
   choose(site.tab||'build',null,true);return;
