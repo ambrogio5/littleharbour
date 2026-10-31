@@ -44,12 +44,24 @@ export function createWorldArt(){
  const road='M590 390Q1350 560 1160 850T550 1140Q560 1400 1160 1440Q1350 1620 1000 1870L870 2080';
  svg+='<path d="'+road+'" stroke="#8f8b70" stroke-width="46" fill="none"/><path d="'+road+'" stroke="#e5d8b8" stroke-width="32" fill="none"/>';
  svg+='<path d="M1000 1870Q1300 1680 1450 1920L1450 2270M560 1400 360 1520" stroke="#dfcba3" stroke-width="19" fill="none"/>';
+ // A single existing raster layer adds materially richer land texture to the
+ // unified map. Clipped to the authored shoreline; interactive sites and
+ // construction stages remain separate foreground objects.
+ svg+='<defs><clipPath id="livingLandClip"><path d="'+shore+'"/></clipPath></defs>';
+ svg+='<image href="assets/unified-terrain.png" x="0" y="0" width="1800" height="2700" preserveAspectRatio="xMidYMid slice" clip-path="url(#livingLandClip)" opacity=".38" style="pointer-events:none"/>';
+ // Terraced retaining walls belong to the landscape, not to a built plot.
+ for(let i=0;i<11;i++){
+  const y=155+i*49;
+  svg+='<path d="M110 '+y+'Q500 '+(y-66)+' 1040 '+(y+42)+'" fill="none" stroke="#e4d3b2" stroke-width="9" opacity=".47"/>';
+  svg+='<path d="M112 '+(y+5)+'Q500 '+(y-61)+' 1040 '+(y+47)+'" fill="none" stroke="#675d4d" stroke-width="2" opacity=".25"/>';
+ }
+
  // Trees remain scenery; every gameplay structure is rendered from state below.
  for(let i=0;i<210;i++){let x=rr(45,1450),y=rr(70,1650);if(x>280&&x<1250&&y>310&&y<1530)continue;svg+=tree(x,y,rr(.65,1.3),i);}
  for(let i=0;i<95;i++)svg+=tree(rr(20,250),rr(150,1950),rr(.7,1.4),i);
  for(let i=0;i<20;i++)svg+=rock(rr(1300,1590),rr(1580,1790),rr(.6,1.1));
  for(let i=0;i<55;i++){const x=rr(80,1750),y=rr(2340,2670);svg+='<path d="M'+f(x)+' '+f(y)+'q22 -8 46 0" stroke="#dbebdb" stroke-width="2" fill="none" opacity=".25"/>';}
- svg+='<path d="M0 0H1800V2700H0Z" fill="url(#worldGrain)"/><g id="worldBuildings"></g></svg>';
+ svg+='<path d="M0 0H1800V2700H0Z" fill="url(#worldGrain)"/><g id="worldBuildings"></g><g id="livingWorldLayer" pointer-events="none"></g></svg>';
  return svg;
 }
 
@@ -70,6 +82,13 @@ function isoWorkshop(kind,level=1){
  if(kind==='olive') out+=`<g transform="translate(-83 -26)">${tree(0,0,1.6,2)}${tree(42,-30,1.1,3)}</g><path d="M22 46l30 -16v22L22 68Z" fill="#8f6648"/><ellipse cx="39" cy="32" rx="17" ry="7" fill="#c9a875"/><path d="M20 28v14m35-26v18" stroke="#76543e" stroke-width="5"/>`;
  if(kind==='kiln') out+=`<path d="M36 -8v-69h18v56" fill="#bf7650" stroke="#8b604d" stroke-width="3"/><path d="M-57 25q16 -21 34 10v17h-34Z" fill="#8b644e"/><path d="M-49 37q6 -10 16 4" fill="none" stroke="#efbd7e" stroke-width="5"/>`;
  if(kind==='specialist') out+=`<path d="M-91 45q-25 -19 -30 3m18 -33q-25 -12 -24 2" stroke="#718366" stroke-width="11" fill="none"/><g transform="translate(73 39)">${stall(0,0,1)}</g>`;
+ // Roof tile courses and small masonry seams add material depth without
+ // flattening each production building into a common image.
+ for(let row=0;row<3;row++)for(let col=0;col<6;col++){
+  const x=-52+col*18+row*5,y=-25+row*7-col*4;
+  out+='<path d="M'+x+' '+y+'l12 6" fill="none" stroke="#f5d4b1" stroke-width="2" opacity=".38"/>';
+ }
+ out+='<path d="M-55 16l20 11m-13 4l19 10m37 -2l18 -9m12 -8l18 -9" fill="none" stroke="#f3e4cd" stroke-width="2" opacity=".38"/>';
  if(level>1)out+=`<path d="M-10 -45l27 -15 27 15" stroke="#f7e7c9" stroke-width="7" fill="none"/><rect x="-30" y="41" width="12" height="9" fill="#c79555"/>`;
  return out;
 }
