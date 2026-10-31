@@ -48,11 +48,17 @@ try{
   await page.locator('#panel [data-action="dispatch"]').click();
   const afterTrade=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1')));
   assert(afterTrade.deliveries>=1&&afterTrade.coins>1000,'Real trade updates simulation and pays out');
+  const afterTradeEvolution=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1-living-v1')));
+  assert(afterTradeEvolution.axes.trade>30,'Successful shipment changes the real town identity');
+  assert((await page.locator('#livingHarbourStatus').innerText()).includes('Living Harbour'),'Living town controls shown');
+  assert((await page.locator('#livingWorldLayer').innerHTML()).includes('<g'),'Physical evolution decorations render');
   await page.locator(nav+'[data-tab="build"]').click();
   await page.locator('#panel [data-action="build"][data-key="olive"]').click();
   await page.waitForSelector('[data-world-building="olive"][data-stage="building"]',{state:'attached'});
   const afterBuild=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1')));
   assert(afterBuild.businesses.includes('olive'),'Paid construction uses the real engine');
+  const afterBuildEvolution=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1-living-v1')));
+  assert(afterBuildEvolution.axes.nature>afterTradeEvolution.axes.nature,'Building olive works changes the natural environment');
   assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),'must-stay-untouched','Existing game save untouched');
   if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();else await page.locator('.v2-topnav [data-tab="map"]').click();
   await page.locator('#v3ZoneNav [data-key="inland"]').click();
@@ -73,6 +79,8 @@ try{
   await page.waitForFunction(()=>document.querySelector('#worldBuildings [data-world-building="olive"]')!==null);
   const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1')));
   assert(restored.businesses.includes('olive'),'Preview game persists construction after reload');
+  const restoredEvolution=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1-living-v1')));
+  assert.deepEqual(restoredEvolution,afterBuildEvolution,'The town character survives reload separately');
   // Developed-town entry point reuses the game engine without touching the
   // player's current town or the new-town preview save.
   await page.locator('.preview-info a').click();
