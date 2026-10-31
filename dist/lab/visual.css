@@ -87,3 +87,29 @@
 }
 .unified-map .world-art-hit:focus-visible{outline:7px solid #f3d48a;outline-offset:1px}
 .unified-map.world-overview .world-art-hit-layer{visibility:hidden;pointer-events:none}
+
+
+/* Living Harbour is a small, optional status strip: it never covers the map. */
+.living-status{margin:0;padding:0 4vw;background:#ede7d8;color:#344c40;border-bottom:1px solid #d3c5ac;font:12px system-ui}
+.living-status details{margin:0;padding:0}
+.living-status summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:39px;cursor:pointer;list-style:none;font-weight:750}
+.living-status summary::-webkit-details-marker{display:none}
+.living-status summary:before{content:'◈';font-size:16px;color:#8d8254}
+.living-status summary span{flex:1}
+.living-status summary small{font-size:10px;font-weight:550;color:#66776a}
+.living-traits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:5px 0 12px}
+.living-trait{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center;text-transform:capitalize;font-size:10px;color:#506754}
+.living-trait meter{grid-column:1/-1;width:100%;height:8px;accent-color:#5d8063}
+.living-trait b{font-weight:650}
+.living-event{margin:0 0 10px;padding:12px 13px;background:#fff9ec;border:1px solid #d7c5a7;border-radius:10px}
+.living-event strong{font-size:13px}.living-event p{margin:5px 0 9px;color:#5b6e62;font-size:11px}
+.living-options{display:flex;flex-wrap:wrap;gap:7px}
+.living-options button{border:1px solid #b8ad89;border-radius:9px;background:#376957;color:#fff;padding:10px 12px;min-height:44px;font-size:12px;font-weight:650}
+.living-note{color:#738071;font-size:10px;margin:1px 0 9px}
+.living-warning{color:#944834}
+@media(max-width:740px){
+ .living-status{padding:0 11px}
+ .living-status summary{min-height:38px;font-size:11px}
+ .living-status summary small{font-size:9px}
+ .living-traits{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+}
