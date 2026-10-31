@@ -1,3 +1,4 @@
+import {painterlyBuilding} from './painterly-assets.js?v=0.3';
 // One original, continuous SVG landscape shared by every district.
 // Portrait geography uses shared coordinates and state-driven physical structures.
 export const WORLD_ART_SIZE={width:1800,height:2700};
@@ -138,14 +139,11 @@ function stageSpecific(e){
 }
 export function renderWorldBuildings(entities){
  return entities.map(e=>{
-  const base=stageSpecific(e);
-  let art=base;
-  if(e.stage==='unbuilt'){
-   art=`${isoGround('#c7bb9c',4)}<path d="M-75 6L-18 -24 78 9 20 43Z" fill="#bba989" stroke="#e9dac0" stroke-width="3" stroke-dasharray="8 8"/><path d="M-36 -1l58 28" stroke="#99866b" stroke-width="8"/><circle cx="54" cy="22" r="10" fill="#dec18b"/>`;
-  }else if(e.stage==='building'){
-   art=`<g opacity=".48">${base}</g><path d="M-80 30v-105M77 31v-101M-80 -55H77M-80 -18H77M-80 20H77M-80 -75L77 19M77 -70L-80 26" stroke="#896f4e" stroke-width="7" fill="none"/><path d="M-92 -82h38l-19 -31Z" fill="#d5a25f"/><path d="M-72 -75h132" stroke="#e9cda4" stroke-width="7"/>`;
-  }
-  const safeLabel=String(e.label).replaceAll('&','&amp;').replaceAll('<','&lt;');
-  return `<g data-world-building="${e.id}" data-stage="${e.stage}" data-level="${e.level}" transform="translate(${e.x} ${e.y})"><title>${safeLabel} — ${e.stage}</title>${art}<ellipse cx="0" cy="0" rx="90" ry="82" fill="transparent" pointer-events="all"/></g>`;
+  const id=String(e.id).replace(/[^a-z0-9_-]/gi,'');
+  const safeLabel=String(e.label).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+  const art=painterlyBuilding(e);
+  return '<g data-world-building="'+id+'" data-kind="'+String(e.kind).replace(/[^a-z0-9_-]/gi,'')+'" data-stage="'+e.stage+'" data-level="'+e.level+'" transform="translate('+e.x+' '+e.y+')">'+
+   '<title>'+safeLabel+' — '+e.stage+'</title>'+art+
+   '<ellipse cx="0" cy="0" rx="90" ry="82" fill="transparent" pointer-events="all"/></g>';
  }).join('');
 }
