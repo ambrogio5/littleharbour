@@ -54,7 +54,7 @@ try{
   const afterBuild=await page.evaluate(()=>JSON.parse(localStorage.getItem('little-harbour-visual-preview-v1')));
   assert(afterBuild.businesses.includes('olive'),'Paid construction uses the real engine');
   assert.equal(await page.evaluate(()=>localStorage.getItem('little-harbour-v1')),'must-stay-untouched','Existing game save untouched');
-  await page.locator(nav+'[data-tab="map"]').click().catch(async()=>{await page.locator('.mobile-nav [data-action="map"]').click();});
+  if(device.isMobile)await page.locator('.mobile-nav [data-action="map"]').click();else await page.locator('.v2-topnav [data-tab="map"]').click();
   await page.locator('#v3ZoneNav [data-key="inland"]').click();
   await page.waitForTimeout(350);
   assert.equal(await page.locator('#v3ZoneNav [data-key="inland"]').getAttribute('aria-pressed'),'true');
