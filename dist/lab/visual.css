@@ -35,3 +35,6 @@
 .unified-map .map-stage{pointer-events:none!important}
 .unified-map .map-stage button,.unified-map .map-stage a{pointer-events:auto!important}
 #newWorldArt [data-world-building]{pointer-events:visiblePainted}
+
+.preview-info{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:7px 4vw;min-height:35px;background:#e6d9bd;color:#364c47;font:700 10px system-ui;letter-spacing:.04em}.preview-info a{color:#2e655b;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;font-weight:750}
+@media(max-width:740px){.preview-info{font-size:9px;padding:6px 11px;gap:7px}.preview-info span{max-width:56%;line-height:1.3}.preview-info a{font-size:10px}}
