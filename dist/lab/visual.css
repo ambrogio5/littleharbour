@@ -1,0 +1,32 @@
+
+/* Little Harbour playable map experiment. No changes to production CSS. */
+.unified-map .district-track{transition:none!important;will-change:transform;transform-origin:0 0;contain:layout style}
+.unified-map .map-scroller{touch-action:none;overscroll-behavior:contain}
+#newWorldArt{position:absolute;inset:0;width:1800px;height:2700px;image-rendering:auto;filter:saturate(1.1) contrast(1.035)}
+#newWorldArt [data-world-building]{cursor:pointer;filter:drop-shadow(0 9px 5px #183a3e4a);transition:filter .15s ease}
+#newWorldArt [data-world-building]:hover{filter:drop-shadow(0 13px 7px #12362f88)}
+.unified-map .world-primary-hotspots .map-pin,
+.unified-map .world-entity-button{
+ background:rgba(249,246,233,.94)!important;color:#274740!important;
+ box-shadow:0 3px 14px #142d3029!important;
+ border:1px solid #d4c4a0!important;
+ border-radius:12px!important;
+ backdrop-filter:blur(7px);
+ -webkit-backdrop-filter:blur(7px);
+}
+.unified-map .world-primary-hotspots .map-pin:active,.unified-map .world-entity-button:active{background:#f1ddb4!important}
+.world-entity-button[data-hotspot-zone="inland"]{border-left:4px solid #7b925b!important}
+.world-entity-button[data-hotspot-zone="market"]{border-left:4px solid #bb8555!important}
+.world-entity-button[data-hotspot-zone="coast"]{border-left:4px solid #608d9f!important}
+.world-entity-button[data-hotspot-zone="neighbourhood"]{border-left:4px solid #a56f62!important}
+.unified-map .world-camera-tools button{background:#fff7e8ee!important;color:#294d4b!important;border:1px solid #cbbd99!important}
+.v3-zone-nav button{background:#214c49;border-color:#416d5f;color:#f2ead9}
+.v3-zone-nav button[aria-pressed=true]{background:#94704b;color:#fffdf2;border-color:#d8c6a6}
+.current-objective{background:#efe3ca!important}
+@media(max-width:740px){
+ .unified-map .world-entity-button{font-weight:650!important}
+ .unified-map .world-primary-hotspots .map-pin{border-radius:10px!important}
+ .unified-map .world-camera-tools{bottom:12px!important}
+ .management #panel{padding-bottom:15px}
+}
+@media(prefers-reduced-motion:reduce){#newWorldArt [data-world-building]{transition:none!important}}
