@@ -1,5 +1,7 @@
 # Little Harbour — release metadata draft
 
+Candidate: **1.0.0 (4)**.
+
 Release target: **free App Store download**, confirmed by the owner on 1 November 2026. TestFlight remains available for prerelease testing; it is not the chosen final destination. Nothing in this file has been submitted to App Store Connect.
 
 ## Product page
@@ -11,7 +13,7 @@ Release target: **free App Store download**, confirmed by the owner on 1 Novembe
 - Language: English (the app is currently English-only)
 - Keywords: harbour,harbor,town,cozy,building,trade,farming,island,offline,strategy
 - Support URL: https://github.com/ambrogio5/littleharbour/issues
-- Privacy policy source: `native/LittleHarbour/Resources/Privacy-policy.txt`. Publish/confirm a permanent public URL before submission; the current beta branch’s GitHub file is reviewable but is not a permanent release URL.
+- Privacy policy source: `native/LittleHarbour/Resources/Privacy-policy.txt`. Publish/confirm a permanent public URL before submission; the current review branch’s GitHub file is reviewable but is not a permanent release URL.
 - Price: **Free**. No advertising, in-app purchases, subscriptions or paid unlocks are included.
 - Territories, final age-rating questionnaire, copyright owner, review contact and trader status: remaining owner decisions; do not infer these from the source repository.
 
@@ -33,7 +35,7 @@ No login, server, subscription or purchase is required. All gameplay and artwork
 
 Opening route: Production → Harvest & replant → mill flour → bake bread → Trade → ship cargo. The current chapter objective provides continuing guidance. Settings & saves includes privacy information, save import/export and backed-up new-town recovery. Native saves and browser-compatible exports are distinct choices.
 
-The iPad interface uses a side inspector when there is sufficient window width. Narrow windows and iPhones use an activity sheet with a Map button. Sites and Explore provide alternatives to pan/pinch gestures. Reduce Motion is respected. There is no audio in this beta.
+The iPad interface uses a side inspector when there is sufficient window width. Narrow windows and iPhones use an activity sheet with a Map button. Sites and Explore provide alternatives to pan/pinch gestures. Reduce Motion is respected. Version 1.0 has no audio.
 
 ## TestFlight “What to Test”
 
@@ -49,7 +51,7 @@ Keep an exported copy before testing recovery. Towns stay on this device; there 
 
 ## Submission gates
 
-Use the checked-in Xcode project and a Release archive with the owner’s final bundle identifier and team. Do not upload the isolated `Harbour QA` identity as the production app. Complete the physical-device matrix and art review in `../docs/RELEASE.md`; do not label simulator evidence as device certification.
+Use the checked-in Xcode project and a Release archive with the owner’s final bundle identifier and team. Do not upload the isolated `Harbour QA` identity as the production app. Complete the physical-device matrix and remaining submission checks in `../docs/RELEASE.md`; do not label simulator evidence as device certification.
 
 Apple’s current requirements page states Xcode 26 or later with iOS/iPadOS 26 SDKs or later for uploads from 28 April 2026. The local Xcode 27.1 build exceeds that SDK floor; confirm the chosen Xcode release is accepted by App Store Connect when uploading. Check the current requirements again immediately before submission:
 https://developer.apple.com/news/upcoming-requirements/

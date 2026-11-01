@@ -129,14 +129,18 @@ import XCTest
         app.launch()
         XCTAssertTrue(app.buttons["Explore"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
-        app.buttons["Explore"].tap(); app.buttons["Home harbour"].tap()
+        app.buttons["Explore"].tap()
+        let explore = XCTAttachment(screenshot: app.screenshot()); explore.name = "Painted district guide"; explore.lifetime = .keepAlways; add(explore)
+        app.buttons["Home harbour"].tap()
         let coast = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); coast.name = "Painted developed harbour"; coast.lifetime = .keepAlways; add(coast)
         app.buttons["Explore"].tap(); app.buttons["Whole town"].tap()
         let town = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); town.name = "Painted whole town"; town.lifetime = .keepAlways; add(town)
         app.buttons["nav-Build"].tap()
         XCTAssertTrue(app.staticTexts["Build"].firstMatch.waitForExistence(timeout: 5))
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
-        app.buttons["Town"].tap(); let journal = app.buttons["Town journal"]; XCTAssertTrue(journal.waitForExistence(timeout: 5)); journal.tap()
+        app.buttons["Town"].tap()
+        let activities = XCTAttachment(screenshot: app.screenshot()); activities.name = "Painted town activities"; activities.lifetime = .keepAlways; add(activities)
+        let journal = app.buttons["Town journal"]; XCTAssertTrue(journal.waitForExistence(timeout: 5)); journal.tap()
         XCTAssertTrue(app.staticTexts["Town activity"].waitForExistence(timeout: 5))
     }
 

@@ -168,3 +168,16 @@ struct MapViewport: Codable, Equatable {
         return value
     }
 }
+
+/// Deterministic label collision handling: selection first, then ready work.
+struct MapLabelLayout {
+    struct Candidate { let id: String; let frame: CGRect; let priority: Int }
+    static func visible(_ candidates: [Candidate]) -> Set<String> {
+        var occupied: [CGRect] = [], result = Set<String>()
+        for candidate in candidates.sorted(by: { $0.priority == $1.priority ? $0.id < $1.id : $0.priority > $1.priority }) {
+            guard !occupied.contains(where: { $0.intersects(candidate.frame) }) else { continue }
+            occupied.append(candidate.frame); result.insert(candidate.id)
+        }
+        return result
+    }
+}

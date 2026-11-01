@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **This is a native beta implementation, not an App Store release or final art/device certification.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 4) is prepared as a free-release candidate. Physical-device testing and App Store submission remain pending.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 
@@ -67,7 +67,7 @@ xcodegen generate --spec native/project.yml
 
 The deterministic bundler strips only the repository's supported named/namespace imports and exports, includes the original sources without changing their bodies, and records SHA-256 source hashes. A CI freshness check prevents silently shipping an outdated economy. Parity tests compare native adapter actions with the original module engine. Native save tests also execute the generated bundle in Apple's JavaScriptCore. `node native/scripts/campaign.mjs --check` earns both full five-chapter campaigns, verifies every action against the original browser engine, and checks the committed action traces. The native campaign test replays all 1,252 player actions and 70 save/reload checkpoints in JavaScriptCore without injected resources. These accelerated tests establish reachability and parity, not human pacing or enjoyment.
 
-Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source and packed-output hashes and dimensions. A separate painted olive tree supports town evolution. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. The painted source atlases, prompts, state reuse and registration details are documented in [painted art provenance](art-source/painted-v2/README.md).
+Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source and packed-output hashes and dimensions. A separate painted olive tree supports town evolution. Twenty-four transparent resource icons cover every economic good plus coins; [source and prompt](art-source/resources-v1/README.md) are committed. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. The painted source atlases, prompts, state reuse and registration details are documented in [painted art provenance](art-source/painted-v2/README.md).
 
 See [the graphics and UX improvement report](docs/GRAPHICS-UX.md), [architecture and repository audit](docs/ARCHITECTURE.md), [verification](docs/VERIFICATION.md) and [release requirements](docs/RELEASE.md).
 
@@ -79,7 +79,7 @@ See [the graphics and UX improvement report](docs/GRAPHICS-UX.md), [architecture
 
 The release target is a **free App Store download**, without advertising or in-app purchases. Device testing is deferred until the owner makes a test device available.
 
-Build 3 adds remembered map views, bounded save recovery, dated backups, confirmed new towns, offline privacy information, a support link and complete earned campaign replays. Read [release hardening verification](docs/RELEASE-HARDENING.md) for the exact tested revision and remaining device/signing gates. The app has no sound in this beta.
+Build 4 adds painted resource icons, illustrated district/activity navigation, a more compact chapter card, collision-aware map labels, boat wakes and direct camera focus for selected sites. The earlier save protections and earned campaign replays remain intact. Read [release polish](docs/RELEASE-POLISH.md) and [release hardening verification](docs/RELEASE-HARDENING.md) for evidence and remaining gates. Version 1.0 has no sound.
 
 The local helper runs engine/art/campaign checks, archives and exports. It never uploads or submits anything. Configure the owner’s actual identifier and team; the example values below are placeholders:
 

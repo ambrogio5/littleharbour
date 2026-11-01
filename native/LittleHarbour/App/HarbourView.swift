@@ -68,7 +68,7 @@ struct HarbourView: View {
             guard let site = pendingSite else { return }
             pendingSite = nil
             let current = store.snapshot?.entities.first { $0.id == site.id } ?? site
-            store.select(current); scene.focus(current.zone)
+            store.select(current); scene.focusSite(current)
             if !hasSideInspector { showInspector = true }
         }) {
             SiteDirectoryView { site in pendingSite = site; showSites = false }
@@ -107,7 +107,7 @@ struct HarbourView: View {
                 Text(store.snapshot?.style.identity ?? "Your Mediterranean town").font(.system(.headline, design: .serif)).lineLimit(2)
             }
             Spacer(minLength: 0)
-            Label("\(store.snapshot?.coins ?? 0)", systemImage: "circle.inset.filled").font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit().padding(.horizontal, 12).padding(.vertical, 8).background(HarbourTheme.gold.opacity(0.12), in: Capsule()).accessibilityLabel("\(store.snapshot?.coins ?? 0) coins")
+            HStack(spacing: 5) { ResourceIcon(item: "coins", size: 26); Text("\(store.snapshot?.coins ?? 0)") }.font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit().padding(.horizontal, 12).padding(.vertical, 8).background(HarbourTheme.gold.opacity(0.12), in: Capsule()).accessibilityLabel("\(store.snapshot?.coins ?? 0) coins")
             Button { showSettings = true } label: { Image(systemName: store.protectedSave ? "exclamationmark.shield" : "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
         }.foregroundStyle(harbourInk).padding(.horizontal, 16).padding(.vertical, 7).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -127,12 +127,27 @@ struct HarbourView: View {
                 Text("Open Settings to export the original, restore a backup, or import a compatible save. Play is paused.").font(.callout)
                 Button("Open save recovery") { showSettings = true }.buttonStyle(.borderedProminent)
             } else if let objective = store.snapshot?.objective {
-                HStack { Text("CHAPTER \(objective.chapter) · \(objective.chapterName.uppercased())").font(.caption2.weight(.bold)).tracking(1); Spacer(); Text("\(store.snapshot?.deliveries ?? 0) deliveries").font(.caption) }
-                Button {
-                    store.navigate(category(for: objective.target)); if !wide { showInspector = true }
-                } label: { HStack { Text(objective.title).font(.system(compact ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(compact ? 1 : 3); Spacer(); Image(systemName: "arrow.up.right") }.multilineTextAlignment(.leading) }.accessibilityIdentifier("objective")
+                if !compact {
+                    HStack {
+                        Text("CHAPTER \(objective.chapter) · \(objective.chapterName.uppercased())").font(.caption2.weight(.bold)).tracking(0.8).lineLimit(1)
+                        Spacer(minLength: 6)
+                        Text("\(store.snapshot?.deliveries ?? 0) deliveries").font(.caption2).monospacedDigit()
+                    }.foregroundStyle(HarbourTheme.muted)
+                }
+                HStack(spacing: 8) {
+                    Button {
+                        store.navigate(category(for: objective.target)); if !wide { showInspector = true }
+                    } label: {
+                        HStack { Text(objective.title).font(.system(compact ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(compact ? 1 : 3); Spacer(minLength: 8); Image(systemName: "arrow.up.right").font(.subheadline) }.frame(minHeight: 44).multilineTextAlignment(.leading)
+                    }.accessibilityIdentifier("objective")
+                    if !compact {
+                        Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { expandedObjective.toggle() } } label: {
+                            Image(systemName: expandedObjective ? "chevron.up" : "info").font(.subheadline.weight(.semibold)).frame(width: 44, height: 44).background(harbourInk.opacity(0.06), in: Circle())
+                        }.accessibilityLabel(expandedObjective ? "Hide chapter guidance" : "Show chapter guidance").accessibilityIdentifier("objective-details")
+                    }
+                }
                 if !compact && expandedObjective { Text(objective.description).font(.callout).fixedSize(horizontal: false, vertical: true) }
-                if !compact { Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { expandedObjective.toggle() } } label: { Label(expandedObjective ? "Less guidance" : "What to do next", systemImage: expandedObjective ? "chevron.up" : "chevron.down").font(.caption.weight(.semibold)).frame(minHeight: 44) }.accessibilityIdentifier("objective-details") }
+
             }
         }.padding(15).frame(maxWidth: 540, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
     }
@@ -140,10 +155,10 @@ struct HarbourView: View {
         HStack(spacing: 0) {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
                 Button { store.navigate(item.0); if !wide { showInspector = true } } label: { VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(store.category == item.0 ? .bold : .medium)) }.frame(maxWidth: .infinity, minHeight: 54).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 15)).padding(.horizontal, 3) }
-                    .accessibilityIdentifier("nav-" + item.0)
+                    .accessibilityIdentifier("nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
             }
             Button { pendingCategory = nil; showTown = true } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }.accessibilityLabel("Town")
-            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54) }.accessibilityLabel("Simulation speed")
+            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54) }.accessibilityLabel("Simulation speed").accessibilityValue(store.snapshot?.speed == 0 ? "Paused" : store.snapshot?.speed == 3 ? "Three times normal" : "Normal")
         }.foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, 5).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private func category(for target: String?) -> String {
@@ -251,9 +266,12 @@ struct InspectorView: View {
                 if !allSupplies && !typeSize.isAccessibilitySize {
                     HStack(spacing: 12) {
                         ForEach(Array(goods.prefix(3)), id: \.self) { item in
-                            VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 6) {
+                                ResourceIcon(item: item, size: 28)
+                                VStack(alignment: .leading, spacing: 3) {
                                 Text("\(s.stock[item] ?? 0)").font(.system(.headline, design: .rounded)).monospacedDigit().accessibilityIdentifier("stock-count-" + item)
                                 Text(goodsNames[item] ?? item).font(.caption).foregroundStyle(HarbourTheme.muted)
+                                }
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
                         if goods.isEmpty { Text("Your next harvest starts here.").font(.caption).foregroundStyle(HarbourTheme.muted) }
@@ -264,7 +282,7 @@ struct InspectorView: View {
     }
     private func supply(_ item: String, count: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: HarbourTheme.goodSymbol(item)).foregroundStyle(HarbourTheme.gold).accessibilityHidden(true)
+            ResourceIcon(item: item, size: 40)
             Text("\(count)").font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit().accessibilityIdentifier("stock-count-" + item)
             Text(goodsNames[item] ?? item).font(.caption)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(9).background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 10))
@@ -363,7 +381,7 @@ struct ProjectView: View {
                         Text(plan.title).font(.system(.title, design: .serif, weight: .semibold))
                         ForEach(plan.requirements) { r in
                             VStack(alignment: .leading, spacing: 10) {
-                                HStack { Label(goodsNames[r.item] ?? r.item.capitalized, systemImage: HarbourTheme.goodSymbol(r.item)); Spacer(); Text("\(r.available) / \(r.required)").monospacedDigit() }.font(.headline)
+                                HStack { ResourceIcon(item: r.item, size: 32); Text(goodsNames[r.item] ?? r.item.capitalized); Spacer(); Text("\(r.available) / \(r.required)").monospacedDigit() }.font(.headline)
                                 ProgressView(value: min(Double(r.required), Double(r.available)), total: max(1, Double(r.required))).tint(HarbourTheme.sea)
                                 HStack {
                                     Text(r.missing == 0 ? "Ready in the storehouse" : "\(r.missing) still needed")
@@ -455,13 +473,17 @@ private struct ExploreDirectoryView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("mapLabels") private var mapLabels = true
     let onSelect: (String) -> Void
-    private let regions = [("all", "Whole town", "globe.europe.africa"), ("harbour", "Home harbour", "house"), ("inland", "Hillside & fields", "leaf"), ("neighbourhood", "Neighbourhood", "building.2"), ("market", "Market quarter", "basket"), ("coast", "Working coast", "sailboat")]
+    private let regions = [("all", "Whole town", "See how it all comes together", "waterfront-built"), ("harbour", "Home harbour", "The quay, fishing and the waterfront", "pier-built"), ("inland", "Hillside & fields", "Harvests, mills and workshops", "mill-built"), ("neighbourhood", "Neighbourhood", "Homes, gardens and local crafts", "home-built"), ("market", "Market quarter", "The heart of your growing town", "market-built"), ("coast", "Working coast", "Boats, the lighthouse and ferry", "lighthouse-built")]
     var body: some View {
         NavigationStack {
             List {
                 Section("Find your way") {
                     ForEach(regions, id: \.0) { region in
-                        Button { onSelect(region.0) } label: { Label(region.1, systemImage: region.2).frame(minHeight: 44) }.accessibilityLabel(region.1)
+                        Button { onSelect(region.0) } label: { HStack(spacing: 14) {
+                            Image(uiImage: HarbourArtwork.image(region.3)).resizable().scaledToFit().frame(width: 62, height: 62).accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 4) { Text(region.1).font(.system(.headline, design: .serif)); Text(region.2).font(.subheadline).foregroundStyle(HarbourTheme.muted) }
+                            Spacer(minLength: 0); Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+                        }.padding(.vertical, 4) }.accessibilityLabel(region.1)
                     }
                 }
                 Section { Toggle("Building labels", isOn: $mapLabels) }
@@ -481,7 +503,7 @@ private struct TownDirectoryView: View {
         NavigationStack {
             List {
                 Section("Your living town") {
-                    Button { onSelect("Journal") } label: { Label("Town journal", systemImage: "book.closed").frame(minHeight: 44) }.accessibilityLabel("Town journal")
+                    Button { onSelect("Journal") } label: { activityRow("Journal", title: "Town journal") }.accessibilityLabel("Town journal")
                     rows(available(["Contracts", "Fleet", "Neighbourhood", "Ferry"]))
                 }
                 Section("The working harbour") { rows(available(["Production", "Trade", "Build"])) }
@@ -497,8 +519,20 @@ private struct TownDirectoryView: View {
     private func rows(_ categories: [String]) -> some View {
         ForEach(categories, id: \.self) { category in
             Button { onSelect(category) } label: {
-                Label(category, systemImage: HarbourTheme.symbol(category)).frame(minHeight: 44)
+                activityRow(category, title: category)
             }.accessibilityLabel(category)
         }
     }
+    private func activityRow(_ category: String, title: String) -> some View {
+        HStack(spacing: 12) {
+            Image(uiImage: HarbourArtwork.image(HarbourTheme.artwork(category))).resizable().scaledToFit().frame(width: 54, height: 54).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(.headline, design: .serif))
+                Text(HarbourTheme.caption(category)).font(.caption).foregroundStyle(HarbourTheme.muted)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+        }.padding(.vertical, 3)
+    }
+
 }

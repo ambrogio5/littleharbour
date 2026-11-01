@@ -30,6 +30,17 @@ import SwiftUI
         super.init(size: size)
         scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.08, green: 0.39, blue: 0.49, alpha: 1)
         addChild(world); addChild(cameraNode); camera = cameraNode
+        // A restrained sea-chart surround makes fitted-map margins intentional.
+        let waves = CGMutablePath()
+        for row in -12...20 {
+            for column in -14...20 {
+                let x = CGFloat(column * 260 + (row.isMultiple(of: 2) ? 0 : 130)), y = CGFloat(row * 190)
+                waves.move(to: CGPoint(x: x, y: y))
+                waves.addCurve(to: CGPoint(x: x + 66, y: y), control1: CGPoint(x: x + 22, y: y + 10), control2: CGPoint(x: x + 44, y: y - 10))
+            }
+        }
+        let seaMarks = SKShapeNode(path: waves); seaMarks.strokeColor = UIColor(white: 1, alpha: 0.085)
+        seaMarks.lineWidth = 2; seaMarks.zPosition = -10001; world.addChild(seaMarks)
         let terrain = SKSpriteNode(texture: texture("terrain"), size: CGSize(width: 1800, height: 2700))
         terrain.anchorPoint = .zero; terrain.position = .zero; terrain.zPosition = -10000; world.addChild(terrain)
         world.addChild(ornaments)
@@ -146,13 +157,24 @@ import SwiftUI
             }
         }
         for slot in snapshot.boats.indices {
-            guard let sprite = sprites["boat\(slot)"], let trip = snapshot.boats[slot]?.trip else { continue }
+            guard let sprite = sprites["boat\(slot)"] else { continue }
+            guard let trip = snapshot.boats[slot]?.trip else { sprite.childNode(withName: "wake")?.removeFromParent(); continue }
             if !reduceMotion {
                 let progress = max(0, min(1, 1 - trip.left / trip.duration))
                 let excursion = sin(progress * .pi)
                 sprite.position.x = 1630 + excursion * 90
                 sprite.position.y = CGFloat(2700 - (2100 + slot * 240)) + excursion * (trip.route == "quarry" ? 850 : 1350)
-            }
+                sprite.zPosition = 2700 - sprite.position.y
+                if sprite.childNode(withName: "wake") == nil {
+                    let path = CGMutablePath()
+                    for offset in [0, 18, 36] {
+                        path.move(to: CGPoint(x: -52 - offset / 2, y: -66 - offset))
+                        path.addQuadCurve(to: CGPoint(x: 52 + offset / 2, y: -66 - offset), control: CGPoint(x: 0, y: -94 - offset))
+                    }
+                    let wake = SKShapeNode(path: path); wake.name = "wake"; wake.strokeColor = UIColor(white: 1, alpha: 0.65); wake.lineWidth = 3; wake.zPosition = -1; sprite.addChild(wake)
+                }
+                sprite.childNode(withName: "wake")?.alpha = CGFloat(min(0.85, excursion * 2))
+            } else { sprite.childNode(withName: "wake")?.removeFromParent() }
         }
         // Labels and selection travel with the real boat, rather than staying at its berth.
         for e in entities where e.kind == "boat" {
@@ -190,16 +212,27 @@ import SwiftUI
         clampCamera(); persistViewport()
     }
     private func updateLabels() {
+        var candidates: [MapLabelLayout.Candidate] = []
         for e in entities {
             guard let label = labels[e.id], let plate = labelPlates[e.id] else { continue }
-            let visible = e.id == selectedID || (showLabels && cameraNode.xScale < 3.5 && e.stage != "unbuilt")
-            label.isHidden = !visible; plate.isHidden = !visible
             label.fontSize = min(36, max(20, 11 * cameraNode.xScale))
             let rect = CGRect(x: -label.frame.width / 2 - 12, y: -label.frame.height / 2 - 7, width: label.frame.width + 24, height: label.frame.height + 14)
             plate.path = CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil)
             plate.position = label.position
+            if e.id == selectedID || (showLabels && cameraNode.xScale < 3.5 && e.stage != "unbuilt") {
+                let box = rect.offsetBy(dx: label.position.x, dy: label.position.y).insetBy(dx: -5 * cameraNode.xScale, dy: -4 * cameraNode.xScale)
+                candidates.append(.init(id: e.id, frame: box, priority: e.id == selectedID ? 100 : e.ripe == true ? 20 : 10))
+            }
             badges[e.id]?.isHidden = cameraNode.xScale > 3.8
         }
+        let visible = MapLabelLayout.visible(candidates)
+        for e in entities { labels[e.id]?.isHidden = !visible.contains(e.id); labelPlates[e.id]?.isHidden = !visible.contains(e.id) }
+    }
+    func focusSite(_ entity: WorldEntity) {
+        focusedRegion = nil
+        cameraNode.position = sprites[entity.id]?.position ?? mapPosition(entity)
+        cameraNode.setScale(min(1.6, max(0.9, cameraNode.xScale)))
+        clampCamera(); persistViewport()
     }
     func zoom(_ multiplier: CGFloat, persist: Bool = true) {
         guard multiplier.isFinite, multiplier > 0 else { return }

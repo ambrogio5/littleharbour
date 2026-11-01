@@ -110,4 +110,35 @@ import UIKit
         XCTAssertEqual(announcedScale, 2)
     }
 
+    func testSelectedMapLabelWinsCollisionsRegardlessOfEntityOrder() {
+        let overlapping = CGRect(x: 0, y: 0, width: 120, height: 40)
+        let candidates: [MapLabelLayout.Candidate] = [
+            .init(id: "ordinary", frame: overlapping, priority: 10),
+            .init(id: "ready", frame: overlapping, priority: 20),
+            .init(id: "selected", frame: overlapping, priority: 100),
+            .init(id: "separate", frame: CGRect(x: 200, y: 0, width: 120, height: 40), priority: 10)
+        ]
+        XCTAssertEqual(MapLabelLayout.visible(candidates), ["selected", "separate"])
+        XCTAssertEqual(MapLabelLayout.visible(Array(candidates.reversed())), ["selected", "separate"])
+        XCTAssertEqual(MapLabelLayout.visible(Array(candidates.prefix(2))), ["ready"])
+    }
+    func testEveryEconomicResourceHasPackagedPaintedArtwork() throws {
+        for item in Array(goodsNames.keys) + ["coins"] {
+            let url = try XCTUnwrap(Bundle.main.url(forResource: "good-" + item, withExtension: "png"), item)
+            let image = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage)
+            XCTAssertEqual(image.width, 192, item); XCTAssertEqual(image.height, 192, item)
+            XCTAssertNotEqual(image.alphaInfo, .none, item)
+        }
+    }
+    func testSiteDirectoryCameraTargetsTheActualBuilding() throws {
+        let snapshot = try EngineRuntime().snapshot(), scene = HarbourScene(size: CGSize(width: 400, height: 700))
+        scene.apply(snapshot, selected: nil); scene.focus("all")
+        let mill = try XCTUnwrap(snapshot.entities.first { $0.id == "mill" })
+        scene.focusSite(mill)
+        XCTAssertLessThanOrEqual(scene.cameraNode.xScale, 1.6001)
+        XCTAssertEqual(scene.cameraNode.position.x, scene.mapPosition(mill).x, accuracy: 0.01)
+        // Keep the full viewport on the map if the site's centre is near an edge.
+        XCTAssertLessThan(abs(scene.cameraNode.position.y - scene.mapPosition(mill).y), 560)
+    }
+
 }
