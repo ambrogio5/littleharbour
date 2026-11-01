@@ -24,7 +24,7 @@ struct HarbourView: View {
                         VStack(spacing: 8) {
                             cameraControls(wide: wide)
                             Spacer()
-                            objective(wide: wide)
+                            objective(wide: wide, compact: geometry.size.height < 450)
                         }.padding(12)
                     }.clipped()
                     if wide { InspectorView().frame(width: min(420, geometry.size.width * 0.4)).background(harbourPaper) }
@@ -71,7 +71,7 @@ struct HarbourView: View {
             } label: { Label("Explore", systemImage: "map").frame(minHeight: 44) }
             Menu {
                 ForEach(store.snapshot?.entities ?? []) { entity in
-                    Button("\(entity.label) · \(entity.stage) · level \(entity.level)") { store.select(entity); scene.focus(entity.zone); if !wide { showInspector = true } }
+                    Button("\(entity.displayLabel) · \(entity.stage) · level \(entity.level)") { store.select(entity); scene.focus(entity.zone); if !wide { showInspector = true } }
                 }
             } label: { Label("Sites", systemImage: "building.2").frame(minHeight: 44) }
             Spacer(minLength: 0)
@@ -79,7 +79,7 @@ struct HarbourView: View {
             Button { scene.zoom(0.8) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom in")
         }.font(.subheadline.weight(.semibold)).padding(.horizontal, 8).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.96), in: RoundedRectangle(cornerRadius: 15))
     }
-    private func objective(wide: Bool) -> some View {
+    private func objective(wide: Bool, compact: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             if store.protectedSave {
                 Text("Your saved town is protected").font(.headline)
@@ -89,8 +89,8 @@ struct HarbourView: View {
                 HStack { Text("CHAPTER \(objective.chapter) · \(objective.chapterName.uppercased())").font(.caption2.weight(.bold)).tracking(1); Spacer(); Text("\(store.snapshot?.deliveries ?? 0) deliveries").font(.caption) }
                 Button {
                     store.category = category(for: objective.target); if !wide { showInspector = true }
-                } label: { HStack { Text(objective.title).font(.system(.title3, design: .serif, weight: .semibold)); Spacer(); Image(systemName: "arrow.up.right") }.multilineTextAlignment(.leading) }.accessibilityIdentifier("objective")
-                Text(objective.description).font(.callout).lineLimit(3)
+                } label: { HStack { Text(objective.title).font(.system(compact ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(compact ? 1 : 3); Spacer(); Image(systemName: "arrow.up.right") }.multilineTextAlignment(.leading) }.accessibilityIdentifier("objective")
+                if !compact { Text(objective.description).font(.callout).lineLimit(3) }
             }
         }.padding(15).frame(maxWidth: 620, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
     }
@@ -130,7 +130,7 @@ struct InspectorView: View {
                 if let entity = store.snapshot?.entities.first(where: { $0.id == store.selectedSite }) {
                     HStack {
                         Image(uiImage: HarbourArtwork.image(entity.texture)).resizable().scaledToFit().frame(width: 90, height: 90).accessibilityHidden(true)
-                        VStack(alignment: .leading) { Text(entity.label).font(.headline); Text("\(entity.stage.capitalized) · level \(entity.level)").font(.caption) }
+                        VStack(alignment: .leading) { Text(entity.displayLabel).font(.headline); Text("\(entity.stage.capitalized) · level \(entity.level)").font(.caption) }
                         Spacer()
                     }.padding(8).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 14))
                 }
@@ -228,7 +228,7 @@ struct ProjectView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text(plan.title).font(.system(.title, design: .serif))
                         ForEach(plan.requirements) { r in Text("\(goodsNames[r.item] ?? r.item.capitalized): \(r.available)/\(r.required) · \(r.incoming) incoming · \(r.missing) missing").font(.callout) }
-                        ForEach(plan.recipes) { r in Text("\(r.batches) × \(r.key) · \(Int(r.seconds))s · \(r.queueable) ready to queue") }
+                        ForEach(plan.recipes) { r in Text("\(r.batches) × \(r.name) · \(Int(r.seconds))s · \(r.queueable) ready to queue") }
                         ForEach(Array(plan.blockers.enumerated()), id: \.offset) { _, b in Text(b.message).foregroundStyle(.secondary) }
                         Button("Queue available production") { store.queuePlan(goal) }.buttonStyle(.borderedProminent).disabled(store.protectedSave)
                         Button("Reserve available supplies") { store.reserve(goal) }.buttonStyle(.bordered).disabled(store.protectedSave)

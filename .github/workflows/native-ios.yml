@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths: ['native/**', 'dist/**', '.github/workflows/native-ios.yml']
   workflow_dispatch:
+concurrency:
+  group: native-ios-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

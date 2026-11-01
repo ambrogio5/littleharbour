@@ -70,3 +70,7 @@ The deterministic bundler strips only the repository's supported named/namespace
 Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source hashes and dimensions. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. Native extra boatyard/vineyard details are in `scripts/architecture-art.mjs`.
 
 See [architecture and repository audit](docs/ARCHITECTURE.md), [verification](docs/VERIFICATION.md) and [release requirements](docs/RELEASE.md).
+
+## Review order
+
+[PR #13](https://github.com/ambrogio5/littleharbour/pull/13) contains the engine/art foundation. [PR #14](https://github.com/ambrogio5/littleharbour/pull/14) contains this client and is stacked on the foundation branch. Review/merge the foundation first, then retarget the client to main. Neither PR is automatically merged or deployed by this work.

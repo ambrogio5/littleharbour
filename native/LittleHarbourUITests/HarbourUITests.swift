@@ -52,7 +52,7 @@ final class HarbourUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed)
         app.buttons["nav-Trade"].tap()
         XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
-        let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Landscape town and inspector"; screenshot.lifetime = .keepAlways; add(screenshot)
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); screenshot.name = "Landscape town and inspector"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
 
     func testDevelopedTownFerryUsesRealFleetAndProducesInspectableArt() throws {
@@ -63,8 +63,14 @@ final class HarbourUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
         app.buttons["Town"].tap(); app.buttons["Ferry"].tap()
+        XCTAssertTrue(app.staticTexts["Ferry"].firstMatch.waitForExistence(timeout: 5))
         let service = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Pietra Cove passenger service")).firstMatch
-        XCTAssertTrue(service.waitForExistence(timeout: 10)); XCTAssertTrue(service.isEnabled); service.tap()
+        // A developed town's inventory can push the service below the visible inspector.
+        for _ in 0..<8 {
+            if service.exists && service.isHittable { break }
+            app.scrollViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(service.exists); XCTAssertTrue(service.isEnabled); service.tap()
         XCTAssertTrue(app.staticTexts.matching(identifier: "voyage-status").firstMatch.waitForExistence(timeout: 5))
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Developed town with real passenger service"; screenshot.lifetime = .keepAlways; add(screenshot)
     }

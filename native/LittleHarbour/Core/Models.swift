@@ -11,6 +11,10 @@ struct WorldEntity: Decodable, Identifiable {
     let level: Int
     let ripe: Bool?
     let tab, select: String?
+    var displayLabel: String {
+        guard id.hasPrefix("plot"), stage != "unbuilt" else { return label }
+        return ["home": "Town house", "carpenter": "Carpenter", "weaver": "Weaving studio", "sailmaker": "Sail loft", "square": "Public square", "flaxgarden": "Flax garden"][kind] ?? label
+    }
     var texture: String {
         let type: String
         switch id {
@@ -93,6 +97,9 @@ struct ProjectPlan: Decodable {
         let batches, queueable: Int
         let seconds: Double
         var id: String { key }
+        var name: String {
+            ["field":"Grow wheat", "mill":"Mill flour", "bakery":"Bake bread", "press":"Press olive oil", "saw":"Saw planks", "fittings":"Make boat fittings", "orchard0":"Harvest upper orchard", "garden0":"Harvest upper garden", "orchard1":"Harvest lower orchard", "garden1":"Harvest lower garden"][key] ?? key.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression).capitalized
+        }
     }
     struct Blocker: Decodable { let message: String }
     let title: String

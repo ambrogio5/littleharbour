@@ -49,7 +49,7 @@ import SwiftUI
             if node.userData?["texture"] as? String != e.texture { node.texture = texture(e.texture); node.userData = ["texture": e.texture] }
             node.position = CGPoint(x: e.x, y: 2700 - e.y); node.zPosition = e.y
             node.alpha = e.stage == "unbuilt" ? 0.83 : 1
-            labels[e.id]?.text = e.label
+            labels[e.id]?.text = e.displayLabel
             labels[e.id]?.position = CGPoint(x: e.x, y: 2700 - e.y - 92)
             labels[e.id]?.isHidden = cameraNode.xScale > 3.8 && e.id != selected
         }
@@ -121,7 +121,8 @@ import SwiftUI
     }
     func tap(at screen: CGPoint, in view: SKView) {
         let candidates = entities.map { entity -> (WorldEntity, CGFloat) in
-            let point = convertPoint(toView: CGPoint(x: entity.x, y: 2700 - entity.y))
+            let renderedPosition = sprites[entity.id]?.position ?? CGPoint(x: entity.x, y: 2700 - entity.y)
+            let point = convertPoint(toView: renderedPosition)
             return (entity, hypot(point.x - screen.x, point.y - screen.y))
         }
         if let hit = candidates.min(by: { $0.1 < $1.1 }), hit.1 <= max(24, 100 / cameraNode.xScale) { onSelect?(hit.0) }
