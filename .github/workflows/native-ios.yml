@@ -1,0 +1,20 @@
+name: Native foundation
+on:
+  pull_request:
+    paths: ['native/**', 'dist/**', '.github/workflows/native-ios.yml']
+  push:
+    branches: [main]
+    paths: ['native/**', 'dist/**', '.github/workflows/native-ios.yml']
+permissions:
+  contents: read
+jobs:
+  adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node native/scripts/bundle-engine.mjs --check
+      - run: node --test native/scripts/bridge.test.mjs
+      - run: node native/scripts/verify-art.mjs
