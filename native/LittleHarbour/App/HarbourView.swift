@@ -14,6 +14,10 @@ struct HarbourView: View {
     @State private var showInspector = false
     @State private var showSettings = false
     @State private var showSites = false
+    @State private var showExplore = false
+    @State private var showTown = false
+    @State private var showSpeed = false
+    @State private var pendingCategory: String?
     @State private var pendingSite: WorldEntity?
     @State private var hasSideInspector = false
     @State private var expandedObjective = false
@@ -26,7 +30,7 @@ struct HarbourView: View {
                 header
                 HStack(spacing: 0) {
                     VStack(spacing: 0) {
-                        // Keep native menu hit regions outside the UIKit/SpriteKit surface.
+                        // Keep native control hit regions outside the UIKit/SpriteKit surface.
                         // A separate toolbar avoids ambiguous accessibility hit regions on older iOS.
                         cameraControls(wide: wide).padding(.horizontal, 12).padding(.vertical, 8).background(harbourPaper)
                         ZStack(alignment: .bottomLeading) {
@@ -54,6 +58,22 @@ struct HarbourView: View {
         }) {
             SiteDirectoryView { site in pendingSite = site; showSites = false }
         }
+        .sheet(isPresented: $showExplore) {
+            ExploreDirectoryView { region in scene.focus(region); showExplore = false }
+        }
+        .sheet(isPresented: $showTown, onDismiss: {
+            guard let category = pendingCategory else { return }
+            pendingCategory = nil; store.navigate(category)
+            if !hasSideInspector { showInspector = true }
+        }) {
+            TownDirectoryView { category in pendingCategory = category; showTown = false }
+        }
+        .confirmationDialog("Town pace", isPresented: $showSpeed, titleVisibility: .visible) {
+            Button("Pause") { store.speed(0) }
+            Button("Normal speed") { store.speed(1) }
+            Button("Fast · 3×") { store.speed(3) }
+            Button("Cancel", role: .cancel) {}
+        }
         .onChange(of: showSettings) { _, value in store.modalOpen = value; if value { store.flush() } }
         .onChange(of: phase) { _, value in store.lifecycle(value == .active) }
         .onReceive(timer) { _ in store.pulse() }
@@ -75,16 +95,7 @@ struct HarbourView: View {
     }
     private func cameraControls(wide: Bool) -> some View {
         HStack(spacing: 5) {
-            Menu {
-                Button("Whole town") { scene.focus("all") }
-                Button("Home harbour") { scene.focus("harbour") }
-                Button("Hillside & fields") { scene.focus("inland") }
-                Button("Neighbourhood") { scene.focus("neighbourhood") }
-                Button("Market quarter") { scene.focus("market") }
-                Button("Working coast") { scene.focus("coast") }
-                Divider()
-                Toggle("Building labels", isOn: $mapLabels)
-            } label: { Label("Explore", systemImage: "map").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Explore")
+            Button { showExplore = true } label: { Label("Explore", systemImage: "map").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Explore")
             Button { pendingSite = nil; showSites = true } label: { Label("Sites", systemImage: "building.2").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Sites")
             Spacer(minLength: 0)
             Button { scene.zoom(1.25) } label: { Image(systemName: "minus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom out")
@@ -113,30 +124,8 @@ struct HarbourView: View {
                 Button { store.navigate(item.0); if !wide { showInspector = true } } label: { VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(store.category == item.0 ? .bold : .medium)) }.frame(maxWidth: .infinity, minHeight: 54).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 15)).padding(.horizontal, 3) }
                     .accessibilityIdentifier("nav-" + item.0)
             }
-            Menu {
-                Button { store.navigate("Journal"); if !wide { showInspector = true } } label: { Label("Town journal", systemImage: "book.closed") }
-                Divider()
-                ForEach(["Contracts", "Fleet", "Neighbourhood", "Ferry"].filter { store.snapshot?.categories.contains($0) == true }, id: \.self) { category in
-                    Button { store.navigate(category); if !wide { showInspector = true } } label: { Label(category, systemImage: HarbourTheme.symbol(category)) }
-                }
-                if store.snapshot?.categories.contains(where: { ["Waterfront", "Market", "Inland", "Lighthouse", "Destinations", "Residents", "Town layout"].contains($0) }) == true {
-                Menu("Grow the town", systemImage: "building.2") {
-                    ForEach(["Waterfront", "Market", "Inland", "Lighthouse", "Destinations", "Residents", "Town layout"].filter { store.snapshot?.categories.contains($0) == true }, id: \.self) { category in
-                        Button { store.navigate(category); if !wide { showInspector = true } } label: { Label(category, systemImage: HarbourTheme.symbol(category)) }
-                    }
-                }
-                }
-                if store.snapshot?.categories.contains(where: { ["Queues", "Automation", "Refits", "Reservations", "Circuits"].contains($0) }) == true {
-                Menu("Manage work", systemImage: "slider.horizontal.3") {
-                    ForEach(["Queues", "Automation", "Refits", "Reservations", "Circuits"].filter { store.snapshot?.categories.contains($0) == true }, id: \.self) { category in
-                        Button { store.navigate(category); if !wide { showInspector = true } } label: { Label(category, systemImage: HarbourTheme.symbol(category)) }
-                    }
-                }
-                }
-            } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }
-            Menu {
-                Button("Pause") { store.speed(0) }; Button("Normal speed") { store.speed(1) }; Button("Fast · 3×") { store.speed(3) }
-            } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54) }.accessibilityLabel("Simulation speed")
+            Button { pendingCategory = nil; showTown = true } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }.accessibilityLabel("Town")
+            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54) }.accessibilityLabel("Simulation speed")
         }.foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, 5).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private func category(for target: String?) -> String {
@@ -151,6 +140,7 @@ struct InspectorView: View {
     @State private var projectGoal: String?
     @State private var query = ""
     @State private var readyOnly = false
+    @State private var showActivityPicker = false
     @State private var allSupplies = false
     @State private var siteOnly = true
     private var selected: WorldEntity? { store.snapshot?.entities.first { $0.id == store.selectedSite && $0.category == store.category } }
@@ -165,7 +155,7 @@ struct InspectorView: View {
                             Text(store.category).font(.system(typeSize.isAccessibilitySize ? .headline : .largeTitle, design: .serif, weight: .semibold))
                         }
                         Spacer()
-                        Menu { ForEach((store.snapshot?.categories ?? []) + ["Journal"], id: \.self) { name in Button { store.navigate(name) } label: { Label(name, systemImage: HarbourTheme.symbol(name)) } } } label: { Image(systemName: "line.3.horizontal.decrease").frame(width: 44, height: 44).background(harbourInk.opacity(0.06), in: Circle()) }.accessibilityLabel("Choose town activity")
+                        Button { showActivityPicker = true } label: { Image(systemName: "line.3.horizontal.decrease").frame(width: 44, height: 44).background(harbourInk.opacity(0.06), in: Circle()) }.accessibilityLabel("Choose town activity")
                     }
                     if selected == nil { Text(HarbourTheme.caption(store.category)).font(.subheadline).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
                     if let entity = selected {
@@ -225,6 +215,7 @@ struct InspectorView: View {
             if let action = pendingAction { Button(action.title, role: .destructive) { store.perform(action); pendingAction = nil } }
             Button("Cancel", role: .cancel) { pendingAction = nil }
         } message: { if let action = pendingAction { Text(action.detail.isEmpty ? "Completed deliveries and spent materials are not refunded. Review the stated refund before continuing." : action.detail + ". This replaces the current setup without a refund.") } }
+        .sheet(isPresented: $showActivityPicker) { TownDirectoryView { category in store.navigate(category); showActivityPicker = false } }
         .sheet(item: Binding(get: { projectGoal.map(GoalSelection.init) }, set: { projectGoal = $0?.id })) { goal in ProjectView(goal: goal.id) }
     }
     private func stock(_ s: HarbourSnapshot) -> some View {
@@ -438,6 +429,58 @@ private struct SiteDirectoryView: View {
                 .searchable(text: $search, prompt: "Find a building or boat")
                 .navigationTitle("Town sites").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+}
+
+private struct ExploreDirectoryView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("mapLabels") private var mapLabels = true
+    let onSelect: (String) -> Void
+    private let regions = [("all", "Whole town", "globe.europe.africa"), ("harbour", "Home harbour", "house"), ("inland", "Hillside & fields", "leaf"), ("neighbourhood", "Neighbourhood", "building.2"), ("market", "Market quarter", "basket"), ("coast", "Working coast", "sailboat")]
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Find your way") {
+                    ForEach(regions, id: \.0) { region in
+                        Button { onSelect(region.0) } label: { Label(region.1, systemImage: region.2).frame(minHeight: 44) }.accessibilityLabel(region.1)
+                    }
+                }
+                Section { Toggle("Building labels", isOn: $mapLabels) }
+            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.ink)
+                .navigationTitle("Explore the harbour").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+}
+
+private struct TownDirectoryView: View {
+    @EnvironmentObject private var store: GameStore
+    @Environment(\.dismiss) private var dismiss
+    let onSelect: (String) -> Void
+    private func available(_ names: [String]) -> [String] { names.filter { store.snapshot?.categories.contains($0) == true } }
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Your living town") {
+                    Button { onSelect("Journal") } label: { Label("Town journal", systemImage: "book.closed").frame(minHeight: 44) }.accessibilityLabel("Town journal")
+                    rows(available(["Contracts", "Fleet", "Neighbourhood", "Ferry"]))
+                }
+                Section("The working harbour") { rows(available(["Production", "Trade", "Build"])) }
+                let growth = available(["Waterfront", "Market", "Inland", "Lighthouse", "Destinations", "Residents", "Town layout"])
+                if !growth.isEmpty { Section("Grow the town") { rows(growth) } }
+                let work = available(["Queues", "Automation", "Refits", "Reservations", "Circuits"])
+                if !work.isEmpty { Section("Manage work") { rows(work) } }
+            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.ink)
+                .navigationTitle("Town activities").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+    private func rows(_ categories: [String]) -> some View {
+        ForEach(categories, id: \.self) { category in
+            Button { onSelect(category) } label: {
+                Label(category, systemImage: HarbourTheme.symbol(category)).frame(minHeight: 44)
+            }.accessibilityLabel(category)
         }
     }
 }

@@ -9,10 +9,10 @@ This pass prepares a TestFlight candidate. It does not claim App Store readiness
 - Reads stop at 150 KB before parsing, including document-picker and backup imports. Oversized corrupt originals remain exportable and can be recovered through a verified streaming backup. New saves above the supported limit cannot overwrite a valid town.
 - New backups encode their creation time in the filename, appear newest first and display readable dates. Older UUID backups remain available. File timestamp APIs are no longer requested. Backup and export files receive the same iOS file-protection setting as the primary save.
 - Sites now opens a searchable native directory with painted thumbnails and construction states. It avoids the live-updating long menu that produced intermittent invalid accessibility hit points. Selection resolves the current entity and opens its relevant activity after the directory dismisses.
-- Native map controls now sit in a toolbar outside the SpriteKit surface, addressing inaccessible overlay hit regions found by CI on iOS 18.5. The persistence UI test compares the saved wheat inventory instead of depending on how quickly the runner pauses a growing field.
+- Native map controls now sit in a toolbar outside the SpriteKit surface. Explore and Town open native list sheets, and speed uses a confirmation dialog, removing the remaining menu hit regions found inaccessible by CI on iOS 18.5. The persistence UI test compares the saved wheat inventory instead of depending on how quickly the runner pauses a growing field.
 - A paused simulation no longer republishes unchanged snapshots every half second. Actions still refresh/save immediately, and the monotonic clock continues resetting so resuming does not catch up paused time.
 - Exported files use distinct temporary folders, preventing a later export from changing an earlier share-sheet attachment.
-- Settings now includes an offline privacy policy, public project support link and the version/build from the actual application bundle.
+- Settings now includes an offline privacy policy, public project support link and the version/build from the actual application bundle. Privacy navigation has explicit presentation state; opening it no longer publishes an import-cancellation update while the navigation stack is transitioning.
 - Build settings support a separate QA identifier and display name. The local archive/export helper checks engine, artwork and campaign freshness and never uploads anything.
 
 ## Earned campaign verification
@@ -41,12 +41,14 @@ Local environment: Xcode 27.1, Swift 6.4 in Swift 5 language mode, iOS deploymen
 - Local Release QA archive: **succeeded**. Codesign verification passed; offline privacy policy and privacy manifest are present; archive includes debug symbols. App bundle is approximately 44 MiB on disk, not an App Store download-size measurement.
 - Release helper shell syntax: **passed**. Archive/export through the final production account, IPA export and App Store upload are unverified.
 
-The previous remote run on Xcode 16.4 / iOS 18.5 built successfully and passed all 14 then-existing native tests, but four UI tests failed: three inaccessible map-menu hit regions and one timing-dependent harvest assertion. Those failures prompted the toolbar and inventory-persistence changes above; the updated remote run must pass before the PR is considered green.
+The first remote run on Xcode 16.4 / iOS 18.5 built successfully and passed all 14 then-existing native tests, but four UI tests failed. After the directory and inventory-persistence fixes, run 41274325223 passed all 23 core tests and eight of ten UI cases. Explore still had an inaccessible menu target and the privacy page failed to open. The remaining menus are now native sheets/dialogs and privacy navigation is explicit, without disappearance-time store publication. The four affected navigation, privacy, ferry and persistence cases passed locally after these changes. The updated remote run must pass before the PR is considered green.
 
 The initial new-town UI test failed because it expected an offscreen lazy-list row to exist without scrolling. It also exposed a view-update publication warning in the original alert-binding pattern. The final flow separates alert presentation state, waits for the successful replacement message, and scrolls to the recovery action. The focused replacement/privacy rerun passed without that warning.
 
 Local result artifacts (not committed):
 
+- `/tmp/littleharbour-release-navigation-fix.xcresult` (four UI cases after sheet/privacy fixes)
+- `/tmp/littleharbour-release-commit-iphone.xcresult` (33/33 at 9130575, before sheet/privacy fixes)
 - `/tmp/littleharbour-release-recovery-review.xcresult`
 - `/tmp/littleharbour-release-directory-iphone.xcresult` (before paused-refresh optimization)
 - `/tmp/littleharbour-release-final-iphone.xcresult` (before toolbar/directory changes)

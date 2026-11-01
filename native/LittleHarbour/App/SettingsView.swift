@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("hapticFeedback") private var hapticFeedback = true
     @State private var showImporter = false
     @State private var showReplacement = false
+    @State private var showPrivacy = false
     @State private var exportURL: URL?
     @State private var backups: [URL] = []
     var body: some View {
@@ -49,7 +50,7 @@ struct SettingsView: View {
                     Text("Use Town for contracts, fleet, neighbourhood, ferry, production targets, reservations and the Living Harbour journal. Choices change the town’s appearance; seasonal decisions never generate free currency or goods.")
                 }
                 Section("Privacy & support") {
-                    NavigationLink("Privacy policy") { PrivacyView() }
+                    Button("Privacy policy") { showPrivacy = true }
                     Link("Get help or report a problem", destination: URL(string: "https://github.com/ambrogio5/littleharbour/issues")!)
                     Text("Support opens the public project issue tracker in your browser. Include the app version and steps to reproduce a problem.").font(.footnote)
                 }
@@ -58,7 +59,7 @@ struct SettingsView: View {
                     Text("Everything you need to play is included. No account or internet connection is required. Your town stays on this device; export a backup to keep an independent copy.")
                     Text("Built for unhurried play: no advertising, in-app purchases, account or online services. Your device may include app data in its system backups, according to your backup settings.").font(.footnote)
                 }
-            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.sea).navigationTitle("Settings & saves").toolbar { Button("Done") { dismiss() } }
+            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.sea).navigationTitle("Settings & saves").toolbar { Button("Done") { store.cancelImport(); dismiss() } }
             .safeAreaInset(edge: .bottom) { FeedbackBanner() }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
                 do {
@@ -73,7 +74,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { store.cancelImport() }
             } message: { Text(store.importSummary) }
             .onAppear { reloadBackups() }
-            .onDisappear { store.cancelImport() }
+            .navigationDestination(isPresented: $showPrivacy) { PrivacyView() }
         }
     }
     private func prepareExport(original: Bool = false, browser: Bool = false) {

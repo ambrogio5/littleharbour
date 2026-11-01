@@ -79,7 +79,10 @@ import Combine
             importSummary = "\(town.coins) coins · \(town.deliveries) deliveries · chapter \(town.objective.chapter). Your current save will be backed up before replacement."
         } catch { message = error.localizedDescription }
     }
-    func cancelImport() { pendingImport = nil; importSummary = "" }
+    func cancelImport() {
+        if pendingImport != nil { pendingImport = nil }
+        if !importSummary.isEmpty { importSummary = "" }
+    }
     func previewNewTown() {
         cancelImport()
         do {
