@@ -1,0 +1,72 @@
+# Little Harbour for iPhone and iPad
+
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **This is a native beta implementation, not an App Store release or a claim of finished painted artwork.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+
+## Build and run
+
+1. Open `native/LittleHarbour.xcodeproj` in Xcode. The project and shared scheme are committed; **XcodeGen is not required to open or build it**.
+2. Select the **LittleHarbour** scheme and an installed iPhone or iPad simulator, then Run.
+3. For a physical device, select your own Apple development team under Signing & Capabilities, choose a unique bundle identifier if necessary, connect the device, enable Developer Mode and Run. No signing identity or team is committed.
+
+Deployment target: iOS/iPadOS 17.0. Locally compiled using Xcode 27.1 / Swift 6.4 in Swift 5 language mode, with complete concurrency checking. Compatibility with older Xcode versions is not yet verified. The project uses Apple frameworks only.
+
+From the repository root:
+
+```sh
+xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+xcrun simctl list devices available
+# Substitute an installed simulator ID from the list.
+xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
+  -destination 'platform=iOS Simulator,id=SIMULATOR_UUID' \
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+
+# Unsigned device-architecture compile; this does not run on a physical device.
+xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
+  -configuration Release -destination 'generic/platform=iOS' \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+`LittleHarbourTests` runs the actual JavaScriptCore engine and native filesystem recovery tests. `LittleHarbourUITests` exercises native navigation, harvests, save/relaunch, map gestures, site selection and landscape layout. UI tests use a separate disposable application-support namespace, never the player's town. Tests that request `--ui-testing` reset their own in-memory town; persistence tests use `--persistence-testing` and explicitly reset only that namespace.
+
+## Playing
+
+Drag the map; pinch or use +/− to zoom. Explore jumps between districts. Sites provides the same building access using native buttons, including with VoiceOver. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
+
+Production, Trade and Build stay on the bottom bar. Town opens contracts, waterfront, market, inland, fleet, circuits, lighthouse, destinations, neighbourhood, residents, ferry, refits, automation, reservations and the journal. Unavailable actions explain their requirements. The chapter objective follows the existing progression engine. All costs, queues, rewards and unlocks use the original economy.
+
+## Save transfer and recovery
+
+Export a browser JSON town using the existing game's Settings. In the native app, open Settings → Import a town. The app validates the entire candidate before asking to replace the current town, then archives and verifies the current file before writing. Browser schema versions 1–13 migrate through the original `parseSave`; the browser source is unchanged.
+
+Native exports contain `nativeVersion: 1`, the original version-13 town and a validated evolution snapshot in one atomic file. **Export for browser game** emits the ordinary town schema. Browser exports do not carry the graphics preview's separately stored Living Harbour history, camera settings, pinned goals or browser-only target presets. Importing a plain browser town starts a fresh evolution model while retaining its economy and paid work. There is no automatic/cloud synchronization.
+
+The native slot is Application Support / LittleHarbour / `town.native.json`; browser storage is never read or written. Unknown, corrupt, empty and unreadable saves pause play and block automatic writes. Exact original bytes can be exported. Backups are visible in Settings and can be exported or reviewed for restoration. Backups are not automatically deleted. The first changed save after loading also preserves the pre-normalization bytes.
+
+Checkpoints are every 15 active seconds, after actions and when leaving the foreground. Time pauses in the background and Settings, with no offline catch-up. Abrupt termination can lose progress since the last completed checkpoint. Atomic replacement protects against partial writes, not every filesystem/hardware failure. Native files have iOS data protection; use downloaded exports as independent backups. One process owns a town; unexpected external changes lock writes.
+
+## Source and asset maintenance
+
+```sh
+# Regenerate the bundled engine after changing shared JS or native/bridge.js.
+node native/scripts/bundle-engine.mjs
+node native/scripts/bundle-engine.mjs --check
+node --test native/scripts/bridge.test.mjs
+node native/scripts/verify-art.mjs
+npm test
+
+# Optional art re-export: requires installed Google Chrome + playwright-core.
+npm install --no-save --no-package-lock --ignore-scripts playwright-core
+node native/scripts/build-art.mjs
+node native/scripts/build-icon.mjs
+
+# Only if modifying project structure/settings; requires XcodeGen.
+xcodegen generate --spec native/project.yml
+```
+
+The deterministic bundler strips only the repository's supported named/namespace imports and exports, includes the original sources without changing their bodies, and records SHA-256 source hashes. A CI freshness check prevents silently shipping an outdated economy. Parity tests compare native adapter actions with the original module engine. Native save tests also execute the generated bundle in Apple's JavaScriptCore.
+
+Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source hashes and dimensions. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. Native extra boatyard/vineyard details are in `scripts/architecture-art.mjs`.
+
+See [architecture and repository audit](docs/ARCHITECTURE.md), [verification](docs/VERIFICATION.md) and [release requirements](docs/RELEASE.md).

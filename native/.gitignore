@@ -1,0 +1,4 @@
+DerivedData/
+build/
+*.xcresult/
+**/xcuserdata/
