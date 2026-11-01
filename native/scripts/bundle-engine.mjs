@@ -4,6 +4,26 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const modules=new Map();
+// Collect all bindings in a declaration, including catalog lines such as
+// `export const A={...}, B={...}`. Ignore commas inside nested values/strings.
+function siblingBindings(source, offset){
+ let depth=0,quote=null,escaped=false,lineComment=false,blockComment=false;const names=[];
+ for(let i=source.indexOf('=',offset)+1;i<source.length;i++){
+  const c=source[i],next=source[i+1];
+  if(lineComment){if(c==='\n')lineComment=false;continue;}
+  if(blockComment){if(c==='*'&&next==='/'){blockComment=false;i++;}continue;}
+  if(quote){if(escaped){escaped=false;continue;}if(c==='\\'){escaped=true;continue;}if(c===quote)quote=null;continue;}
+  if(c==='/'&&next==='/'){lineComment=true;i++;continue;}
+  if(c==='/'&&next==='*'){blockComment=true;i++;continue;}
+  if(c==='"'||c==="'"||c==='`'){quote=c;continue;}
+  if('({['.includes(c))depth++;
+  else if(')}]'.includes(c))depth--;
+  else if(c===';'&&depth===0)break;
+  else if(c===','&&depth===0){const name=source.slice(i+1).match(/^\s*([A-Za-z_$][\w$]*)\s*=/);if(!name)throw Error('Unsupported exported binding');names.push(name[1]);}
+ }
+ return names;
+}
+
 function bundle(file){
  file=path.resolve(file); const id=path.relative(root,file).replaceAll('\\','/');
  if(modules.has(id))return id;
@@ -13,7 +33,7 @@ function bundle(file){
   return binding.startsWith('* as ')?`const ${binding.slice(5)}=require(${JSON.stringify(dep)});`:`const ${binding}=require(${JSON.stringify(dep)});`;
  });
  source=source.replace(/^export \* from ['"](.+?)['"];?\s*$/gm,(_,spec)=>`Object.assign(exports,require(${JSON.stringify(bundle(path.resolve(path.dirname(file),spec.split('?')[0])))}));`);
- source=source.replace(/\bexport (function|const|let|class)\s+(\w+)/g,(_,type,name)=>{names.push(name);return `${type} ${name}`;});
+ source=source.replace(/\bexport (function|const|let|class)\s+(\w+)/g,(_,type,name,offset,full)=>{names.push(name);if(type==='const'||type==='let')names.push(...siblingBindings(full,offset));return `${type} ${name}`;});
  modules.set(id,source+`\nObject.assign(exports,{${names.join(',')}});`); return id;
 }
 const entry=bundle(path.join(root,'native/bridge.js'));

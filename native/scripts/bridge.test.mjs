@@ -7,19 +7,22 @@ import * as E from '../../dist/engine.js';
 import {sampleTown} from '../../dist/demo-town.js';
 import {worldEntities} from '../../dist/world-model.js';
 const late=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/late-town.json',import.meta.url),'utf8'));
+const preQuay=E.fresh();Object.assign(preQuay,{deliveries:2,coins:1000,expansion:'fishing',businesses:['fishing']});
+const fixtures=[E.fresh(),preQuay,sampleTown(),late];
 const snapshot=()=>JSON.parse(B.snapshot());
 const nativeTown=()=>JSON.parse(B.browserSave());
 test('Every exposed enabled economic action equals the original engine transaction',()=>{
- let count=0;
- for(const fixture of [E.fresh(),sampleTown(),late]){
-  B.load(JSON.stringify(fixture));const ids=snapshot().actions.filter(a=>a.enabled).map(a=>a.id);
+ const context=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../LittleHarbour/Resources/engine-bundle.js',import.meta.url),'utf8'),context);
+ const generated=context.Harbour;let count=0;
+ for(const fixture of fixtures){
+  B.load(JSON.stringify(fixture));generated.load(JSON.stringify(fixture));assert.deepEqual(JSON.parse(generated.snapshot()),snapshot(),'generated and ESM snapshots match');const ids=snapshot().actions.filter(a=>a.enabled).map(a=>a.id);
   for(const id of ids){
-   B.load(JSON.stringify(fixture));const [fn,args]=JSON.parse(id),expected=structuredClone(fixture);
-   assert(E[fn](expected,...args),id); assert(B.act(id),id);
-   assert.deepEqual(nativeTown(),E.parseSave(JSON.stringify(expected)),id);count++;
+   B.load(JSON.stringify(fixture));generated.load(JSON.stringify(fixture));const [fn,args]=JSON.parse(id),expected=structuredClone(fixture);
+   assert(E[fn](expected,...args),id); assert(B.act(id),id);assert(generated.act(id),'generated '+id);
+   assert.deepEqual(nativeTown(),E.parseSave(JSON.stringify(expected)),id);assert.deepEqual(JSON.parse(generated.browserSave()),nativeTown(),'generated '+id);count++;
   }
  }
- assert(count>180);console.log(`${count} native adapter transactions matched original engine behavior.`);
+ assert(count>180);console.log(`${count} ESM and generated-runtime transactions each matched original engine behavior.`);
 });
 test('Illegal and stale construction actions cannot charge twice or produce evolution',()=>{
  B.reset();const before=B.save();assert.equal(B.act(JSON.stringify(['build',['olive']])),false);assert.equal(B.save(),before);
