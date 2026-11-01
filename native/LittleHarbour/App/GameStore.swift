@@ -3,7 +3,7 @@ import Combine
 
 @MainActor final class GameStore: ObservableObject {
     @Published private(set) var snapshot: HarbourSnapshot?
-    @Published var message: String?
+    @Published var message: String? { didSet { feedbackUntil = 0 } }
     @Published var protectedSave = false
     @Published var pendingImport: Data?
     @Published var importSummary = ""
@@ -17,6 +17,7 @@ import Combine
     private var lastTick = ProcessInfo.processInfo.systemUptime
     private var checkpoint = 0.0
     private var refreshClock = 0.0
+    private var feedbackUntil = 0.0
     init() {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         // UI tests can choose a separate disposable town, never a player's save.
@@ -39,6 +40,7 @@ import Combine
     func refresh() throws { snapshot = try engine?.snapshot() }
     func pulse() {
         let now = ProcessInfo.processInfo.systemUptime, dt = min(0.5, max(0, now - lastTick)); lastTick = now
+        if feedbackUntil > 0 && now >= feedbackUntil && !protectedSave { message = nil; feedbackUntil = 0 }
         guard active, !modalOpen, !protectedSave, let engine else { return }
         do {
             try engine.call("tick", [dt]); checkpoint += dt; refreshClock += dt
@@ -57,6 +59,11 @@ import Combine
         do {
             guard try engine.call("act", [action.id]).toBool() else { message = "This action has changed. Review its current requirements."; return }
             try refresh(); flush()
+            if !protectedSave {
+                message = snapshot?.log.first ?? "Done. Your town is saved."
+                feedbackUntil = ProcessInfo.processInfo.systemUptime + 4
+                if UserDefaults.standard.object(forKey: "hapticFeedback") as? Bool ?? true { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+            }
             if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: snapshot?.log.first) }
         } catch { freeze(error) }
     }
@@ -87,5 +94,6 @@ import Combine
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(original || protectedSave ? "Little-Harbour-original.json" : browser ? "Little-Harbour-browser.json" : "Little-Harbour-native.json")
         try data.write(to: url, options: .atomic); return url
     }
+    func navigate(_ category: String) { selectedSite = nil; self.category = category }
     func select(_ entity: WorldEntity) { selectedSite = entity.id; category = entity.category }
 }

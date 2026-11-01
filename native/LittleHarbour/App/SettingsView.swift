@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("mapLabels") private var mapLabels = true
+    @AppStorage("hapticFeedback") private var hapticFeedback = true
     @State private var showImporter = false
     @State private var exportURL: URL?
     @State private var backups: [URL] = []
@@ -19,6 +21,11 @@ struct SettingsView: View {
                     if store.protectedSave { Button("Export exact original bytes") { prepareExport(original: true) } }
                     if let exportURL { ShareLink("Share exported save", item: exportURL).accessibilityIdentifier("share-save") }
                     Button("Import a town…") { showImporter = true }
+                }
+                Section("Make yourself at home") {
+                    Toggle("Building labels", isOn: $mapLabels)
+                    Toggle("Gentle haptic feedback", isOn: $hapticFeedback)
+                    Text("The map respects Reduce Motion. Text follows your device’s text size. Explore and Sites offer alternatives to map gestures.").font(.footnote)
                 }
                 Section("Recovery backups") {
                     Text("Every imported replacement and the first save after loading preserve an exact copy of the original. Backups stay on this device. Export copies for safekeeping.").font(.footnote)
@@ -40,11 +47,11 @@ struct SettingsView: View {
                     Text("Use Town for contracts, fleet, neighbourhood, ferry, production targets, reservations and the Living Harbour journal. Choices change the town’s appearance; seasonal decisions never generate free currency or goods.")
                 }
                 Section("About this build") {
-                    Text("Little Harbour · native preview 0.1.0").font(.headline)
-                    Text("Native SwiftUI and SpriteKit presentation with the repository’s original game engine. All game code and artwork ship inside the app; no account or network connection is required.")
-                    Text("The layered Mediterranean artwork is adapted from the current playable map. Finished painted assets, sound design, physical-device performance certification and App Store release preparation remain in development.").font(.footnote)
+                    Text("Little Harbour · painted native preview 0.2.0").font(.headline)
+                    Text("Everything you need to play is included. No account or internet connection is required. Your town stays on this device; export a backup to keep an independent copy.")
+                    Text("Painted Mediterranean terrain and individual buildings are layered over your living town. Sound design, physical-device performance certification and App Store release preparation remain in development.").font(.footnote)
                 }
-            }.navigationTitle("Settings & saves").toolbar { Button("Done") { dismiss() } }
+            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.sea).navigationTitle("Settings & saves").toolbar { Button("Done") { dismiss() } }
             .safeAreaInset(edge: .bottom) { FeedbackBanner() }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
                 do {

@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **This is a native beta implementation, not an App Store release or a claim of finished painted artwork.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **This is a native beta implementation, not an App Store release or final art/device certification.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 
@@ -32,9 +32,9 @@ xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
 
 ## Playing
 
-Drag the map; pinch or use +/− to zoom. Explore jumps between districts. Sites provides the same building access using native buttons, including with VoiceOver. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
+Drag the map; pinch or use +/− to zoom. Explore jumps between districts. Sites provides the same building access using native buttons, including with VoiceOver. Building labels can be hidden in Explore or Settings. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
 
-Production, Trade and Build stay on the bottom bar. Town opens contracts, waterfront, market, inland, fleet, circuits, lighthouse, destinations, neighbourhood, residents, ferry, refits, automation, reservations and the journal. Unavailable actions explain their requirements. The chapter objective follows the existing progression engine. All costs, queues, rewards and unlocks use the original economy.
+Production, Trade and Build stay on the bottom bar. Town opens the journal, contracts, fleet, neighbourhood and ferry directly. Grow the town groups waterfront, market, inland, lighthouse, destinations, residents and layout; Manage work groups queues, circuits, refits, automation and reservations. The active destination is highlighted. Activities show compact expandable inventory, progress, search, and All actions / Ready now filters. Selecting a production site scopes its recipes; clear the site or switch off Only this site to browse the full category. Unavailable actions explain their requirements. Successful actions give brief visual feedback and optional haptics. The chapter objective follows the existing progression engine. All costs, queues, rewards and unlocks use the original economy.
 
 ## Save transfer and recovery
 
@@ -56,8 +56,8 @@ node --test native/scripts/bridge.test.mjs
 node native/scripts/verify-art.mjs
 npm test
 
-# Optional art re-export: requires installed Google Chrome + playwright-core.
-npm install --no-save --no-package-lock --ignore-scripts playwright-core
+# Optional deterministic painted-asset repacking: macOS + Swift/Xcode tools.
+# Source atlases are committed; no generation service/API key is needed.
 node native/scripts/build-art.mjs
 node native/scripts/build-icon.mjs
 
@@ -67,9 +67,9 @@ xcodegen generate --spec native/project.yml
 
 The deterministic bundler strips only the repository's supported named/namespace imports and exports, includes the original sources without changing their bodies, and records SHA-256 source hashes. A CI freshness check prevents silently shipping an outdated economy. Parity tests compare native adapter actions with the original module engine. Native save tests also execute the generated bundle in Apple's JavaScriptCore.
 
-Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source hashes and dimensions. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. Native extra boatyard/vineyard details are in `scripts/architecture-art.mjs`.
+Art exports contain the current continuous 1800×2700 terrain and 120 transparent 384×384 textures, covering 24 kinds and five visual variants. A 320-unit world frame keeps anchors consistent. The manifest checks source and packed-output hashes and dimensions. A separate painted olive tree supports town evolution. Every site remains its own SpriteKit node, ordered by world depth. Both specialist workshops remain visible after the charter; purchased neighbourhood plots retain their actual saved locations and furnishings. The painted source atlases, prompts, state reuse and registration details are documented in [painted art provenance](art-source/painted-v2/README.md).
 
-See [architecture and repository audit](docs/ARCHITECTURE.md), [verification](docs/VERIFICATION.md) and [release requirements](docs/RELEASE.md).
+See [the graphics and UX improvement report](docs/GRAPHICS-UX.md), [architecture and repository audit](docs/ARCHITECTURE.md), [verification](docs/VERIFICATION.md) and [release requirements](docs/RELEASE.md).
 
 ## Review order
 

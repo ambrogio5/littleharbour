@@ -28,13 +28,15 @@ struct WorldEntity: Decodable, Identifiable {
         return type + "-" + phase
     }
     var category: String {
-        if id == "pier" { return "Trade" }
+        if id == "pier" { return stage == "unbuilt" ? "Build" : "Trade" }
         if id == "waterfront" { return "Waterfront" }
         if id == "lighthouse" { return "Lighthouse" }
         if id == "ferry" { return "Ferry" }
         if id == "civic" { return "Residents" }
         if ["specialist", "boatyard", "estate"].contains(id) && stage == "unbuilt" || (["olive", "fishing"].contains(id) && stage == "unbuilt") { return "Build" }
-        if id.hasPrefix("boat") { return "Fleet" }
+        if id == "boat0" || id == "boat1" { return "Fleet" }
+        if stage == "built", ["kiln", "claypit", "terrace0", "terrace1", "boatyard", "estate"].contains(id) { return "Production" }
+        if id.hasPrefix("plot"), stage == "built", ["carpenter", "weaver", "sailmaker", "flaxgarden"].contains(kind) { return "Production" }
         if id.hasPrefix("plot") { return "Neighbourhood" }
         if tab == "market" { return "Market" }
         if tab == "inland" { return "Inland" }
@@ -109,3 +111,42 @@ struct ProjectPlan: Decodable {
     let blockers: [Blocker]
 }
 let goodsNames = ["wheat":"Wheat", "flour":"Flour", "bread":"Bread", "olives":"Olives", "oil":"Olive oil", "fish":"Fish", "wood":"Timber", "stone":"Stone", "planks":"Planks", "boatparts":"Boat fittings", "grapes":"Grapes", "wine":"Wine", "provisions":"Provisions", "clay":"Clay", "fruit":"Fruit", "vegetables":"Vegetables", "jars":"Jars", "tiles":"Tiles", "preserves":"Preserves", "flax":"Flax", "cloth":"Cloth", "furniture":"Furniture", "sails":"Sails"]
+
+extension HarbourAction {
+    // Match structured engine arguments rather than translated display text.
+    var invocation: (String, [Any])? {
+        guard let raw = try? JSONSerialization.jsonObject(with: Data(id.utf8)) as? [Any], raw.count == 2,
+              let name = raw[0] as? String, let args = raw[1] as? [Any] else { return nil }
+        return (name, args)
+    }
+    var verb: String {
+        guard let (name, _) = invocation else { return "Continue" }
+        if name == "harvestReplant" { return "Harvest & replant" }
+        if name == "start" { return "Start production" }
+        if name.hasPrefix("dispatch") { return "Send shipment" }
+        if name.hasPrefix("startFerry") { return "Launch service" }
+        if name.hasPrefix("startVoyage") || name == "startCircuit" { return "Set sail" }
+        if name.hasPrefix("build") || name == "invest" { return "Start building" }
+        if name.hasPrefix("fund") { return "Fund project" }
+        if name.hasPrefix("select") || name.hasPrefix("choose") { return "Choose" }
+        if name.hasPrefix("buy") { return "Purchase" }
+        if name.hasPrefix("upgrade") || name.hasPrefix("install") { return "Upgrade" }
+        if name.hasPrefix("cancel") || name == "abandonContract" { return "Review cancellation" }
+        if name.hasPrefix("remove") { return "Review redevelopment" }
+        if name.hasPrefix("deliver") || name.hasPrefix("supply") { return "Deliver supplies" }
+        return "Continue"
+    }
+    func belongs(to site: WorldEntity?) -> Bool {
+        guard let site, let (name, args) = invocation else { return true }
+        let first = args.first as? String ?? ""
+        if site.id == "field" { return name == "harvestReplant" || first == "field" }
+        let recipes: [String: [String]] = ["mill":["mill"], "bakery":["bakery"], "olive":["olives","press"], "fishing":["fishing"], "boatyard":["saw","fittings"], "estate":["grapes","wine"], "kiln":["jars","tiles","fruitPreserves","vegetablePreserves"], "claypit":["clay"], "terrace0":["orchard0","garden0"], "terrace1":["orchard1","garden1"], "carpenter":["furniture"], "weaver":["cloth"], "sailmaker":["sails"], "flaxgarden":["flax"]]
+        if name == "start" || name == "setTarget" { return recipes[site.id.hasPrefix("plot") ? site.kind : site.id]?.contains(first) == true }
+        if site.id.hasPrefix("plot"), let plot = Int(site.id.dropFirst(4)) { return (args.first as? Int) == plot }
+        if ["boat0", "boat1"].contains(site.id), let berth = Int(site.id.dropFirst(4)) { return (args.first as? Int) == berth }
+        if name == "build" { return first == site.id }
+        if site.id == "pier" { return name == "upgrade" || category == "Trade" }
+        // A system panel is already scoped to its harbour district.
+        return category == site.category && !["Production", "Build", "Neighbourhood", "Fleet"].contains(category)
+    }
+}

@@ -1,6 +1,6 @@
 # Little Harbour — V4 / Playtest 19
 
-Native iPhone/iPad beta source and the committed Xcode project are in [`native/`](native/README.md). See its build instructions, verification record and remaining release requirements. The browser game below retains its existing engine and saves.
+Native iPhone/iPad beta source and the committed Xcode project are in [`native/`](native/README.md). The native v0.2 update adds painted Mediterranean sprites and a redesigned management UI; see its [graphics/UX report](native/docs/GRAPHICS-UX.md), build instructions and remaining release requirements. The browser game below retains its existing engine and saves.
 
 ## Roadmap increment · v0.20.0
 

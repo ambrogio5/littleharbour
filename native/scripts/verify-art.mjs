@@ -7,8 +7,9 @@ for(const[file,hash]of Object.entries(manifest.hashes)){
  const actual=crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex');
  if(actual!==hash)throw Error(`Art source changed: ${file}. Run node native/scripts/build-art.mjs`);
 }
-for(const name of ['terrain',...manifest.textures]){
+for(const name of ['terrain',...manifest.textures,...(manifest.extras||[])]){
  const png=fs.readFileSync(new URL(name+'.png',base));if(png.readUInt32BE(0)!==0x89504e47)throw Error('Invalid PNG '+name);
+ if(manifest.outputHashes && crypto.createHash('sha256').update(png).digest('hex')!==manifest.outputHashes[name])throw Error('Packed texture changed: '+name);
  const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
  if(name==='terrain'?width!==1800||height!==2700:width!==384||height!==384)throw Error('Unexpected image geometry '+name);
 }

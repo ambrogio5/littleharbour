@@ -8,7 +8,12 @@ import SwiftUI
     private let ornaments = SKNode()
     private var sprites: [String: SKSpriteNode] = [:]
     private var labels: [String: SKLabelNode] = [:]
-    private var textures: [String: SKTexture] = [:]
+    private var labelPlates: [String: SKShapeNode] = [:]
+    private var badges: [String: SKLabelNode] = [:]
+    private var selectedID: String?
+    var showLabels = true
+    private let textures: NSCache<NSString, SKTexture> = { let c = NSCache<NSString, SKTexture>(); c.totalCostLimit = 48 * 1024 * 1024; return c }()
+    private var activitySignature = ""
     private var entities: [WorldEntity] = []
     private var current: HarbourSnapshot?
     private var styleSignature = ""
@@ -19,23 +24,30 @@ import SwiftUI
     var onSelect: ((WorldEntity) -> Void)?
     override init(size: CGSize) {
         super.init(size: size)
-        scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.17, green: 0.39, blue: 0.44, alpha: 1)
+        scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.08, green: 0.39, blue: 0.49, alpha: 1)
         addChild(world); addChild(cameraNode); camera = cameraNode
         let terrain = SKSpriteNode(texture: texture("terrain"), size: CGSize(width: 1800, height: 2700))
         terrain.anchorPoint = .zero; terrain.position = .zero; terrain.zPosition = -10000; world.addChild(terrain)
         world.addChild(ornaments)
         selectionRing.strokeColor = UIColor(red: 1, green: 0.87, blue: 0.55, alpha: 1)
-        selectionRing.lineWidth = 5; selectionRing.fillColor = .clear; selectionRing.zPosition = 5000; selectionRing.isHidden = true; world.addChild(selectionRing)
+        selectionRing.lineWidth = 4; selectionRing.fillColor = UIColor(red: 1, green: 0.88, blue: 0.58, alpha: 0.15); selectionRing.zPosition = 1; selectionRing.isHidden = true; world.addChild(selectionRing)
     }
     required init?(coder: NSCoder) { fatalError("Use init(size:)") }
+    // Presentation anchors align fixed coastal landmarks to the painted shore.
+    // Saved neighbourhood plots and all economic coordinates remain untouched.
+    func mapPosition(_ entity: WorldEntity) -> CGPoint {
+        let shore: [String: CGPoint] = ["pier": CGPoint(x: 1150, y: 2320), "fishing": CGPoint(x: 530, y: 2120), "ferry": CGPoint(x: 1400, y: 2060), "lighthouse": CGPoint(x: 1510, y: 1780)]
+        let p = shore[entity.id] ?? CGPoint(x: entity.x, y: entity.y)
+        return CGPoint(x: p.x, y: 2700 - p.y)
+    }
     private func texture(_ name: String) -> SKTexture {
-        if let cached = textures[name] { return cached }
-        let result = SKTexture(imageNamed: name); result.filteringMode = .linear; textures[name] = result; return result
+        if let cached = textures.object(forKey: name as NSString) { return cached }
+        let result = SKTexture(imageNamed: name); result.filteringMode = .linear; textures.setObject(result, forKey: name as NSString, cost: Int(result.size().width * result.size().height * 4)); return result
     }
     func apply(_ snapshot: HarbourSnapshot, selected: String?) {
-        entities = snapshot.entities; current = snapshot
+        entities = snapshot.entities; current = snapshot; selectedID = selected
         let ids = Set(entities.map(\.id))
-        for id in sprites.keys.filter({ !ids.contains($0) }) { sprites.removeValue(forKey: id)?.removeFromParent(); labels.removeValue(forKey: id)?.removeFromParent() }
+        for id in sprites.keys.filter({ !ids.contains($0) }) { sprites.removeValue(forKey: id)?.removeFromParent(); labels.removeValue(forKey: id)?.removeFromParent(); labelPlates.removeValue(forKey: id)?.removeFromParent(); badges.removeValue(forKey: id)?.removeFromParent() }
         for e in entities {
             let node: SKSpriteNode
             if let existing = sprites[e.id] { node = existing }
@@ -43,28 +55,37 @@ import SwiftUI
                 node = SKSpriteNode(); node.size = CGSize(width: 320, height: 320); node.name = e.id
                 world.addChild(node); sprites[e.id] = node
                 let label = SKLabelNode(fontNamed: "AvenirNext-DemiBold"); label.fontSize = 23
-                label.fontColor = UIColor(red: 0.16, green: 0.25, blue: 0.23, alpha: 1)
-                label.verticalAlignmentMode = .top; label.zPosition = 4000; world.addChild(label); labels[e.id] = label
+                label.fontColor = UIColor(red: 0.10, green: 0.25, blue: 0.27, alpha: 1)
+                label.verticalAlignmentMode = .center; label.zPosition = 4001; world.addChild(label); labels[e.id] = label
+                let plate = SKShapeNode(); plate.fillColor = UIColor(red: 0.99, green: 0.97, blue: 0.91, alpha: 0.94); plate.strokeColor = UIColor(red: 0.25, green: 0.39, blue: 0.36, alpha: 0.18); plate.lineWidth = 1; plate.zPosition = 4000; world.addChild(plate); labelPlates[e.id] = plate
+                let badge = SKLabelNode(fontNamed: "AvenirNext-Bold"); badge.fontSize = 22; badge.fontColor = UIColor(red: 0.12, green: 0.35, blue: 0.31, alpha: 1); badge.zPosition = 4002; world.addChild(badge); badges[e.id] = badge
             }
             if node.userData?["texture"] as? String != e.texture { node.texture = texture(e.texture); node.userData = ["texture": e.texture] }
-            node.position = CGPoint(x: e.x, y: 2700 - e.y); node.zPosition = e.y
-            node.alpha = e.stage == "unbuilt" ? 0.83 : 1
+            node.position = mapPosition(e); node.zPosition = 2700 - mapPosition(e).y
+            node.alpha = e.stage == "unbuilt" ? 0.74 : 1
             labels[e.id]?.text = e.displayLabel
-            labels[e.id]?.position = CGPoint(x: e.x, y: 2700 - e.y - 92)
-            labels[e.id]?.isHidden = cameraNode.xScale > 3.8 && e.id != selected
+            labels[e.id]?.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 124)
+            badges[e.id]?.text = e.ripe == true ? "✦" : e.stage == "building" ? "•••" : nil
+            badges[e.id]?.position = CGPoint(x: mapPosition(e).x + 91, y: mapPosition(e).y + 84)
+            if let badge = badges[e.id] {
+                if !reduceMotion && snapshot.speed > 0 && e.ripe == true {
+                    if badge.action(forKey: "ready") == nil { badge.run(.repeatForever(.sequence([.fadeAlpha(to: 0.45, duration: 0.8), .fadeAlpha(to: 1, duration: 0.8)])), withKey: "ready") }
+                } else { badge.removeAllActions(); badge.alpha = 1 }
+            }
         }
-        if let selected, let e = entities.first(where: { $0.id == selected }) { selectionRing.position = CGPoint(x: e.x, y: 2700 - e.y - 25); selectionRing.isHidden = false }
+        if let selected, let e = entities.first(where: { $0.id == selected }) { selectionRing.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 60); selectionRing.zPosition = 2700 - mapPosition(e).y - 0.5; selectionRing.isHidden = false }
         else { selectionRing.isHidden = true }
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
         animateActivity(snapshot)
+        updateLabels()
         if !initialFocus && size.width > 0 { initialFocus = true; focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
     }
     private func rebuildOrnaments(_ style: WorldStyle) {
         ornaments.removeAllChildren()
         for i in 0..<max(0, min(16, style.oliveDensity - 14)) {
-            let tree = SKSpriteNode(texture: texture("orchard-built"), size: CGSize(width: 90, height: 90))
-            let y = CGFloat(280 + i / 6 * 122); tree.position = CGPoint(x: 195 + i % 6 * 139, y: 2700 - Int(y)); tree.zPosition = y - 10; ornaments.addChild(tree)
+            let tree = SKSpriteNode(texture: texture("olive-tree"), size: CGSize(width: 90, height: 90))
+            let y = CGFloat(280 + i * 94); tree.position = CGPoint(x: 105 + i % 2 * 55, y: 2700 - Int(y)); tree.zPosition = y - 10; ornaments.addChild(tree)
         }
         for i in 0..<min(7, style.marketStalls) {
             let stall = SKSpriteNode(texture: texture("market-built"), size: CGSize(width: 105, height: 105))
@@ -77,10 +98,29 @@ import SwiftUI
         }
         for i in 0..<min(4, max(0, style.tradeTraffic - 1)) {
             let boat = SKSpriteNode(texture: texture("boat-built"), size: CGSize(width: 125, height: 125))
-            boat.position = CGPoint(x: 1230 + i % 2 * 95, y: 2700 - (2000 + i * 125)); boat.zPosition = 3000; ornaments.addChild(boat)
+            boat.position = CGPoint(x: 1680 + i % 2 * 70, y: 2700 - (1370 + i * 150)); boat.zPosition = 3000; ornaments.addChild(boat)
         }
     }
     private func animateActivity(_ snapshot: HarbourSnapshot) {
+        let working = Set(snapshot.jobs.map(\.name))
+        let signature = "\(reduceMotion)-\(snapshot.speed)-" + working.sorted().joined(separator: ",")
+        if signature != activitySignature {
+            activitySignature = signature
+            for sprite in sprites.values { sprite.childNode(withName: "work-effect")?.removeFromParent() }
+            if !reduceMotion && snapshot.speed > 0 {
+                for (id, names) in [("bakery", ["Bake bread"]), ("kiln", ["Fire jars", "Fire tiles"])] where names.contains(where: working.contains) {
+                    guard let sprite = sprites[id] else { continue }
+                    let effect = SKNode(); effect.name = "work-effect"; effect.zPosition = 1; sprite.addChild(effect)
+                    for i in 0..<3 {
+                        let puff = SKShapeNode(ellipseOf: CGSize(width: 12, height: 9)); puff.fillColor = UIColor(white: 1, alpha: 0.42); puff.strokeColor = .clear; puff.alpha = 0; effect.addChild(puff)
+                        puff.run(.sequence([.wait(forDuration: Double(i) * 0.7), .repeatForever(.sequence([
+                            .run { [weak puff] in puff?.position = CGPoint(x: 20, y: 91); puff?.setScale(0.6); puff?.alpha = 0.55 },
+                            .group([.moveBy(x: 24, y: 50, duration: 2.4), .scale(to: 2, duration: 2.4), .fadeOut(withDuration: 2.4)])
+                        ]))]))
+                    }
+                }
+            }
+        }
         for slot in snapshot.boats.indices {
             guard let sprite = sprites["boat\(slot)"], let trip = snapshot.boats[slot]?.trip else { continue }
             if !reduceMotion {
@@ -90,7 +130,12 @@ import SwiftUI
                 sprite.position.y = CGFloat(2700 - (2100 + slot * 240)) + excursion * (trip.route == "quarry" ? 850 : 1350)
             }
         }
-        if let mill = sprites["mill"] { mill.color = .white; mill.colorBlendFactor = snapshot.jobs.contains(where: { $0.name == "Mill flour" }) ? 0.10 : 0 }
+        // Labels and selection travel with the real boat, rather than staying at its berth.
+        for e in entities where e.kind == "boat" {
+            guard let boat = sprites[e.id] else { continue }
+            labels[e.id]?.position = CGPoint(x: boat.position.x, y: boat.position.y - 124)
+            if selectedID == e.id { selectionRing.position = CGPoint(x: boat.position.x, y: boat.position.y - 60); selectionRing.zPosition = boat.zPosition - 0.5 }
+        }
     }
     override func didChangeSize(_ oldSize: CGSize) {
         if initialFocus { focus(focusedRegion) }
@@ -113,11 +158,24 @@ import SwiftUI
         cameraNode.setScale((region == "all" ? max(horizontal, vertical) : sqrt(horizontal * vertical)) * 1.04)
         clampCamera()
     }
+    private func updateLabels() {
+        for e in entities {
+            guard let label = labels[e.id], let plate = labelPlates[e.id] else { continue }
+            let visible = e.id == selectedID || (showLabels && cameraNode.xScale < 3.5 && e.stage != "unbuilt")
+            label.isHidden = !visible; plate.isHidden = !visible
+            label.fontSize = min(36, max(20, 11 * cameraNode.xScale))
+            let rect = CGRect(x: -label.frame.width / 2 - 12, y: -label.frame.height / 2 - 7, width: label.frame.width + 24, height: label.frame.height + 14)
+            plate.path = CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil)
+            plate.position = label.position
+            badges[e.id]?.isHidden = cameraNode.xScale > 3.8
+        }
+    }
     func zoom(_ multiplier: CGFloat) { cameraNode.setScale(min(8, max(0.65, cameraNode.xScale * multiplier))); clampCamera() }
     func clampCamera() {
         let halfW = min(900, size.width * cameraNode.xScale / 2), halfH = min(1350, size.height * cameraNode.yScale / 2)
         cameraNode.position.x = max(halfW, min(1800 - halfW, cameraNode.position.x))
         cameraNode.position.y = max(halfH, min(2700 - halfH, cameraNode.position.y))
+        updateLabels()
     }
     func tap(at screen: CGPoint, in view: SKView) {
         let candidates = entities.map { entity -> (WorldEntity, CGFloat) in
@@ -134,6 +192,7 @@ struct HarbourMap: UIViewRepresentable {
     let snapshot: HarbourSnapshot?
     let selected: String?
     let reduceMotion: Bool
+    let showLabels: Bool
     let paused: Bool
     func makeUIView(context: Context) -> SKView {
         let view = SKView(); view.preferredFramesPerSecond = 30; view.ignoresSiblingOrder = true
@@ -148,7 +207,7 @@ struct HarbourMap: UIViewRepresentable {
         return view
     }
     func updateUIView(_ view: SKView, context: Context) {
-        scene.reduceMotion = reduceMotion
+        scene.reduceMotion = reduceMotion; scene.showLabels = showLabels
         if let snapshot { scene.apply(snapshot, selected: selected) }
         view.accessibilityValue = String(format: "Zoom %.2f", 1 / scene.cameraNode.xScale)
         view.isPaused = paused
@@ -177,11 +236,11 @@ struct HarbourMap: UIViewRepresentable {
 }
 
 @MainActor enum HarbourArtwork {
-    private static let cache = NSCache<NSString, UIImage>()
+    private static let cache: NSCache<NSString, UIImage> = { let c = NSCache<NSString, UIImage>(); c.totalCostLimit = 12 * 1024 * 1024; return c }()
     static func image(_ name: String) -> UIImage {
         if let image = cache.object(forKey: name as NSString) { return image }
         let image = Bundle.main.path(forResource: name, ofType: "png").flatMap { UIImage(contentsOfFile: $0) } ?? UIImage(systemName: "building.2") ?? UIImage()
-        cache.setObject(image, forKey: name as NSString)
+        cache.setObject(image, forKey: name as NSString, cost: Int(image.size.width * image.size.height * image.scale * image.scale * 4))
         return image
     }
 }

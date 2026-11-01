@@ -1,5 +1,7 @@
 # Verification record
 
+**Follow-up:** the newer painted-art/UI pass has a separate [graphics and UX verification report](GRAPHICS-UX.md). Results below describe the initial native baseline, not the current artwork.
+
 Baseline: main `5bb5bdc` (latest merged premium-building update at the start of this work). The checkout was clean. No tracked browser runtime, save schema, balance constant, browser test or Pages workflow was changed. Native code and resources are additive; the root README links to them.
 
 ## Local results
