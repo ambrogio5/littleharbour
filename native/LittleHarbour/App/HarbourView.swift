@@ -13,6 +13,8 @@ struct HarbourView: View {
     @State private var scene = HarbourScene(size: CGSize(width: 800, height: 1000))
     @State private var showInspector = false
     @State private var showSettings = false
+    @State private var showSites = false
+    @State private var pendingSite: WorldEntity?
     @State private var hasSideInspector = false
     @State private var expandedObjective = false
     @AppStorage("mapLabels") private var mapLabels = true
@@ -23,14 +25,15 @@ struct HarbourView: View {
             VStack(spacing: 0) {
                 header
                 HStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
-                        HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
-                        VStack(spacing: 8) {
-                            cameraControls(wide: wide)
-                            Spacer()
-                            objective(wide: wide, compact: geometry.size.height < 450)
-                        }.padding(12)
-                    }.clipped()
+                    VStack(spacing: 0) {
+                        // Keep native menu hit regions outside the UIKit/SpriteKit surface.
+                        // A separate toolbar avoids ambiguous accessibility hit regions on older iOS.
+                        cameraControls(wide: wide).padding(.horizontal, 12).padding(.vertical, 8).background(harbourPaper)
+                        ZStack(alignment: .bottomLeading) {
+                            HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
+                            objective(wide: wide, compact: geometry.size.height < 450).padding(12)
+                        }.clipped()
+                    }
                     if wide { InspectorView().frame(width: min(400, geometry.size.width * 0.40)).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
                 }
                 dock(wide: wide)
@@ -42,6 +45,15 @@ struct HarbourView: View {
         }
         .tint(harbourInk)
         .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showSites, onDismiss: {
+            guard let site = pendingSite else { return }
+            pendingSite = nil
+            let current = store.snapshot?.entities.first { $0.id == site.id } ?? site
+            store.select(current); scene.focus(current.zone)
+            if !hasSideInspector { showInspector = true }
+        }) {
+            SiteDirectoryView { site in pendingSite = site; showSites = false }
+        }
         .onChange(of: showSettings) { _, value in store.modalOpen = value; if value { store.flush() } }
         .onChange(of: phase) { _, value in store.lifecycle(value == .active) }
         .onReceive(timer) { _ in store.pulse() }
@@ -73,11 +85,7 @@ struct HarbourView: View {
                 Divider()
                 Toggle("Building labels", isOn: $mapLabels)
             } label: { Label("Explore", systemImage: "map").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Explore")
-            Menu {
-                ForEach(store.snapshot?.entities ?? []) { entity in
-                    Button("\(entity.displayLabel) · \(entity.stage) · level \(entity.level)") { store.select(entity); scene.focus(entity.zone); if !wide { showInspector = true } }
-                }
-            } label: { Label("Sites", systemImage: "building.2").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Sites")
+            Button { pendingSite = nil; showSites = true } label: { Label("Sites", systemImage: "building.2").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Sites")
             Spacer(minLength: 0)
             Button { scene.zoom(1.25) } label: { Image(systemName: "minus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom out")
             Button { scene.zoom(0.8) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom in")
@@ -235,7 +243,7 @@ struct InspectorView: View {
                     HStack(spacing: 12) {
                         ForEach(Array(goods.prefix(3)), id: \.self) { item in
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("\(s.stock[item] ?? 0)").font(.system(.headline, design: .rounded)).monospacedDigit()
+                                Text("\(s.stock[item] ?? 0)").font(.system(.headline, design: .rounded)).monospacedDigit().accessibilityIdentifier("stock-count-" + item)
                                 Text(goodsNames[item] ?? item).font(.caption).foregroundStyle(HarbourTheme.muted)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -248,7 +256,7 @@ struct InspectorView: View {
     private func supply(_ item: String, count: Int) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Image(systemName: HarbourTheme.goodSymbol(item)).foregroundStyle(HarbourTheme.gold).accessibilityHidden(true)
-            Text("\(count)").font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit()
+            Text("\(count)").font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit().accessibilityIdentifier("stock-count-" + item)
             Text(goodsNames[item] ?? item).font(.caption)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(9).background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 10))
     }
@@ -395,5 +403,41 @@ private struct MapControlLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack { configuration.icon; if !compact { configuration.title } }
 
+    }
+}
+
+private struct SiteDirectoryView: View {
+    @EnvironmentObject private var store: GameStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+    let onSelect: (WorldEntity) -> Void
+    private var sites: [WorldEntity] {
+        (store.snapshot?.entities ?? []).filter { search.isEmpty || ($0.displayLabel + " " + $0.zone + " " + $0.stage).localizedCaseInsensitiveContains(search) }
+    }
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Text("Find a place in your town. Choose a site to see its work, supplies and next improvements.").font(.subheadline).foregroundStyle(HarbourTheme.muted)
+                }
+                ForEach(sites) { site in
+                    Button { onSelect(site) } label: {
+                        HStack(spacing: 14) {
+                            Image(uiImage: HarbourArtwork.image(site.texture)).resizable().scaledToFit().frame(width: 72, height: 72).accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(site.displayLabel).font(.headline)
+                                Text(site.stage == "unbuilt" ? "Planned site" : site.stage == "building" ? "Under construction" : "Level \(site.level) · \(site.ripe == true ? "Ready to harvest" : "Established")").font(.subheadline).foregroundStyle(HarbourTheme.muted)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).accessibilityHidden(true)
+                        }.padding(.vertical, 4)
+                    }.accessibilityLabel("\(site.displayLabel) · \(site.stage) · level \(site.level)")
+                }
+                if sites.isEmpty { Text("No matching sites. Try a building or district name.").foregroundStyle(HarbourTheme.muted) }
+            }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.ink)
+                .searchable(text: $search, prompt: "Find a building or boat")
+                .navigationTitle("Town sites").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
     }
 }

@@ -19,7 +19,11 @@ import XCTest
     func testCameraAndAccessibleSitesMenu() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["Zoom in"].waitForExistence(timeout: 20)); app.buttons["Zoom in"].tap(); app.buttons["Zoom out"].tap()
-        app.buttons["Sites"].tap(); let site = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Stone mill")).firstMatch
+        app.buttons["Sites"].tap()
+        XCTAssertTrue(app.navigationBars["Town sites"].waitForExistence(timeout: 5))
+        let search = app.searchFields.firstMatch; search.tap(); search.typeText("stone")
+        let directory = XCTAttachment(screenshot: app.screenshot()); directory.name = "Searchable painted site directory"; directory.lifetime = .keepAlways; add(directory)
+        let site = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Stone mill")).firstMatch
         XCTAssertTrue(site.waitForExistence(timeout: 5)); site.tap()
         XCTAssertTrue(app.staticTexts["Stone mill"].waitForExistence(timeout: 5))
     }
@@ -27,12 +31,15 @@ import XCTest
         let app = XCUIApplication(); app.launchArguments = ["--persistence-testing", "--reset-test-town"]; app.launch()
         XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["nav-Production"].tap()
         let harvest = app.buttons["harvest"]; XCTAssertTrue(harvest.waitForExistence(timeout: 10)); harvest.tap()
-        XCTAssertTrue(app.staticTexts["Wheat"].exists)
+        let wheat = app.staticTexts["stock-count-wheat"]
+        XCTAssertTrue(wheat.waitForExistence(timeout: 5)); let savedWheat = wheat.label
+        XCTAssertGreaterThan(Int(savedWheat) ?? 0, 0)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
         app.terminate(); app.launchArguments = ["--persistence-testing"]; app.launch()
         XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["nav-Production"].tap()
-        XCTAssertTrue(app.staticTexts["Wheat"].waitForExistence(timeout: 10)); XCTAssertFalse(app.buttons["harvest"].isEnabled)
+        XCTAssertTrue(app.staticTexts["stock-count-wheat"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["stock-count-wheat"].label, savedWheat)
     }
 
     func testPinchPanAndLandscapeLayout() throws {
@@ -125,6 +132,34 @@ import XCTest
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Town"].tap(); let journal = app.buttons["Town journal"]; XCTAssertTrue(journal.waitForExistence(timeout: 5)); journal.tap()
         XCTAssertTrue(app.staticTexts["Town activity"].waitForExistence(timeout: 5))
+    }
+
+    func testNewTownRequiresConfirmationAndOffersRecoveryBackup() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--persistence-testing", "--reset-test-town"]; app.launch()
+        XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20)); app.buttons["Settings and saves"].tap()
+        let newTown = app.buttons["new-town"]
+        for _ in 0..<5 { if newTown.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(newTown.isHittable); newTown.tap()
+        XCTAssertTrue(app.alerts["Replace this town?"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Cancel"].tap(); newTown.tap()
+        app.alerts.buttons["Replace with backup"].tap()
+        XCTAssertTrue(app.staticTexts["Town ready. Your previous save is kept in Recovery backups."].waitForExistence(timeout: 5))
+        let restore = app.buttons["Review restore"].firstMatch
+        for _ in 0..<6 { if restore.exists && restore.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(restore.isHittable)
+        let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Save recovery and dated backups"; screenshot.lifetime = .keepAlways; add(screenshot)
+    }
+
+    func testPrivacyIsAvailableOfflineAndLabelsAreAccessible() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20)); app.buttons["Settings and saves"].tap()
+        let privacy = app.buttons["Privacy policy"]
+        for _ in 0..<12 { if privacy.exists && privacy.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(privacy.isHittable); privacy.tap()
+        XCTAssertTrue(app.navigationBars["Privacy policy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Your town belongs to you")).firstMatch.exists)
+        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .trait])
+        let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Offline privacy policy"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
 
 }

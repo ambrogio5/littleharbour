@@ -203,7 +203,7 @@ struct HarbourMap: UIViewRepresentable {
         tap.require(toFail: pan); view.addGestureRecognizer(pan); view.addGestureRecognizer(pinch); view.addGestureRecognizer(tap)
         view.accessibilityIdentifier = "world-map"
         view.isAccessibilityElement = true; view.accessibilityLabel = "Little Harbour town map"
-        view.accessibilityHint = "Use the Sites menu to select buildings with VoiceOver. District and zoom buttons are above the map."
+        view.accessibilityHint = "Use Sites to search and select buildings with VoiceOver. District and zoom buttons are above the map."
         return view
     }
     func updateUIView(_ view: SKView, context: Context) {

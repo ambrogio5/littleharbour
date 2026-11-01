@@ -1,19 +1,19 @@
 # Release work still required
 
-This repository delivers a working native beta and reviewable source. It does not deliver an App Store submission, signed archive, physical-device certification, final art approval or a validated full-length commercial campaign.
+This repository delivers a working native beta and reviewable source. A locally signed QA archive can now be built, and both complete campaigns are replayed automatically with earned resources. This does not establish physical-device performance, human campaign pacing, final art approval or App Store readiness. See [current hardening evidence](RELEASE-HARDENING.md).
 
 ## Before TestFlight
 
-- Set the owner's bundle identifier and development team; provision/sign a Release archive using the owner's Apple Developer account. An unsigned generic-iOS compile is not an installable IPA.
+- Set the owner's final bundle identifier and development team; provision and export using the owner's Apple Developer account. The locally available signing certificate produced a QA archive, but its cached profile excludes the paired iPhone/iPad. Device-specific provisioning reported “No Accounts”; add the account in Xcode Settings before hardware testing. The committed release helper never uploads.
 - Exercise real iPhones and iPads, including the oldest intended supported hardware, with Instruments: frame pacing, memory/texture pressure, battery, thermals, background interruption, system document pickers, share sheets, migration/recovery, long sessions and app termination. Check Stage Manager, split view, orientation and accessibility text sizes.
-- Complete a human progression playthrough through all five chapters using earned resources and both specialist paths. Existing engine tests cover much of the progression, but no native full-campaign duration/balance claim is made.
+- Complete a human progression playthrough through all five chapters using earned resources and both specialist paths. The new automated earned playthrough covers both paths through completed ferry service in the original engine, generated bundle and Apple JavaScriptCore, including residents, furnished homes and sail refits. No human duration/balance claim is made.
 - Finish art direction review against the original approved mockup. The v0.2 painted terrain/building pass is integrated, with source images and prompts committed. Review construction-family reuse, upgraded annex proportions, ground contact and remaining overlaps against the original concept. Add worker, mill-wheel and richer maritime/construction effects plus sound/music; basic production smoke is already present. Confirm asset provenance, rights and commercial terms. Verify map-label/site collisions and near-coast hit targets at every developed layout.
 - Review the generated app icon as final branding. The v0.2 icon is a newly generated painted harbour scene; its source and prompt are committed.
 - Complete VoiceOver, Reduce Motion, contrast, Switch Control and extreme Dynamic Type testing. Add localization as required for the intended storefronts.
 
 ## App Store preparation
 
-- Create the App Store Connect record; supply final name, description, screenshots, age rating, category, support URL, privacy-policy URL and review contact/instructions.
+- Create the App Store Connect record. Product copy, review notes, TestFlight notes and a privacy policy are prepared in `native/release/APP-STORE-METADATA.md` and the bundled `Privacy-policy.txt`. Final screenshots, rating answers, copyright, review contact, pricing/territories and a permanent public privacy URL still need owner review. Settings includes offline privacy information and the public repository support link.
 - Review the privacy manifest against the shipping binary and any future SDKs. This build uses monotonic uptime to measure active simulation intervals and declares the corresponding required-reason API. It contains no analytics, advertising, tracking or account service. The monotonic-time declaration follows [Apple’s system boot time required reasons](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype). Reconcile App Store privacy answers with the actual signed build.
 - Verify current SDK/submission requirements, encryption/export declarations, all artwork/audio rights and applicable commercial terms at submission time. No claim of App Review approval is made here; use the current [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) at release time.
 - Decide premium purchase/distribution details. StoreKit, payments, achievements, Game Center, iCloud and multiplayer are not implemented. The existing game has no such runtime systems to port.

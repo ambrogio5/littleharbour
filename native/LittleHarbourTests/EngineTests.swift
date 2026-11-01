@@ -87,4 +87,28 @@ import UIKit
         XCTAssertEqual(town.coins, 740); XCTAssertEqual(town.stock["wood"], 6); XCTAssertEqual(town.stock["stone"], 4)
     }
 
+    func testBothEarnedCampaignsReachCompletedFerryThroughJavaScriptCore() throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "earned-campaigns", withExtension: "json"))
+        let campaigns = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [[String: Any]])
+        XCTAssertEqual(campaigns.count, 2)
+        for campaign in campaigns {
+            let engine = try EngineRuntime(), path = try XCTUnwrap(campaign["path"] as? String)
+            let steps = try XCTUnwrap(campaign["steps"] as? [[String: Any]])
+            for (index, step) in steps.enumerated() {
+                if let action = step["action"] as? String {
+                    XCTAssertTrue(try engine.call("act", [action]).toBool(), "\(path) step \(index): \(action)")
+                } else if let ticks = step["ticks"] as? Int {
+                    for _ in 0..<ticks { try engine.call("tick", [1]) }
+                } else {
+                    XCTAssertEqual(step["reload"] as? Bool, true)
+                    let bytes = try engine.save(); try engine.load(bytes); XCTAssertEqual(try engine.save(), bytes)
+                }
+            }
+            let actual = try XCTUnwrap(JSONSerialization.jsonObject(with: engine.save(browser: true)) as? NSDictionary)
+            let expected = try XCTUnwrap(campaign["expectedTown"] as? NSDictionary)
+            XCTAssertEqual(actual, expected, path + " preserves the earned browser economy through the entire campaign")
+            XCTAssertEqual(try engine.snapshot().objective.chapter, 5)
+        }
+    }
+
 }

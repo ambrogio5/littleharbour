@@ -32,4 +32,29 @@ final class SaveRepositoryTests: XCTestCase {
         XCTAssertThrowsError(try store.replace(Data("replacement".utf8)))
         XCTAssertEqual(try store.original(), Data("original".utf8)); XCTAssertTrue(store.blocked)
     }
+    func testOversizedOriginalCanBeExportedAndRecoveredWithoutLosingBytes() throws {
+        let store = SaveRepository(directory: directory), original = Data(repeating: 65, count: SaveRepository.maximumBytes + 400_000)
+        try original.write(to: store.primary)
+        XCTAssertThrowsError(try store.read()); XCTAssertTrue(store.blocked)
+        let exported = directory.appendingPathComponent("export.json")
+        try store.exportOriginal(to: exported); XCTAssertEqual(try Data(contentsOf: exported), original)
+        try store.replace(Data("recovered".utf8))
+        XCTAssertFalse(store.blocked)
+        XCTAssertEqual(try Data(contentsOf: XCTUnwrap(store.backupFiles().first)), original)
+    }
+    func testOversizedNewSaveCannotOverwriteValidTown() throws {
+        let store = SaveRepository(directory: directory); _ = try store.read()
+        try store.write(Data("valid".utf8))
+        XCTAssertThrowsError(try store.write(Data(repeating: 65, count: SaveRepository.maximumBytes + 1)))
+        XCTAssertEqual(try store.original(), Data("valid".utf8))
+    }
+    func testBackupDatesSortNewestFirstAndOlderBackupsRemainAvailable() throws {
+        let store = SaveRepository(directory: directory)
+        try FileManager.default.createDirectory(at: store.backups, withIntermediateDirectories: true)
+        let names = ["town-1700000000000-one.json", "town-1800000000000-two.json", "town-00000000-0000-0000-0000-000000000000.json", "unrelated.txt"]
+        for name in names { try Data().write(to: store.backups.appendingPathComponent(name)) }
+        XCTAssertEqual(try store.backupFiles().map(\.lastPathComponent), [names[1], names[0], names[2]])
+        XCTAssertEqual(SaveRepository.backupDate(store.backups.appendingPathComponent(names[0])), Date(timeIntervalSince1970: 1_700_000_000))
+        XCTAssertNil(SaveRepository.backupDate(store.backups.appendingPathComponent(names[2])))
+    }
 }

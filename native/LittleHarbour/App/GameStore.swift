@@ -18,16 +18,15 @@ import Combine
     private var checkpoint = 0.0
     private var refreshClock = 0.0
     private var feedbackUntil = 0.0
-    init() {
+    init(repository: SaveRepository? = nil, arguments: [String] = ProcessInfo.processInfo.arguments, environment: [String: String] = ProcessInfo.processInfo.environment) {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         // UI tests can choose a separate disposable town, never a player's save.
-        let arguments = ProcessInfo.processInfo.arguments
         let testing = arguments.contains("--ui-testing") || arguments.contains("--persistence-testing")
-        saves = SaveRepository(directory: base.appendingPathComponent(testing ? "LittleHarbour-UITests" : "LittleHarbour", isDirectory: true))
+        saves = repository ?? SaveRepository(directory: base.appendingPathComponent(testing ? "LittleHarbour-UITests" : "LittleHarbour", isDirectory: true))
         do {
             let runtime = try EngineRuntime(); engine = runtime
             if arguments.contains("--ui-testing") {
-                if let fixture = ProcessInfo.processInfo.environment["LH_TEST_TOWN"] { try runtime.load(Data(fixture.utf8)) }
+                if let fixture = environment["LH_TEST_TOWN"] { try runtime.load(Data(fixture.utf8)) }
                 else { try runtime.call("reset", [false]) }
             }
             else if arguments.contains("--persistence-testing") && arguments.contains("--reset-test-town") {
@@ -41,7 +40,7 @@ import Combine
     func pulse() {
         let now = ProcessInfo.processInfo.systemUptime, dt = min(0.5, max(0, now - lastTick)); lastTick = now
         if feedbackUntil > 0 && now >= feedbackUntil && !protectedSave { message = nil; feedbackUntil = 0 }
-        guard active, !modalOpen, !protectedSave, let engine else { return }
+        guard active, !modalOpen, !protectedSave, snapshot?.speed != 0, let engine else { return }
         do {
             try engine.call("tick", [dt]); checkpoint += dt; refreshClock += dt
             if refreshClock >= 0.5 { try refresh(); refreshClock = 0 }
@@ -73,25 +72,37 @@ import Combine
     func plan(_ goal: String) -> ProjectPlan? { do { return try engine?.plan(goal) } catch { message = error.localizedDescription; return nil } }
     func queuePlan(_ goal: String) { guard !protectedSave else { return }; do { let count = try engine?.call("queuePlan", [goal]).toInt32() ?? 0; message = "\(count) batches queued. Finished ingredients are required before later steps can run."; try refresh(); flush() } catch { freeze(error) } }
     func previewImport(_ data: Data) {
+        cancelImport()
         do {
             let candidate = try EngineRuntime(); try candidate.load(data); let town = try candidate.snapshot()
             pendingImport = try candidate.save()
             importSummary = "\(town.coins) coins · \(town.deliveries) deliveries · chapter \(town.objective.chapter). Your current save will be backed up before replacement."
         } catch { message = error.localizedDescription }
     }
+    func cancelImport() { pendingImport = nil; importSummary = "" }
+    func previewNewTown() {
+        cancelImport()
+        do {
+            let candidate = try EngineRuntime(); try candidate.call("reset", [false])
+            pendingImport = try candidate.save()
+            importSummary = "Start at the original harbour with a wheat field, mill and bakery. Your current town will be kept as an exact recovery backup."
+        } catch { message = error.localizedDescription }
+    }
     func confirmImport() {
         guard let data = pendingImport, let engine else { return }
         do {
-            try saves.replace(data); try engine.load(data); protectedSave = false; pendingImport = nil
-            try refresh(); lastSaved = Date(); message = "Town imported. Your previous save is kept in Backups."
+            try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; category = "Production"
+            try refresh(); lastSaved = Date(); message = "Town ready. Your previous save is kept in Recovery backups."
         } catch { freeze(error) }
     }
     func export(original: Bool = false, browser: Bool = false) throws -> URL {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appendingPathComponent(original || protectedSave ? "Little-Harbour-original.json" : browser ? "Little-Harbour-browser.json" : "Little-Harbour-native.json")
+        if original || protectedSave { try saves.exportOriginal(to: url); return url }
         let data: Data
-        if original || protectedSave { data = try saves.original() }
-        else if let engine { data = try engine.save(browser: browser) }
+        if let engine { data = try engine.save(browser: browser) }
         else { throw HarbourError.message("No town is available to export.") }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(original || protectedSave ? "Little-Harbour-original.json" : browser ? "Little-Harbour-browser.json" : "Little-Harbour-native.json")
         try data.write(to: url, options: .atomic); return url
     }
     func navigate(_ category: String) { selectedSite = nil; self.category = category }

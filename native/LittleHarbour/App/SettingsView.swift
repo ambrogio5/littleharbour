@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("mapLabels") private var mapLabels = true
     @AppStorage("hapticFeedback") private var hapticFeedback = true
     @State private var showImporter = false
+    @State private var showReplacement = false
     @State private var exportURL: URL?
     @State private var backups: [URL] = []
     var body: some View {
@@ -20,7 +21,8 @@ struct SettingsView: View {
                     Button("Export for browser game") { prepareExport(browser: true) }.disabled(store.protectedSave)
                     if store.protectedSave { Button("Export exact original bytes") { prepareExport(original: true) } }
                     if let exportURL { ShareLink("Share exported save", item: exportURL).accessibilityIdentifier("share-save") }
-                    Button("Import a town…") { showImporter = true }
+                    Button("Import a town…") { store.cancelImport(); showImporter = true }
+                    Button("Start a new town…") { store.previewNewTown() }.accessibilityIdentifier("new-town")
                 }
                 Section("Make yourself at home") {
                     Toggle("Building labels", isOn: $mapLabels)
@@ -30,26 +32,31 @@ struct SettingsView: View {
                 Section("Recovery backups") {
                     Text("Every imported replacement and the first save after loading preserve an exact copy of the original. Backups stay on this device. Export copies for safekeeping.").font(.footnote)
                     if backups.isEmpty { Text("No device backups yet.").foregroundStyle(.secondary) }
-                    ForEach(Array(backups.enumerated()), id: \.element) { index, url in
+                    ForEach(backups, id: \.self) { url in
                         VStack(alignment: .leading) {
-                            Text("Backup \(index+1)").font(.headline)
+                            Text(SaveRepository.backupDate(url)?.formatted(date: .abbreviated, time: .standard) ?? "Earlier recovery copy").font(.headline)
                             HStack {
                                 ShareLink("Export", item: url)
                                 Spacer()
-                                Button("Review restore") { do { store.previewImport(try Data(contentsOf: url)) } catch { store.message = error.localizedDescription } }
+                                Button("Review restore") { do { store.previewImport(try SaveRepository.readDocument(url)) } catch { store.message = error.localizedDescription } }
                             }.frame(minHeight: 44)
                         }
                     }
                 }
                 Section("How to play") {
                     Text("Harvest wheat → mill flour → bake bread → ship cargo. Your first shipment funds fishing or olives. Extend the quay, choose a town direction, and complete two different contracts to establish a charter. The chapter objective guides the rest of the campaign.")
-                    Text("Drag to move around the town. Pinch to zoom, or use the zoom buttons. Tap a site to inspect it. The Explore and Sites menus provide the same access without gestures.")
+                    Text("Drag to move around the town. Pinch to zoom, or use the zoom buttons. Tap a site to inspect it. Explore and the searchable Sites directory provide the same access without gestures.")
                     Text("Use Town for contracts, fleet, neighbourhood, ferry, production targets, reservations and the Living Harbour journal. Choices change the town’s appearance; seasonal decisions never generate free currency or goods.")
                 }
+                Section("Privacy & support") {
+                    NavigationLink("Privacy policy") { PrivacyView() }
+                    Link("Get help or report a problem", destination: URL(string: "https://github.com/ambrogio5/littleharbour/issues")!)
+                    Text("Support opens the public project issue tracker in your browser. Include the app version and steps to reproduce a problem.").font(.footnote)
+                }
                 Section("About this build") {
-                    Text("Little Harbour · painted native preview 0.2.0").font(.headline)
+                    Text("Little Harbour · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))").font(.headline)
                     Text("Everything you need to play is included. No account or internet connection is required. Your town stays on this device; export a backup to keep an independent copy.")
-                    Text("Painted Mediterranean terrain and individual buildings are layered over your living town. Sound design, physical-device performance certification and App Store release preparation remain in development.").font(.footnote)
+                    Text("Built for unhurried play: no advertising, in-app purchases, account or online services. Your device may include app data in its system backups, according to your backup settings.").font(.footnote)
                 }
             }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.sea).navigationTitle("Settings & saves").toolbar { Button("Done") { dismiss() } }
             .safeAreaInset(edge: .bottom) { FeedbackBanner() }
@@ -57,20 +64,30 @@ struct SettingsView: View {
                 do {
                     guard let url = try result.get().first else { return }
                     let access = url.startAccessingSecurityScopedResource(); defer { if access { url.stopAccessingSecurityScopedResource() } }
-                    let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                    guard size <= 150_000 else { throw HarbourError.message("Choose a save under 150 KB.") }
-                    store.previewImport(try Data(contentsOf: url))
+                    store.previewImport(try SaveRepository.readDocument(url))
                 } catch { store.message = error.localizedDescription }
             }
-            .alert("Replace this town?", isPresented: Binding(get: { store.pendingImport != nil }, set: { if !$0 { store.pendingImport = nil } })) {
-                Button("Import with backup", role: .destructive) { store.confirmImport(); reloadBackups() }
-                Button("Cancel", role: .cancel) { store.pendingImport = nil }
+            .onChange(of: store.pendingImport) { _, value in showReplacement = value != nil }
+            .alert("Replace this town?", isPresented: $showReplacement) {
+                Button("Replace with backup", role: .destructive) { store.confirmImport(); reloadBackups() }
+                Button("Cancel", role: .cancel) { store.cancelImport() }
             } message: { Text(store.importSummary) }
             .onAppear { reloadBackups() }
+            .onDisappear { store.cancelImport() }
         }
     }
     private func prepareExport(original: Bool = false, browser: Bool = false) {
         do { exportURL = try store.export(original: original, browser: browser) } catch { store.message = error.localizedDescription }
     }
     private func reloadBackups() { do { backups = try store.saves.backupFiles() } catch { store.message = error.localizedDescription } }
+}
+
+private struct PrivacyView: View {
+    private let policy = Bundle.main.url(forResource: "Privacy-policy", withExtension: "txt")
+        .flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "The privacy policy could not be opened. Please contact support."
+    var body: some View {
+        ScrollView {
+            Text(policy).font(.body).frame(maxWidth: 650, alignment: .leading).padding(24).textSelection(.enabled)
+        }.background(HarbourTheme.paper).foregroundStyle(HarbourTheme.ink).navigationTitle("Privacy policy").navigationBarTitleDisplayMode(.inline)
+    }
 }

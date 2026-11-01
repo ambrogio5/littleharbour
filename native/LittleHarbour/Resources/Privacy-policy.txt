@@ -1,0 +1,20 @@
+Little Harbour privacy policy
+Effective 1 November 2026
+
+Your town belongs to you
+Little Harbour works offline. The app does not require an account and does not send your town, device identifiers or gameplay activity to us. It includes no advertising, analytics, tracking or third-party online services.
+
+What stays on your device
+Your town, construction and production progress, town evolution and recovery backups are saved in the app’s private storage. Presentation preferences, such as building labels and haptic feedback, are saved on your device. These files may be included in your device’s system backups according to your Apple backup settings. Little Harbour does not provide its own cloud sync.
+
+Imports and exports
+Importing a save reads only the file you select. Before a town is replaced, the app keeps an exact recovery copy on the device. When you export or share a save, you choose the destination. The selected app or service’s own privacy policy applies after you share it. Save files contain game progress and do not need personal information.
+
+Control and deletion
+You can export your town, restore an earlier backup, or start a new town from Settings & saves. Starting a new town retains the previous town as a recovery backup. Deleting Little Harbour from the device removes its local app data; offloading the app retains that data. Exported copies and system backups must be managed separately in their respective apps or services.
+
+Support
+The Get help link opens the project’s public GitHub issue tracker. Opening that website is optional and subject to GitHub’s privacy policy. Anything you choose to post in a public issue can be read by others. Do not include personal details in a bug report; a screenshot and the app version are usually sufficient. If you choose to attach a save, inspect it first.
+
+Changes
+This policy describes the native 0.2 release. If future versions add online features, this policy and the app’s disclosures will be updated before those features are released.

@@ -20,6 +20,7 @@
 		1E83A7442B475CA2AFF11B7B /* clay-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = F34591BCA9CF2932CC534D2A /* clay-upgraded.png */; };
 		271E445B2EC42E497EA04794 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 688359CF75DAE244FECB76CF /* manifest.json */; };
 		29C286F72B9CE1642355FF19 /* bakery-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 1B3D0C6EAF37F8CEBFDEDE44 /* bakery-unbuilt.png */; };
+		29E897A9463CFF21B00601AF /* Privacy-policy.txt in Resources */ = {isa = PBXBuildFile; fileRef = F1CFEC3F16F059EE0F10D98A /* Privacy-policy.txt */; };
 		2BE7F523B618E6EF8D77C404 /* late-town.json in Resources */ = {isa = PBXBuildFile; fileRef = 253AE54DDEE82CB08C7A06D9 /* late-town.json */; };
 		2CAB06DC6732B6AC8CCFEFC4 /* weaver-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 38A4C63E1CEB3FBCF60DE4BD /* weaver-unbuilt.png */; };
 		2D5DC8899ED9FEBC1EED80B2 /* ferry-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 33F89E0A80BFE3A7F33887A3 /* ferry-ripe.png */; };
@@ -118,6 +119,7 @@
 		C092634C6490BFA9E7FC58E3 /* home-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 04A008D65FB5455D92B1A238 /* home-built.png */; };
 		C2F94357B28B5174C6F9E1B4 /* terrain.png in Resources */ = {isa = PBXBuildFile; fileRef = 18661657F8DC68A40EFD22A6 /* terrain.png */; };
 		C7A8EC5965E290A570DE7C3D /* fishing-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8AF742CE6A1A8BABFEEB6 /* fishing-building.png */; };
+		CAAFD51A5431B217545764CE /* GameStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C3496792698D15EC5E15E9 /* GameStoreTests.swift */; };
 		CCA2F53D5B6F114290FE3596 /* estate-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 41B14851BF267286CEBEC928 /* estate-built.png */; };
 		CD01E0371C7044F060EAE875 /* clay-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 38D2C545FA728D8DC6D04051 /* clay-ripe.png */; };
 		CE7432921F749DB8154EFC00 /* sailmaker-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 4355CCDD4EF2B6CD7B077CA2 /* sailmaker-upgraded.png */; };
@@ -131,6 +133,7 @@
 		E0EE50900A9408F3D9B83D15 /* market-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = EA070ACCCF0886DF4054DA77 /* market-ripe.png */; };
 		E1AF70F27BDD602D73140E35 /* garden-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = EBA9E43B9943F3177CD45669 /* garden-ripe.png */; };
 		E304D4B29E2DEABA85D676D3 /* waterfront-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = F1520684E80DD897CD4D0215 /* waterfront-upgraded.png */; };
+		E5777D89EDDD3B465833E758 /* earned-campaigns.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C6056532A142CAE2FB8B3C2 /* earned-campaigns.json */; };
 		E5E55CB0DAE05D7CB3BD9EAD /* garden-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 38351BA5E51F3AAE039F1CA6 /* garden-unbuilt.png */; };
 		E5EEC4FF475D2F0BCCBB031C /* waterfront-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 3D7E663F6043745D7BB9EA1E /* waterfront-unbuilt.png */; };
 		E6CCA5C61C778794F793A93F /* boatyard-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E7FD89EED35A4CA1DE1A7C1 /* boatyard-built.png */; };
@@ -169,6 +172,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		02C3496792698D15EC5E15E9 /* GameStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStoreTests.swift; sourceTree = "<group>"; };
 		03D700F95B66DD1204369C3A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		0477AABDE2A88066BAA6E88F /* estate-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "estate-unbuilt.png"; sourceTree = "<group>"; };
 		04A008D65FB5455D92B1A238 /* home-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "home-built.png"; sourceTree = "<group>"; };
@@ -215,6 +219,7 @@
 		4355CCDD4EF2B6CD7B077CA2 /* sailmaker-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "sailmaker-upgraded.png"; sourceTree = "<group>"; };
 		456899F7EBBCEE1EB1A20119 /* waterfront-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "waterfront-ripe.png"; sourceTree = "<group>"; };
 		4B109B69A05086C778B5F3D3 /* LittleHarbourTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LittleHarbourTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C6056532A142CAE2FB8B3C2 /* earned-campaigns.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "earned-campaigns.json"; sourceTree = "<group>"; };
 		4E7FD89EED35A4CA1DE1A7C1 /* boatyard-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boatyard-built.png"; sourceTree = "<group>"; };
 		4EBD1C8CD55942333C37D54C /* bakery-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bakery-building.png"; sourceTree = "<group>"; };
 		50637907B29BB90E6090D6BA /* olive-tree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "olive-tree.png"; sourceTree = "<group>"; };
@@ -304,6 +309,7 @@
 		F020122BA588912581903FCA /* bakery-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bakery-built.png"; sourceTree = "<group>"; };
 		F1520684E80DD897CD4D0215 /* waterfront-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "waterfront-upgraded.png"; sourceTree = "<group>"; };
 		F15A4A0BFC142CE2FA597182 /* carpenter-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-unbuilt.png"; sourceTree = "<group>"; };
+		F1CFEC3F16F059EE0F10D98A /* Privacy-policy.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Privacy-policy.txt"; sourceTree = "<group>"; };
 		F34591BCA9CF2932CC534D2A /* clay-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "clay-upgraded.png"; sourceTree = "<group>"; };
 		F51F67839C93BE4C79F893BD /* clay-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "clay-building.png"; sourceTree = "<group>"; };
 		F5DC4283A85A6A1E1FD5EE07 /* boat-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boat-built.png"; sourceTree = "<group>"; };
@@ -331,7 +337,9 @@
 		3A08E4E411C2BBE7E9FE2471 /* LittleHarbourTests */ = {
 			isa = PBXGroup;
 			children = (
+				4C6056532A142CAE2FB8B3C2 /* earned-campaigns.json */,
 				558BB41A827967E6AE3F24B0 /* EngineTests.swift */,
+				02C3496792698D15EC5E15E9 /* GameStoreTests.swift */,
 				253AE54DDEE82CB08C7A06D9 /* late-town.json */,
 				8F81322D747465B10D09A276 /* PresentationTests.swift */,
 				12ABDFF55959D7B0D6F88098 /* SaveRepositoryTests.swift */,
@@ -366,6 +374,7 @@
 				408FDC7538B03BE5FF026C1B /* Assets.xcassets */,
 				5E770251AE4C3E477D324725 /* engine-bundle.js */,
 				BB90A1DE99EAC4BA1759EB22 /* engine-manifest.json */,
+				F1CFEC3F16F059EE0F10D98A /* Privacy-policy.txt */,
 				2AB3F92EA33522AF38350534 /* PrivacyInfo.xcprivacy */,
 				6F871C1864D3B2CB26B31017 /* Art */,
 			);
@@ -650,6 +659,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E5777D89EDDD3B465833E758 /* earned-campaigns.json in Resources */,
 				2BE7F523B618E6EF8D77C404 /* late-town.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -659,6 +669,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B014793858D00C5B6BE67567 /* Assets.xcassets in Resources */,
+				29E897A9463CFF21B00601AF /* Privacy-policy.txt in Resources */,
 				F345E3DF75E785A4DA8EE74A /* PrivacyInfo.xcprivacy in Resources */,
 				930CF9ED1756EEE10DDC6BBD /* bakery-building.png in Resources */,
 				A7D0B0E807CF4961A4D2B679 /* bakery-built.png in Resources */,
@@ -804,6 +815,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				74E546552703883DBC423C40 /* EngineTests.swift in Sources */,
+				CAAFD51A5431B217545764CE /* GameStoreTests.swift in Sources */,
 				84F4C68507C1C9BEEA28DD58 /* PresentationTests.swift in Sources */,
 				82EB9AD9A5467BDBFCEC450F /* SaveRepositoryTests.swift in Sources */,
 			);
@@ -918,7 +930,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -938,6 +950,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HARBOUR_BUNDLE_IDENTIFIER = com.littleharbour.game;
+				HARBOUR_DISPLAY_NAME = "Little Harbour";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -964,7 +978,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.littleharbour.game;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HARBOUR_BUNDLE_IDENTIFIER)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1005,7 +1019,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1019,6 +1033,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HARBOUR_BUNDLE_IDENTIFIER = com.littleharbour.game;
+				HARBOUR_DISPLAY_NAME = "Little Harbour";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -1061,7 +1077,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.littleharbour.game;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(HARBOUR_BUNDLE_IDENTIFIER)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
