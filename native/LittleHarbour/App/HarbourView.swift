@@ -5,12 +5,27 @@ import UniformTypeIdentifiers
 private let harbourInk = HarbourTheme.ink
 private let harbourPaper = HarbourTheme.paper
 
+/// Lazily owned once per window; snapshot refreshes must not recreate the terrain.
+@MainActor private final class HarbourMapState: ObservableObject {
+    let scene: HarbourScene
+    init() {
+        scene = HarbourScene(size: CGSize(width: 800, height: 1000))
+        let arguments = ProcessInfo.processInfo.arguments
+        if !arguments.contains("--ui-testing") {
+            let key = arguments.contains("--persistence-testing") ? "ui-test-mapViewport" : "mapViewport"
+            if arguments.contains("--persistence-testing") && arguments.contains("--reset-test-town") { UserDefaults.standard.removeObject(forKey: key) }
+            scene.configureViewport(preferences: .standard, key: key)
+        }
+    }
+}
+
 struct HarbourView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.scenePhase) private var phase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var scene = HarbourScene(size: CGSize(width: 800, height: 1000))
+    @StateObject private var mapState = HarbourMapState()
+    private var scene: HarbourScene { mapState.scene }
     @State private var showInspector = false
     @State private var showSettings = false
     @State private var showSites = false
@@ -75,7 +90,10 @@ struct HarbourView: View {
             Button("Cancel", role: .cancel) {}
         }
         .onChange(of: showSettings) { _, value in store.modalOpen = value; if value { store.flush() } }
-        .onChange(of: phase) { _, value in store.lifecycle(value == .active) }
+        .onChange(of: phase) { _, value in
+            if value != .active { scene.persistViewport() }
+            store.lifecycle(value == .active)
+        }
         .onReceive(timer) { _ in store.pulse() }
         .safeAreaInset(edge: .bottom) {
             if !hasSideInspector && !showInspector && !showSettings { FeedbackBanner() }

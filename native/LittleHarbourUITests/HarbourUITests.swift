@@ -36,8 +36,14 @@ import XCTest
         XCTAssertGreaterThan(Int(savedWheat) ?? 0, 0)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        let map = app.otherElements["world-map"], initialZoom = app.otherElements["world-map"].value as? String
+        app.buttons["Zoom in"].tap()
+        XCTAssertNotEqual(map.value as? String, initialZoom, "Paused zoom still updates its accessibility value")
+        let savedZoom = map.value as? String
         app.terminate(); app.launchArguments = ["--persistence-testing"]; app.launch()
-        XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["nav-Production"].tap()
+        XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20))
+        XCTAssertEqual(app.otherElements["world-map"].value as? String, savedZoom, "The map restores alongside the saved town")
+        app.buttons["nav-Production"].tap()
         XCTAssertTrue(app.staticTexts["stock-count-wheat"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["stock-count-wheat"].label, savedWheat)
     }

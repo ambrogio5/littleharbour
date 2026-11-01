@@ -32,7 +32,7 @@ xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
 
 ## Playing
 
-Drag the map; pinch or use +/− to zoom. Explore jumps between districts. Sites opens a searchable directory with each building’s artwork and construction state, including access with VoiceOver. Building labels can be hidden in Explore or Settings. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
+Drag the map; pinch or use +/− to zoom. The map remembers your view between sessions. Manual pan/zoom survives rotation; a chosen district or Whole town refits to the new window size. Explore jumps between districts. Sites opens a searchable directory with each building’s artwork and construction state, including access with VoiceOver. Building labels can be hidden in Explore or Settings. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
 
 Production, Trade and Build stay on the bottom bar. Town opens the journal, contracts, fleet, neighbourhood and ferry directly. Grow the town groups waterfront, market, inland, lighthouse, destinations, residents and layout; Manage work groups queues, circuits, refits, automation and reservations. The active destination is highlighted. Activities show compact expandable inventory, progress, search, and All actions / Ready now filters. Selecting a production site scopes its recipes; clear the site or switch off Only this site to browse the full category. Unavailable actions explain their requirements. Successful actions give brief visual feedback and optional haptics. The chapter objective follows the existing progression engine. All costs, queues, rewards and unlocks use the original economy.
 
@@ -77,7 +77,9 @@ See [the graphics and UX improvement report](docs/GRAPHICS-UX.md), [architecture
 
 ## Preparing a local release archive
 
-Build 3 adds bounded save recovery, dated backups, confirmed new towns, offline privacy information, a support link and complete earned campaign replays. Read [release hardening verification](docs/RELEASE-HARDENING.md) for the exact tested revision and remaining device/signing gates. The app has no sound in this beta.
+The release target is a **free App Store download**, without advertising or in-app purchases. Device testing is deferred until the owner makes a test device available.
+
+Build 3 adds remembered map views, bounded save recovery, dated backups, confirmed new towns, offline privacy information, a support link and complete earned campaign replays. Read [release hardening verification](docs/RELEASE-HARDENING.md) for the exact tested revision and remaining device/signing gates. The app has no sound in this beta.
 
 The local helper runs engine/art/campaign checks, archives and exports. It never uploads or submits anything. Configure the owner’s actual identifier and team; the example values below are placeholders:
 

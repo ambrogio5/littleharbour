@@ -1,6 +1,6 @@
 # Little Harbour — release metadata draft
 
-Prepared for a TestFlight beta first. Nothing in this file has been submitted to App Store Connect.
+Release target: **free App Store download**, confirmed by the owner on 1 November 2026. TestFlight remains available for prerelease testing; it is not the chosen final destination. Nothing in this file has been submitted to App Store Connect.
 
 ## Product page
 
@@ -12,7 +12,8 @@ Prepared for a TestFlight beta first. Nothing in this file has been submitted to
 - Keywords: harbour,harbor,town,cozy,building,trade,farming,island,offline,strategy
 - Support URL: https://github.com/ambrogio5/littleharbour/issues
 - Privacy policy source: `native/LittleHarbour/Resources/Privacy-policy.txt`. Publish/confirm a permanent public URL before submission; the current beta branch’s GitHub file is reviewable but is not a permanent release URL.
-- Price, territories, final age-rating questionnaire, copyright owner, review contact and trader status: owner decisions; do not infer these from the source repository.
+- Price: **Free**. No advertising, in-app purchases, subscriptions or paid unlocks are included.
+- Territories, final age-rating questionnaire, copyright owner, review contact and trader status: remaining owner decisions; do not infer these from the source repository.
 
 ## Description
 

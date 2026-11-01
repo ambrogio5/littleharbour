@@ -150,3 +150,21 @@ extension HarbourAction {
         return category == site.category && !["Production", "Build", "Neighbourhood", "Fleet"].contains(category)
     }
 }
+
+
+/// Device-local presentation state, independent of the economic save envelope.
+struct MapViewport: Codable, Equatable {
+    let version: Int
+    let x, y, scale: Double
+    let region: String?
+    var isValid: Bool {
+        let knownRegion = region.map { ["all", "inland", "neighbourhood", "market", "coast", "harbour"].contains($0) } ?? true
+        return version == 1 && x.isFinite && y.isFinite && scale.isFinite
+            && (0...1800).contains(x) && (0...2700).contains(y) && (0.65...64).contains(scale)
+            && knownRegion
+    }
+    static func decode(_ data: Data?) -> MapViewport? {
+        guard let data, data.count <= 1024, let value = try? JSONDecoder().decode(Self.self, from: data), value.isValid else { return nil }
+        return value
+    }
+}

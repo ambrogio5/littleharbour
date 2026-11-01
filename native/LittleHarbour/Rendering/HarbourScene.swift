@@ -18,10 +18,14 @@ import SwiftUI
     private var current: HarbourSnapshot?
     private var styleSignature = ""
     private var initialFocus = false
-    private var focusedRegion = "inland"
+    private var focusedRegion: String? = "inland"
+    private var viewportPreferences: UserDefaults?
+    private var viewportKey = "mapViewport"
+    private var restoredViewport: MapViewport?
     private var selectionRing = SKShapeNode(ellipseOf: CGSize(width: 225, height: 116))
     var reduceMotion = false
     var onSelect: ((WorldEntity) -> Void)?
+    var onZoomChange: ((CGFloat) -> Void)?
     override init(size: CGSize) {
         super.init(size: size)
         scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.08, green: 0.39, blue: 0.49, alpha: 1)
@@ -33,6 +37,16 @@ import SwiftUI
         selectionRing.lineWidth = 4; selectionRing.fillColor = UIColor(red: 1, green: 0.88, blue: 0.58, alpha: 0.15); selectionRing.zPosition = 1; selectionRing.isHidden = true; world.addChild(selectionRing)
     }
     required init?(coder: NSCoder) { fatalError("Use init(size:)") }
+    func configureViewport(preferences: UserDefaults?, key: String = "mapViewport") {
+        guard !initialFocus else { return }
+        viewportPreferences = preferences; viewportKey = key
+        restoredViewport = MapViewport.decode(preferences?.data(forKey: key))
+    }
+    func persistViewport() {
+        guard initialFocus, let preferences = viewportPreferences else { return }
+        let value = MapViewport(version: 1, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
+        if value.isValid, let data = try? JSONEncoder().encode(value), preferences.data(forKey: viewportKey) != data { preferences.set(data, forKey: viewportKey) }
+    }
     // Presentation anchors align fixed coastal landmarks to the painted shore.
     // Saved neighbourhood plots and all economic coordinates remain untouched.
     func mapPosition(_ entity: WorldEntity) -> CGPoint {
@@ -79,7 +93,17 @@ import SwiftUI
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
         animateActivity(snapshot)
         updateLabels()
-        if !initialFocus && size.width > 0 { initialFocus = true; focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
+        if !initialFocus && size.width > 0 && size.height > 0 {
+            initialFocus = true
+            if let viewport = restoredViewport {
+                if let region = viewport.region { focus(region) }
+                else {
+                    focusedRegion = nil; cameraNode.position = CGPoint(x: viewport.x, y: viewport.y)
+                    cameraNode.setScale(min(8, viewport.scale)); clampCamera()
+                }
+                restoredViewport = nil
+            } else { focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
+        }
     }
     private func rebuildOrnaments(_ style: WorldStyle) {
         ornaments.removeAllChildren()
@@ -138,7 +162,14 @@ import SwiftUI
         }
     }
     override func didChangeSize(_ oldSize: CGSize) {
-        if initialFocus { focus(focusedRegion) }
+        guard size.width > 0, size.height > 0 else { return }
+        guard initialFocus else {
+            // A paused save may publish its only snapshot before SKView has a size.
+            if let current { apply(current, selected: selectedID) }
+            return
+        }
+        if let region = focusedRegion { focus(region) }
+        else { clampCamera(); persistViewport() }
     }
     func focus(_ region: String) {
         focusedRegion = region
@@ -156,7 +187,7 @@ import SwiftUI
         let horizontal = frame.width / size.width, vertical = frame.height / size.height
         // Districts favour readable buildings on tall screens; Whole town fits all geography.
         cameraNode.setScale((region == "all" ? max(horizontal, vertical) : sqrt(horizontal * vertical)) * 1.04)
-        clampCamera()
+        clampCamera(); persistViewport()
     }
     private func updateLabels() {
         for e in entities {
@@ -170,12 +201,24 @@ import SwiftUI
             badges[e.id]?.isHidden = cameraNode.xScale > 3.8
         }
     }
-    func zoom(_ multiplier: CGFloat) { cameraNode.setScale(min(8, max(0.65, cameraNode.xScale * multiplier))); clampCamera() }
+    func zoom(_ multiplier: CGFloat, persist: Bool = true) {
+        guard multiplier.isFinite, multiplier > 0 else { return }
+        focusedRegion = nil
+        cameraNode.setScale(min(8, max(0.65, cameraNode.xScale * multiplier))); clampCamera()
+        if persist { persistViewport() }
+    }
+    func pan(by delta: CGPoint) {
+        guard delta.x.isFinite, delta.y.isFinite else { return }
+        focusedRegion = nil
+        cameraNode.position.x -= delta.x * cameraNode.xScale
+        cameraNode.position.y += delta.y * cameraNode.yScale
+        clampCamera()
+    }
     func clampCamera() {
         let halfW = min(900, size.width * cameraNode.xScale / 2), halfH = min(1350, size.height * cameraNode.yScale / 2)
         cameraNode.position.x = max(halfW, min(1800 - halfW, cameraNode.position.x))
         cameraNode.position.y = max(halfH, min(2700 - halfH, cameraNode.position.y))
-        updateLabels()
+        updateLabels(); onZoomChange?(cameraNode.xScale)
     }
     func tap(at screen: CGPoint, in view: SKView) {
         let candidates = entities.map { entity -> (WorldEntity, CGFloat) in
@@ -197,6 +240,7 @@ struct HarbourMap: UIViewRepresentable {
     func makeUIView(context: Context) -> SKView {
         let view = SKView(); view.preferredFramesPerSecond = 30; view.ignoresSiblingOrder = true
         view.presentScene(scene)
+        scene.onZoomChange = { [weak view] scale in view?.accessibilityValue = String(format: "Zoom %.2f", 1 / scale) }
         let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:)))
         let pinch = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:)))
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
@@ -218,17 +262,17 @@ struct HarbourMap: UIViewRepresentable {
         init(scene: HarbourScene) { self.scene = scene }
         @objc func pan(_ gesture: UIPanGestureRecognizer) {
             let delta = gesture.translation(in: gesture.view); gesture.setTranslation(.zero, in: gesture.view)
-            scene.cameraNode.position.x -= delta.x * scene.cameraNode.xScale
-            scene.cameraNode.position.y += delta.y * scene.cameraNode.yScale
-            scene.clampCamera()
+            scene.pan(by: delta)
+            if gesture.state == .ended || gesture.state == .cancelled { scene.persistViewport() }
         }
         @objc func pinch(_ gesture: UIPinchGestureRecognizer) {
             guard let view = gesture.view as? SKView else { return }
             let point = gesture.location(in: view), before = scene.convertPoint(fromView: point)
-            scene.zoom(1 / gesture.scale); gesture.scale = 1
+            scene.zoom(1 / gesture.scale, persist: false); gesture.scale = 1
             let after = scene.convertPoint(fromView: point)
             scene.cameraNode.position.x += before.x - after.x; scene.cameraNode.position.y += before.y - after.y
             scene.clampCamera()
+            if gesture.state == .ended || gesture.state == .cancelled { scene.persistViewport() }
             view.accessibilityValue = String(format: "Zoom %.2f", 1 / scene.cameraNode.xScale)
         }
         @objc func tap(_ gesture: UITapGestureRecognizer) { if let view = gesture.view as? SKView { scene.tap(at: gesture.location(in: view), in: view) } }

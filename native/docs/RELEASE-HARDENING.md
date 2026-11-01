@@ -1,6 +1,6 @@
 # Release hardening — native 0.2.0 build 3
 
-This pass prepares a TestFlight candidate. It does not claim App Store readiness, successful device installation, human campaign certification or App Review approval.
+The owner selected a free App Store release on 1 November 2026. This pass prepares that release candidate; TestFlight may be used for prerelease testing. It does not claim App Store readiness, successful device installation, human campaign certification or App Review approval.
 
 ## Improvements
 
@@ -65,11 +65,22 @@ The Mac has a valid development signing identity. A generic-device QA build and 
 
 Installation on the paired iPhone initially failed because the device was locked. The paired iPad was reachable, but installation rejected the cached provisioning profile. Inspection showed that none of the three paired physical devices is included in that profile. A device-specific build with automatic provisioning then reported **“No Accounts”** in Xcode and that the profile excludes the selected iPad.
 
-The owner needs to add the Apple Developer account in Xcode Settings → Accounts, provision the intended devices and leave a test device unlocked. No account credentials, private key or signing team is committed. No physical gameplay, Instruments frame pacing, memory, thermals, battery or interruption measurements have been completed. Do not cite simulator tests as hardware certification.
+A later read-only check of Xcode Settings on 1 November 2026 confirmed that the owner’s Apple account and developer teams are now present. The owner deferred physical-device testing until later. Provisioning the intended devices and installation still need verification once an unlocked test device is available. No account credentials, private key or signing team is committed. No physical gameplay, Instruments frame pacing, memory, thermals, battery or interruption measurements have been completed. Do not cite simulator tests as hardware certification.
 
 Before external TestFlight or App Store release, also complete a human playthrough, final art/provenance review, oldest supported hardware/OS and full accessibility checks, permanent public privacy URL, final app identity and App Store Connect metadata. The current app is English-only and silent; audio, final commercial art approval and the other explicit beta limitations in `RELEASE.md` remain open.
 
 No browser source, deployed assets or publish workflow changed in this pass. No PR was merged and nothing was uploaded to App Store Connect.
+
+
+## Free-release follow-up
+
+The release materials now specify a free App Store download with no ads, in-app purchases, subscriptions or paid unlocks. Pricing is no longer an open decision; territories, production identity and owner submission details still are.
+
+Map position and zoom now persist in device-local preferences independently of economic saves. Manual camera views survive rotation; explicit district/Whole town views refit to the window. Unknown versions, malformed preferences and out-of-range coordinates fall back to the starting view. UI test preferences use an isolated key, and disposable UI tests disable camera restoration. Zoom accessibility values update even while simulation is paused. Scene ownership is lazy and retained per window, avoiding terrain allocation when the parent view refreshes.
+
+Four new regression tests cover camera restoration/resizing, invalid preferences, responsive Whole town framing and a paused snapshot arriving before view layout. The first run exposed a SpriteKit floating-point boundary and the paused-layout restoration case; both were fixed. Seven presentation tests plus save/relaunch and rotation UI tests then passed (9/9) before the final scene-ownership refinement. The full final-source iPad and older-iOS suites are tracked in PR #14.
+
+Baseline code at `547fce5` passed [all 33 native/core and UI tests in Xcode 16.4 / iOS 18.5](https://github.com/ambrogio5/littleharbour/actions/runs/41276255166). Follow-up camera verification is recorded in PR #14 with the tested revision; a passed baseline does not certify later changes.
 
 ## Actual simulator captures
 

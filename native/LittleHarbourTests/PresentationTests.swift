@@ -47,4 +47,67 @@ import UIKit
         XCTAssertNotEqual(try bytes("field-built"), try bytes("field-ripe"))
         XCTAssertNotNil(Bundle.main.url(forResource: "olive-tree", withExtension: "png"))
     }
+    func testManualCameraSurvivesResizeAndRestoresWithoutChangingTown() throws {
+        let domain = "LittleHarbour.CameraTests." + UUID().uuidString
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: domain))
+        defer { preferences.removePersistentDomain(forName: domain) }
+        let engine = try EngineRuntime(), snapshot = try engine.snapshot(), savedTown = try engine.save()
+        let scene = HarbourScene(size: CGSize(width: 800, height: 1000))
+        scene.configureViewport(preferences: preferences); scene.apply(snapshot, selected: nil)
+        scene.focus("market"); scene.zoom(0.5); scene.pan(by: CGPoint(x: -80, y: 120)); scene.persistViewport()
+        let position = scene.cameraNode.position, scale = scene.cameraNode.xScale
+        scene.size = CGSize(width: 1000, height: 800)
+        XCTAssertEqual(scene.cameraNode.position.x, position.x, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.y, position.y, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.xScale, scale, accuracy: 0.01)
+        let restored = HarbourScene(size: CGSize(width: 800, height: 1000))
+        restored.configureViewport(preferences: preferences); restored.apply(snapshot, selected: nil)
+        XCTAssertEqual(restored.cameraNode.position.x, position.x, accuracy: 0.01)
+        XCTAssertEqual(restored.cameraNode.position.y, position.y, accuracy: 0.01)
+        XCTAssertEqual(restored.cameraNode.xScale, scale, accuracy: 0.01)
+        XCTAssertEqual(try engine.save(), savedTown)
+    }
+    func testWholeTownRefitsAfterResizeAndBadPreferencesFallBack() throws {
+        let domain = "LittleHarbour.CameraTests." + UUID().uuidString
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: domain))
+        defer { preferences.removePersistentDomain(forName: domain) }
+        preferences.set(Data("broken".utf8), forKey: "mapViewport")
+        let scene = HarbourScene(size: CGSize(width: 800, height: 1000))
+        scene.configureViewport(preferences: preferences); scene.apply(try EngineRuntime().snapshot(), selected: nil)
+        XCTAssertEqual(MapViewport.decode(preferences.data(forKey: "mapViewport"))?.region, "inland")
+        scene.focus("all"); let portraitScale = scene.cameraNode.xScale
+        scene.size = CGSize(width: 1000, height: 500)
+        XCTAssertGreaterThan(scene.cameraNode.xScale, portraitScale)
+        XCTAssertEqual(scene.cameraNode.position.x, 900, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
+        XCTAssertEqual(MapViewport.decode(preferences.data(forKey: "mapViewport"))?.region, "all")
+    }
+    func testCameraPreferencesRejectUnknownVersionsAndUnsafeCoordinates() throws {
+        for value in [
+            MapViewport(version: 2, x: 900, y: 1350, scale: 1, region: nil),
+            MapViewport(version: 1, x: -1, y: 1350, scale: 1, region: nil),
+            MapViewport(version: 1, x: 900, y: 1350, scale: 0, region: nil),
+            MapViewport(version: 1, x: 900, y: 1350, scale: 1, region: "unknown")
+        ] { XCTAssertNil(MapViewport.decode(try JSONEncoder().encode(value))) }
+        XCTAssertNil(MapViewport.decode(Data(repeating: 32, count: 1025)))
+        XCTAssertFalse(MapViewport(version: 1, x: .infinity, y: 1350, scale: 1, region: nil).isValid)
+    }
+
+    func testPausedCameraRestoresWhenLayoutArrivesAfterSnapshot() throws {
+        let domain = "LittleHarbour.CameraTests." + UUID().uuidString
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: domain))
+        defer { preferences.removePersistentDomain(forName: domain) }
+        let viewport = MapViewport(version: 1, x: 900, y: 1350, scale: 2, region: nil)
+        preferences.set(try JSONEncoder().encode(viewport), forKey: "mapViewport")
+        let engine = try EngineRuntime(); try engine.call("speed", [0])
+        let scene = HarbourScene(size: .zero)
+        scene.configureViewport(preferences: preferences); scene.apply(try engine.snapshot(), selected: nil)
+        var announcedScale: CGFloat?
+        scene.onZoomChange = { announcedScale = $0 }
+        scene.size = CGSize(width: 400, height: 700)
+        XCTAssertEqual(scene.cameraNode.xScale, 2)
+        XCTAssertEqual(scene.cameraNode.position, CGPoint(x: 900, y: 1350))
+        XCTAssertEqual(announcedScale, 2)
+    }
+
 }

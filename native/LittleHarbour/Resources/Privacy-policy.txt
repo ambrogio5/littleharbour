@@ -5,7 +5,7 @@ Your town belongs to you
 Little Harbour works offline. The app does not require an account and does not send your town, device identifiers or gameplay activity to us. It includes no advertising, analytics, tracking or third-party online services.
 
 What stays on your device
-Your town, construction and production progress, town evolution and recovery backups are saved in the app’s private storage. Presentation preferences, such as building labels and haptic feedback, are saved on your device. These files may be included in your device’s system backups according to your Apple backup settings. Little Harbour does not provide its own cloud sync.
+Your town, construction and production progress, town evolution and recovery backups are saved in the app’s private storage. Presentation preferences, such as building labels, map position and zoom, and haptic feedback, are saved on your device. These files may be included in your device’s system backups according to your Apple backup settings. Little Harbour does not provide its own cloud sync.
 
 Imports and exports
 Importing a save reads only the file you select. Before a town is replaced, the app keeps an exact recovery copy on the device. When you export or share a save, you choose the destination. The selected app or service’s own privacy policy applies after you share it. Save files contain game progress and do not need personal information.
