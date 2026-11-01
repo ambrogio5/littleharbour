@@ -8,6 +8,7 @@ Candidate: **1.0.0 (4)**, prepared for a **free App Store download**. No adverti
 - Illustrated district and town activity lists retain native scrolling, accessible buttons and descriptive text.
 - The chapter card uses less map space while preserving direct objective navigation and expandable guidance.
 - Map labels resolve collisions with selected sites first and ready harvests next. Sites focuses the actual building, including its current boat position. The ocean outside the terrain has subtle chart waves; moving boats leave a wake, disabled under Reduce Motion.
+- Clearing action search, submitting it or selecting another activity/site dismisses its keyboard. This fixes an iPad screenshot-review finding where the old search field kept the map compressed after choosing a building.
 - Active bottom destinations and simulation speed now expose explicit accessibility state. Resource images are decorative; text and quantities remain accessible.
 
 The original economy, save schema and browser source are unchanged by this pass. Existing safe migration, atomic writes, dated recovery backups and remembered camera views remain in place.

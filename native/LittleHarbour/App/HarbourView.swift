@@ -172,6 +172,7 @@ struct InspectorView: View {
     @State private var pendingAction: HarbourAction?
     @State private var projectGoal: String?
     @State private var query = ""
+    @FocusState private var searchFocused: Bool
     @State private var readyOnly = false
     @State private var showActivityPicker = false
     @State private var allSupplies = false
@@ -210,8 +211,8 @@ struct InspectorView: View {
                             if selected == nil { stock(s) }
                             HStack {
                                 Image(systemName: "magnifyingglass").foregroundStyle(HarbourTheme.muted)
-                                TextField("Find an action or resource", text: $query).accessibilityLabel("Search actions").autocorrectionDisabled()
-                                if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 22)).frame(width: 44, height: 44) }.accessibilityLabel("Clear search") }
+                                TextField("Find an action or resource", text: $query).focused($searchFocused).accessibilityLabel("Search actions").autocorrectionDisabled().submitLabel(.done).onSubmit { searchFocused = false }
+                                if !query.isEmpty { Button { query = ""; searchFocused = false } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 22)).frame(width: 44, height: 44) }.accessibilityLabel("Clear search") }
                             }.padding(.horizontal, 12).frame(minHeight: 46).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 13))
                             let categoryActions = s.actions.filter { $0.category == store.category }
                             let relevant = categoryActions.filter { $0.belongs(to: selected) }
@@ -240,8 +241,8 @@ struct InspectorView: View {
                     }
                 }.padding(20)
             }.scrollDismissesKeyboard(.interactively).background(harbourPaper).foregroundStyle(harbourInk)
-            .onChange(of: store.category) { _, _ in query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
-            .onChange(of: store.selectedSite) { _, _ in siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
+            .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
+            .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
         .safeAreaInset(edge: .bottom) { FeedbackBanner() }
         .confirmationDialog("Confirm this investment", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } }), titleVisibility: .visible) {

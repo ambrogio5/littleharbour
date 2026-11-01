@@ -104,6 +104,8 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Stone mill"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.switches["site-filter"].exists)
         XCTAssertFalse(app.buttons["harvest"].exists)
+        let keyboardDismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [keyboardDismissed], timeout: 5), .completed, "Selecting a site must restore the map area after action search")
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); screenshot.name = "Painted site inspector"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
 
