@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import LittleHarbour
 
 @MainActor final class EngineTests: XCTestCase {
@@ -58,4 +59,32 @@ import XCTest
         let data = try engine.save(); let reloaded = try EngineRuntime(); try reloaded.load(data)
         XCTAssertEqual(try reloaded.save(), data)
     }
+    func testActualApplicationBundleContainsTerrainAndEverySiteTexture() throws {
+        let engine = try EngineRuntime()
+        XCTAssertNotNil(UIImage(named: "terrain"))
+        for sample in [false, true] {
+            try engine.call("reset", [sample])
+            for entity in try engine.snapshot().entities {
+                XCTAssertNotNil(UIImage(named: entity.texture), entity.texture)
+            }
+        }
+        let url = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+        try engine.load(Data(contentsOf: url))
+        for entity in try engine.snapshot().entities { XCTAssertNotNil(UIImage(named: entity.texture), entity.texture) }
+    }
+
+    func testBundledQuayAndStorehouseUseOriginalCosts() throws {
+        let engine = try EngineRuntime()
+        var fixture = try XCTUnwrap(JSONSerialization.jsonObject(with: engine.save(browser: true)) as? [String: Any])
+        fixture["coins"] = 1000; fixture["deliveries"] = 2
+        fixture["expansion"] = "fishing"; fixture["businesses"] = ["fishing"]
+        try engine.load(JSONSerialization.data(withJSONObject: fixture))
+        XCTAssertTrue(try engine.call("act", ["[\"upgrade\",[]]"]).toBool())
+        XCTAssertEqual(try engine.snapshot().coins, 860)
+        try engine.call("tick", [8])
+        XCTAssertTrue(try engine.call("act", ["[\"upgradeWorkshops\",[]]"]).toBool())
+        let town = try engine.snapshot()
+        XCTAssertEqual(town.coins, 740); XCTAssertEqual(town.stock["wood"], 6); XCTAssertEqual(town.stock["stone"], 4)
+    }
+
 }

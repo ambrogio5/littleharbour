@@ -45,7 +45,12 @@ final class HarbourUITests: XCTestCase {
         map.swipeLeft()
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
-        XCTAssertTrue(app.buttons["nav-Trade"].waitForExistence(timeout: 5)); app.buttons["nav-Trade"].tap()
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            let frame = app.windows.firstMatch.frame
+            return frame.width > frame.height && app.buttons["nav-Trade"].isHittable
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 10), .completed)
+        app.buttons["nav-Trade"].tap()
         XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Landscape town and inspector"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
@@ -55,7 +60,9 @@ final class HarbourUITests: XCTestCase {
         let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
         app.launch()
-        XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["Ferry"].tap()
+        XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        app.buttons["Town"].tap(); app.buttons["Ferry"].tap()
         let service = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Pietra Cove passenger service")).firstMatch
         XCTAssertTrue(service.waitForExistence(timeout: 10)); XCTAssertTrue(service.isEnabled); service.tap()
         XCTAssertTrue(app.staticTexts.matching(identifier: "voyage-status").firstMatch.waitForExistence(timeout: 5))

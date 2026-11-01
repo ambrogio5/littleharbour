@@ -108,7 +108,9 @@ import SwiftUI
         }
         guard size.width > 0, size.height > 0 else { return }
         cameraNode.position = CGPoint(x: frame.midX, y: frame.midY)
-        cameraNode.setScale(max(frame.width / size.width, frame.height / size.height) * 1.04)
+        let horizontal = frame.width / size.width, vertical = frame.height / size.height
+        // Districts favour readable buildings on tall screens; Whole town fits all geography.
+        cameraNode.setScale((region == "all" ? max(horizontal, vertical) : sqrt(horizontal * vertical)) * 1.04)
         clampCamera()
     }
     func zoom(_ multiplier: CGFloat) { cameraNode.setScale(min(8, max(0.65, cameraNode.xScale * multiplier))); clampCamera() }
@@ -170,5 +172,15 @@ struct HarbourMap: UIViewRepresentable {
             view.accessibilityValue = String(format: "Zoom %.2f", 1 / scene.cameraNode.xScale)
         }
         @objc func tap(_ gesture: UITapGestureRecognizer) { if let view = gesture.view as? SKView { scene.tap(at: gesture.location(in: view), in: view) } }
+    }
+}
+
+@MainActor enum HarbourArtwork {
+    private static let cache = NSCache<NSString, UIImage>()
+    static func image(_ name: String) -> UIImage {
+        if let image = cache.object(forKey: name as NSString) { return image }
+        let image = Bundle.main.path(forResource: name, ofType: "png").flatMap { UIImage(contentsOfFile: $0) } ?? UIImage(systemName: "building.2") ?? UIImage()
+        cache.setObject(image, forKey: name as NSString)
+        return image
     }
 }

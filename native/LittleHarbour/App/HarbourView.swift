@@ -129,7 +129,7 @@ struct InspectorView: View {
                 }
                 if let entity = store.snapshot?.entities.first(where: { $0.id == store.selectedSite }) {
                     HStack {
-                        Image(entity.texture).resizable().scaledToFit().frame(width: 90, height: 90).accessibilityHidden(true)
+                        Image(uiImage: HarbourArtwork.image(entity.texture)).resizable().scaledToFit().frame(width: 90, height: 90).accessibilityHidden(true)
                         VStack(alignment: .leading) { Text(entity.label).font(.headline); Text("\(entity.stage.capitalized) · level \(entity.level)").font(.caption) }
                         Spacer()
                     }.padding(8).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 14))
