@@ -154,8 +154,19 @@ import XCTest
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20)); app.buttons["Settings and saves"].tap()
         let privacy = app.buttons["Privacy policy"]
-        for _ in 0..<12 { if privacy.exists && privacy.isHittable { break }; app.swipeUp() }
-        XCTAssertTrue(privacy.isHittable); privacy.tap()
+        // Older iOS reports partly clipped List rows as hittable, including under
+        // the home indicator. Scroll the whole target into the usable viewport.
+        func fullyVisible() -> Bool {
+            guard privacy.exists, privacy.isHittable else { return false }
+            return privacy.frame.minY > app.navigationBars.firstMatch.frame.maxY + 8
+                && privacy.frame.maxY < app.windows.firstMatch.frame.maxY - 50
+        }
+        for _ in 0..<12 {
+            if fullyVisible() { break }
+            if privacy.exists && privacy.frame.minY < app.navigationBars.firstMatch.frame.maxY + 8 { app.swipeDown(velocity: .slow) }
+            else { app.swipeUp(velocity: .slow) }
+        }
+        XCTAssertTrue(fullyVisible()); privacy.tap()
         XCTAssertTrue(app.navigationBars["Privacy policy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Your town belongs to you")).firstMatch.exists)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .trait])

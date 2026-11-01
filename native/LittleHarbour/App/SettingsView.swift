@@ -30,6 +30,11 @@ struct SettingsView: View {
                     Toggle("Gentle haptic feedback", isOn: $hapticFeedback)
                     Text("The map respects Reduce Motion. Text follows your device’s text size. Explore and Sites offer alternatives to map gestures.").font(.footnote)
                 }
+                Section("Privacy & support") {
+                    Button("Privacy policy") { showPrivacy = true }
+                    Link("Get help or report a problem", destination: URL(string: "https://github.com/ambrogio5/littleharbour/issues")!)
+                    Text("Support opens the public project issue tracker in your browser. Include the app version and steps to reproduce a problem.").font(.footnote)
+                }
                 Section("Recovery backups") {
                     Text("Every imported replacement and the first save after loading preserve an exact copy of the original. Backups stay on this device. Export copies for safekeeping.").font(.footnote)
                     if backups.isEmpty { Text("No device backups yet.").foregroundStyle(.secondary) }
@@ -48,11 +53,6 @@ struct SettingsView: View {
                     Text("Harvest wheat → mill flour → bake bread → ship cargo. Your first shipment funds fishing or olives. Extend the quay, choose a town direction, and complete two different contracts to establish a charter. The chapter objective guides the rest of the campaign.")
                     Text("Drag to move around the town. Pinch to zoom, or use the zoom buttons. Tap a site to inspect it. Explore and the searchable Sites directory provide the same access without gestures.")
                     Text("Use Town for contracts, fleet, neighbourhood, ferry, production targets, reservations and the Living Harbour journal. Choices change the town’s appearance; seasonal decisions never generate free currency or goods.")
-                }
-                Section("Privacy & support") {
-                    Button("Privacy policy") { showPrivacy = true }
-                    Link("Get help or report a problem", destination: URL(string: "https://github.com/ambrogio5/littleharbour/issues")!)
-                    Text("Support opens the public project issue tracker in your browser. Include the app version and steps to reproduce a problem.").font(.footnote)
                 }
                 Section("About this build") {
                     Text("Little Harbour · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))").font(.headline)
