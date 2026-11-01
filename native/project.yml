@@ -49,7 +49,10 @@ targets:
   LittleHarbourUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [LittleHarbourUITests]
+    sources:
+      - path: LittleHarbourUITests
+      - path: LittleHarbourTests/late-town.json
+        buildPhase: resources
     dependencies:
       - target: LittleHarbour
     settings:

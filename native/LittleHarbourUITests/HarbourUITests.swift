@@ -9,7 +9,7 @@ final class HarbourUITests: XCTestCase {
         XCTAssertFalse(harvest.isEnabled)
         XCTAssertTrue(app.staticTexts["Wheat"].exists)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
-        app.buttons["nav-Trade"].tap(); XCTAssertTrue(app.staticTexts["Trade"].waitForExistence(timeout: 5))
+        app.buttons["nav-Trade"].tap(); XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Settings and saves"].tap(); XCTAssertTrue(app.buttons["Export native town & evolution"].waitForExistence(timeout: 5))
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Settings"; screenshot.lifetime = .keepAlways; add(screenshot)
@@ -46,8 +46,20 @@ final class HarbourUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.buttons["nav-Trade"].waitForExistence(timeout: 5)); app.buttons["nav-Trade"].tap()
-        XCTAssertTrue(app.staticTexts["Trade"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Landscape town and inspector"; screenshot.lifetime = .keepAlways; add(screenshot)
+    }
+
+    func testDevelopedTownFerryUsesRealFleetAndProducesInspectableArt() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
+        app.launch()
+        XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["Ferry"].tap()
+        let service = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Pietra Cove passenger service")).firstMatch
+        XCTAssertTrue(service.waitForExistence(timeout: 10)); XCTAssertTrue(service.isEnabled); service.tap()
+        XCTAssertTrue(app.staticTexts.matching(identifier: "voyage-status").firstMatch.waitForExistence(timeout: 5))
+        let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Developed town with real passenger service"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
 
 }

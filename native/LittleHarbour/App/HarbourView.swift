@@ -138,6 +138,7 @@ struct InspectorView: View {
                     if store.category == "Journal" { journal(s) }
                     else {
                         stock(s)
+                        if ["Fleet", "Circuits", "Ferry"].contains(store.category) { boats(s) }
                         if store.category == "Production" || store.category == "Queues" { jobs(s) }
                         TextField("Find an action or resource", text: $query).textFieldStyle(.roundedBorder).accessibilityLabel("Search actions")
                         let actions = s.actions.filter { $0.category == store.category && (query.isEmpty || ($0.title + $0.detail).localizedCaseInsensitiveContains(query)) }
@@ -170,6 +171,21 @@ struct InspectorView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack { Text(job.name).font(.subheadline.weight(.medium)); Spacer(); Text("\(Int(ceil(job.left)))s").font(.caption.monospacedDigit()) }
                     ProgressView(value: max(0, min(1, 1 - job.left / max(1, job.duration)))).accessibilityLabel(job.name).accessibilityValue("\(Int(ceil(job.left))) seconds remaining")
+                }
+            }
+        }
+    }
+    private func boats(_ s: HarbourSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(s.boats.indices, id: \.self) { slot in
+                if let boat = s.boats[slot] {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Berth \(slot + 1) · \(boat.type.capitalized)").font(.headline)
+                        if let trip = boat.trip {
+                            Text("\(trip.ferry == true ? "Passengers" : "Cargo") → \(trip.route.capitalized) · \(Int(ceil(trip.left)))s remaining").font(.caption).accessibilityIdentifier("voyage-status")
+                            ProgressView(value: max(0, min(1, 1 - trip.left / trip.duration)))
+                        } else { Text("Moored · ready for provisions").font(.caption) }
+                    }.padding(10).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 10))
                 }
             }
         }

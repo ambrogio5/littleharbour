@@ -13,6 +13,7 @@
 		0F4A89E8F9EA45B41DC4CCE3 /* specialist-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F3880E44FFC3F319FB0E80B /* specialist-ripe.png */; };
 		111B9B3398D303A5BD6780AA /* boat-built.png in Resources */ = {isa = PBXBuildFile; fileRef = F5DC4283A85A6A1E1FD5EE07 /* boat-built.png */; };
 		13D8C0D2CD63E3F6702FE9A8 /* HarbourUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4AA985637C02571F2C4CFF /* HarbourUITests.swift */; };
+		17606B7A65A9F177B9BE5760 /* late-town.json in Resources */ = {isa = PBXBuildFile; fileRef = 253AE54DDEE82CB08C7A06D9 /* late-town.json */; };
 		18AD56C8E25E1FC91C3BFF63 /* ferry-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 6506ED5AA00119A9F803BB35 /* ferry-building.png */; };
 		18F98106304B6DF19DBA38AA /* olive-built.png in Resources */ = {isa = PBXBuildFile; fileRef = A0E84BAC91D722324FBAB4AE /* olive-built.png */; };
 		1E83845C7889C46AE1D9C7DA /* olive-building.png in Resources */ = {isa = PBXBuildFile; fileRef = A69DED0BCD397A200FEC1DD6 /* olive-building.png */; };
@@ -576,6 +577,7 @@
 			buildConfigurationList = A7B9253C67CFFDD060496F88 /* Build configuration list for PBXNativeTarget "LittleHarbourUITests" */;
 			buildPhases = (
 				79B98F07384C314B8EDDC78E /* Sources */,
+				67A052F0C52C7A5E87B18642 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -773,6 +775,14 @@
 				9733E9121766F9900248094F /* weaver-ripe.png in Resources */,
 				2CAB06DC6732B6AC8CCFEFC4 /* weaver-unbuilt.png in Resources */,
 				D7107DDA66CB0C9E4549DEC2 /* weaver-upgraded.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		67A052F0C52C7A5E87B18642 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				17606B7A65A9F177B9BE5760 /* late-town.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

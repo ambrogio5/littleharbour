@@ -25,7 +25,10 @@ import Combine
         saves = SaveRepository(directory: base.appendingPathComponent(testing ? "LittleHarbour-UITests" : "LittleHarbour", isDirectory: true))
         do {
             let runtime = try EngineRuntime(); engine = runtime
-            if arguments.contains("--ui-testing") { try runtime.call("reset", [false]) }
+            if arguments.contains("--ui-testing") {
+                if let fixture = ProcessInfo.processInfo.environment["LH_TEST_TOWN"] { try runtime.load(Data(fixture.utf8)) }
+                else { try runtime.call("reset", [false]) }
+            }
             else if arguments.contains("--persistence-testing") && arguments.contains("--reset-test-town") {
                 _ = try saves.read(); try runtime.call("reset", [false]); try saves.replace(runtime.save())
             }
