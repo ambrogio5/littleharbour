@@ -1,5 +1,7 @@
 # Verification record
 
+Latest gameplay increment: [Harbour Festival, build 10](HARBOUR-FESTIVAL.md). The original baseline below is historical; current build-specific evidence is in the linked reports.
+
 **Follow-up:** the newer painted-art/UI pass has a separate [graphics and UX verification report](GRAPHICS-UX.md). Results below describe the initial native baseline, not the current artwork.
 
 Baseline: main `5bb5bdc` (latest merged premium-building update at the start of this work). The checkout was clean. No tracked browser runtime, save schema, balance constant, browser test or Pages workflow was changed. Native code and resources are additive; the root README links to them.

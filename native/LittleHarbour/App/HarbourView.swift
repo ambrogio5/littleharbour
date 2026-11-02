@@ -262,7 +262,7 @@ struct InspectorView: View {
                         }.harbourCard()
                     }
                     if let s = store.snapshot {
-                        if store.category != "Ambitions" && (!dense || store.guidanceFocus) { guidanceCard(s) }
+                        if !["Ambitions", "Festival"].contains(store.category) && (!dense || store.guidanceFocus) { guidanceCard(s) }
                         if let direction = s.directions.first(where: { $0.id == store.directionFocus }) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(direction.title).font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
@@ -274,6 +274,7 @@ struct InspectorView: View {
                         }
                         if store.category == "Journal" { journal(s) }
                         else if store.category == "Ambitions" { DirectionsPanel() }
+                        else if store.category == "Festival" { FestivalPanel() }
                         else if ["Fleet", "Circuits", "Ferry"].contains(store.category) { FleetPanel() }
                         else {
                             if (store.category == "Production" || store.category == "Queues") && (!store.guidanceFocus || s.guidance.waiting) { jobs(s) }
@@ -435,6 +436,13 @@ struct InspectorView: View {
     }
     private func journal(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 18) {
+            if s.festival.stage == 4 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("The first harbour festival", systemImage: "party.popper").font(.headline)
+                    Text(s.festival.choice == "craft" ? "Local makers filled the courtyard with woven cloth and handmade pieces. Visitors arrived from both shores, and the exhibition became a new harbour tradition." : "Bread, preserves and stories filled the courtyard. Visitors arrived from both shores, and the food fair became a new harbour tradition.").font(.subheadline)
+                    Button("Visit the festival") { store.navigate("Festival") }.frame(minHeight: 44)
+                }.harbourCard()
+            }
             VStack(alignment: .leading, spacing: 14) {
                 Text("Season \(s.evolution.season) · \(s.evolution.choiceCount) decisions").font(.headline)
                 ForEach(s.evolution.axes.keys.sorted(), id: \.self) { axis in
@@ -590,6 +598,7 @@ private struct TownDirectoryView: View {
         NavigationStack {
             List {
                 Section("Your living town") {
+                    if store.snapshot?.festival.unlocked == true { Button("Harbour festival") { onSelect("Festival") }.accessibilityIdentifier("town-festival") }
                     Button("Town ambitions") { onSelect("Ambitions") }.accessibilityIdentifier("town-ambitions")
                     Button { onSelect("Journal") } label: { activityRow("Journal", title: "Town journal") }.accessibilityLabel("Town journal")
                     rows(available(["Contracts", "Fleet", "Neighbourhood", "Ferry"]))

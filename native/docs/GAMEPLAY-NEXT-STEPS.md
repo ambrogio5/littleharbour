@@ -1,6 +1,6 @@
-# Longer play after the ferry — proposed next content pass
+# Longer play after the ferry — roadmap
 
-Design proposal, not implemented gameplay. Based on the current native adapter, `directions.js`, `dist/catalog.js`, `dist/progression.js` and the two earned campaign replays. Build 9 changes appearance only; existing saves and progression are unchanged.
+Build 10 implements the first increment, Harbour Festival: two supply themes, real passenger returns, a permanent courtyard reward, a journal memory and two rotating request choices. See [implementation and evidence](HARBOUR-FESTIVAL.md). The remaining projects below are proposals, not playable content. The original design target of two or three 15–20-minute sessions has not been validated by human playtests.
 
 ## What runs out now
 
@@ -14,7 +14,7 @@ After the ferry chapter, Elena opens a board with three named projects. The play
 
 | Project | Decisions and existing systems | Proposed lasting result |
 | --- | --- | --- |
-| Harbour festival — implement first | Choose a food stall or craft exhibition; allocate bread/preserves or cloth/furniture; run passenger services to bring visitors; finish with a mixed local order. | A visibly decorated square and journal scene; unlock a new pool of mixed local requests. |
+| Harbour festival — implemented in build 10 | Choose a food stall or craft exhibition; allocate bread/preserves or cloth/furniture; run passenger services to bring visitors; finish with a mixed local order. | A visibly decorated square and journal scene; unlock a new pool of mixed local requests. |
 | Coastal restoration | Choose which partner to support first; balance timber/stone returns against island earnings; supply a repair project using cargo and coastal commissions. | A visible repaired waterfront landmark and additional authored commission choices. |
 | Shipwright’s exhibition | Prepare one boat for passengers and the other for cargo; use sails, fittings and workshop refits to satisfy different stages. | A distinct cosmetic pennant/boat finish and new optional fleet challenges. |
 
@@ -42,4 +42,4 @@ Measure active decisions and idle waiting at both 1× and 3× with: a modest ear
 
 Required automated coverage: reachable stages without injected goods; every branch; incoming goods and reservations; rewards exactly once; invalid/old/future saves; background pause; double taps; reload during each stage; full-board and focused-guide navigation. Physical checks: the next action is understandable without opening several menus, the board fits Duo landscape, and stages remain readable in large text and both appearances.
 
-Recommended sequence: finish the current layout/appearance acceptance → implement and test Harbour festival → tune its pacing using earned saves → add the other two projects → evaluate a third destination. No additional gameplay content is claimed as shipped in build 9.
+Recommended sequence: finish the current layout/appearance acceptance → implement and test Harbour festival → tune its pacing using earned saves → add the other two projects → evaluate a third destination. Build 10 ships only the festival increment. Coastal restoration, shipwright projects and a new destination remain unimplemented.

@@ -107,7 +107,28 @@ import UIKit
             let actual = try XCTUnwrap(JSONSerialization.jsonObject(with: engine.save(browser: true)) as? NSDictionary)
             let expected = try XCTUnwrap(campaign["expectedTown"] as? NSDictionary)
             XCTAssertEqual(actual, expected, path + " preserves the earned browser economy through the entire campaign")
-            XCTAssertEqual(try engine.snapshot().objective.chapter, 5)
+            XCTAssertEqual(try engine.snapshot().objective.chapter, 6)
+        }
+    }
+
+    func testEarnedFestivalBranchesSurviveEveryStageInJavaScriptCore() throws {
+        let bundle = Bundle(for: Self.self)
+        let bases = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: "earned-campaigns", withExtension: "json")))) as? [[String: Any]])
+        let campaigns = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: "festival-campaigns", withExtension: "json")))) as? [[String: Any]])
+        for campaign in campaigns {
+            let base = try XCTUnwrap(bases.first { $0["path"] as? String == campaign["path"] as? String })
+            let engine = try EngineRuntime(); try engine.load(JSONSerialization.data(withJSONObject: XCTUnwrap(base["expectedTown"])))
+            for step in try XCTUnwrap(campaign["steps"] as? [[String: Any]]) {
+                if let action = step["action"] as? String { XCTAssertTrue(try engine.call("act", [action]).toBool(), action) }
+                if let ticks = step["ticks"] as? Int { for _ in 0..<ticks { try engine.call("tick", [1]) } }
+                if step["reload"] as? Bool == true { let save = try engine.save(); try engine.load(save); XCTAssertEqual(try engine.save(), save) }
+            }
+            XCTAssertEqual(try engine.snapshot().festival.stage, 4)
+            XCTAssertEqual(try engine.snapshot().festival.orders, 2)
+            XCTAssertEqual(try engine.snapshot().festival.choice, campaign["choice"] as? String)
+            XCTAssertEqual(try JSONSerialization.jsonObject(with: engine.save()) as? NSDictionary, campaign["expected"] as? NSDictionary)
+            let reimport = try EngineRuntime(); try reimport.load(engine.save(browser: true))
+            XCTAssertEqual(try reimport.snapshot().festival.stage, 0, "Browser exports deliberately omit native festival progress")
         }
     }
 

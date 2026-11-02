@@ -28,6 +28,7 @@ struct WorldEntity: Decodable, Identifiable {
         return type + "-" + phase
     }
     var category: String {
+        if tab == "festival" { return "Festival" }
         if id == "pier" { return stage == "unbuilt" ? "Build" : "Trade" }
         if id == "waterfront" { return "Waterfront" }
         if id == "lighthouse" { return "Lighthouse" }
@@ -96,7 +97,21 @@ struct TownDirection: Decodable, Identifiable {
     let unlocked: Bool
     let siteID: String?
 }
+struct FestivalState: Decodable {
+    struct Supply: Decodable, Identifiable {
+        let item: String
+        let required, available, incoming: Int
+        var id: String { item }
+    }
+    let unlocked: Bool
+    let stage, orders: Int
+    let choice: String?
+    let visits: [String: Int]
+    let title, body: String
+    let requirements: [Supply]
+}
 struct HarbourSnapshot: Decodable {
+    let festival: FestivalState
     let workshops: [String: WorkshopState]
     let directions: [TownDirection]
     let townFocus: String?
@@ -119,7 +134,7 @@ struct HarbourSnapshot: Decodable {
         return boat.artwork
     }
     var categories: [String] {
-        let order = ["Production", "Queues", "Trade", "Build", "Contracts", "Waterfront", "Market", "Inland", "Fleet", "Circuits", "Lighthouse", "Destinations", "Neighbourhood", "Town layout", "Residents", "Ferry", "Refits", "Automation", "Reservations"]
+        let order = ["Festival", "Production", "Queues", "Trade", "Build", "Contracts", "Waterfront", "Market", "Inland", "Fleet", "Circuits", "Lighthouse", "Destinations", "Neighbourhood", "Town layout", "Residents", "Ferry", "Refits", "Automation", "Reservations"]
         return order.filter { category in actions.contains { $0.category == category } }
     }
 }
@@ -156,6 +171,10 @@ extension HarbourAction {
     }
     var verb: String {
         guard let (name, _) = invocation else { return "Continue" }
+        if name == "festivalPrepare" { return "Prepare courtyard" }
+        if name == "festivalSupply" { return "Contribute supplies" }
+        if name == "festivalCelebrate" { return "Open the festival" }
+        if name == "festivalOrder" { return "Fulfil request" }
         if name == "harvestReplant" { return "Harvest & replant" }
         if name == "start" { return "Start production" }
         if name.hasPrefix("dispatch") { return "Send shipment" }

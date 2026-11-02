@@ -89,7 +89,8 @@ test('Every campaign recommendation points to current actions and remains read-o
    }
   }
  }
- assert.equal(snapshot().guidance.category,'Ambitions','The earned final chapter opens optional ambitions');
+ assert.equal(snapshot().objective.chapter,6,'The earned final chapter opens the festival');
+ assert.equal(snapshot().festival.unlocked,true);
  console.log(`${checked} progression guidance snapshots checked across both earned campaigns.`);
 });
 
@@ -144,6 +145,71 @@ test('Native stock target migration rejects malformed overrides transactionally 
   assert.throws(()=>B.load(JSON.stringify({...valid,stockTargets:targets})));assert.equal(B.save(),before);
  }
  assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion:1})));assert.equal(B.save(),before);
- assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion:3})));assert.equal(B.save(),before);
+ assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion:4})));assert.equal(B.save(),before);
  B.reset();assert.equal(JSON.parse(B.save()).nativeVersion,1);assert.equal(B.act(JSON.stringify(['setTarget',['field',24]])),false);
+});
+
+test('Festival contributions are transactional, reservation-aware and stale actions cannot spend twice',()=>{
+ const base=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'))[0].expectedTown;
+ const town=structuredClone(base);town.coins=5000;for(const key of Object.keys(town.stock))town.stock[key]=100;town.stock.bread=24;
+ B.load(JSON.stringify(town));const id=(fn,...args)=>JSON.stringify([fn,args]);
+ assert.equal(snapshot().festival.unlocked,true);const before=B.save();snapshot();assert.equal(B.save(),before);
+ assert(B.act(id('festivalPrepare')));assert.equal(JSON.parse(B.save()).nativeVersion,3);
+ const paid=B.save();assert.equal(B.act(id('festivalPrepare')),false);assert.equal(B.save(),paid);
+ assert(B.reserve('neighbourhood:order:'+town.neighbourhood.orders));
+ const held=B.save();assert.equal(B.act(id('festivalSupply','food')),false);assert.equal(B.save(),held);
+ assert(B.act(id('releaseReservation','neighbourhood:order:'+town.neighbourhood.orders)));
+ const coins=nativeTown().coins,bread=nativeTown().stock.bread;assert(B.act(id('festivalSupply','food')));
+ assert.equal(nativeTown().coins,coins);assert.equal(nativeTown().stock.bread,bread-24);
+ const supplied=B.save();assert.equal(B.act(id('festivalChoose','craft')),false);assert.equal(B.act(id('festivalSupply','food')),false);assert.equal(B.act(id('festivalCelebrate','food')),false);assert.equal(B.save(),supplied);
+ const browser=B.browserSave();assert.deepEqual(E.parseSave(browser),nativeTown());assert.equal(B.save(),supplied);
+ B.load(browser);assert.equal(snapshot().festival.stage,0);B.load(supplied);assert.equal(snapshot().festival.stage,2);
+});
+
+test('Festival arrivals count returned passenger services, never cargo, recall, pause or duplicate reloads',()=>{
+ const town=structuredClone(JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'))[1].expectedTown);
+ town.coins=5000;for(const key of Object.keys(town.stock))town.stock[key]=100;B.load(JSON.stringify(town));
+ const act=(fn,...args)=>assert(B.act(JSON.stringify([fn,args])),fn);
+ act('festivalPrepare');act('festivalChoose','craft');act('festivalSupply','craft');
+ act('startFerryService',0,'quarry');act('cancelVoyage',0);B.tick(60);assert.equal(snapshot().festival.visits.quarry,0);
+ act('startVoyage',0,'quarry',1);for(let i=0;i<100;i++)B.tick(1);assert.equal(snapshot().festival.visits.quarry,0);
+ for(const route of ['quarry','quarry','quarry','island','island']){
+  act('startFerryService',0,route);B.speed(0);const paused=B.save();B.tick(60);assert.equal(B.save(),paused);B.speed(1);
+  const duration=snapshot().boats[0].trip.duration;for(let i=0;i<Math.ceil(duration);i++)B.tick(1);
+  const returned=B.save();B.load(returned);B.tick(0);assert.equal(B.save(),returned);
+ }
+ assert.deepEqual(snapshot().festival.visits,{quarry:2,island:2});assert.equal(snapshot().festival.stage,3);
+ act('festivalCelebrate','craft');const opened=B.save();assert.equal(B.act(JSON.stringify(['festivalCelebrate',['craft']])),false);assert.equal(B.save(),opened);
+ const offers=snapshot().actions.filter(a=>a.fn==='festivalOrder'),coins=nativeTown().coins;assert.equal(offers.length,2);
+ assert(B.act(offers[0].id));assert.equal(nativeTown().coins,coins+offers[0].reward);assert.equal(snapshot().festival.orders,1);
+ const rewarded=B.save();assert.equal(B.act(offers[0].id),false);assert.equal(B.act(offers[1].id),false);assert.equal(B.save(),rewarded);
+});
+
+test('Festival version-three migration validates progress and retains Keep 24 without losing the live town',()=>{
+ const base=structuredClone(JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'))[0].expectedTown);
+ base.coins=5000;base.stock.tiles=20;B.load(JSON.stringify(base));assert(B.act('["setTarget",["field",24]]'));assert(B.act('["festivalPrepare",[]]'));
+ const valid=JSON.parse(B.save());assert.equal(valid.nativeVersion,3);B.load(JSON.stringify(valid));assert.equal(snapshot().workshops.field.target,24);
+ const original=B.save();
+ for(const festival of [null,{},[],{...valid.festival,stage:0},{...valid.festival,choice:'unknown'},{...valid.festival,baselineRuns:base.ferry.runs+1},{...valid.festival,orders:1},{...valid.festival,visits:{quarry:2,island:2}},{...valid.festival,extra:1}]){
+  assert.throws(()=>B.load(JSON.stringify({...valid,festival})));assert.equal(B.save(),original);
+ }
+ for(const nativeVersion of [1,2,4]){assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion})));assert.equal(B.save(),original);}
+ B.reset();const fresh=B.save();assert.equal(B.act('["festivalPrepare",[]]'),false);assert.equal(B.save(),fresh);
+});
+
+test('Both post-ferry festival branches and requests are earned through original production and save checkpoints',()=>{
+ const bases=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'));
+ const campaigns=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/festival-campaigns.json',import.meta.url),'utf8'));
+ assert.equal(campaigns.length,2);
+ for(const c of campaigns){
+  B.load(JSON.stringify(bases.find(b=>b.path===c.path).expectedTown));
+  for(const step of c.steps){
+   if(step.action)assert(B.act(step.action),step.action);
+   if(step.ticks)for(let i=0;i<step.ticks;i++)B.tick(1);
+   if(step.reload){const bytes=B.save();B.load(bytes);assert.equal(B.save(),bytes);}
+   const before=B.save(),s=snapshot();assert.equal(B.save(),before);
+   for(const id of s.guidance.choices)assert(s.actions.some(a=>a.id===id&&a.category===s.guidance.category));
+  }
+  assert.deepEqual(JSON.parse(B.save()),c.expected);assert.equal(snapshot().festival.choice,c.choice);assert.equal(snapshot().festival.orders,2);
+ }
 });

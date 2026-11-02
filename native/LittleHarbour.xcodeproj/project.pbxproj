@@ -12,6 +12,7 @@
 		02251E2E8EC1C0170C1B5017 /* EngineRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534895C135CCBF67073F53D2 /* EngineRuntime.swift */; };
 		024A57A0576B2650276E0AA0 /* good-preserves.png in Resources */ = {isa = PBXBuildFile; fileRef = D6EA7FE650DAA4689A965034 /* good-preserves.png */; };
 		08DAB8688DEBD5AD7FD415D1 /* estate-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 0477AABDE2A88066BAA6E88F /* estate-unbuilt.png */; };
+		0B0B2AC622FE99C785CEA833 /* festival-ready.json in Resources */ = {isa = PBXBuildFile; fileRef = BAA641DF7BB6542267A5FAB1 /* festival-ready.json */; };
 		0F4A89E8F9EA45B41DC4CCE3 /* specialist-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F3880E44FFC3F319FB0E80B /* specialist-ripe.png */; };
 		102CDC2303823BD13143415E /* vessel-coaster-homebound.png in Resources */ = {isa = PBXBuildFile; fileRef = E871D3DEBB6EF7877B42FE48 /* vessel-coaster-homebound.png */; };
 		111B9B3398D303A5BD6780AA /* boat-built.png in Resources */ = {isa = PBXBuildFile; fileRef = F5DC4283A85A6A1E1FD5EE07 /* boat-built.png */; };
@@ -64,12 +65,14 @@
 		485C61A68C7DD23919926836 /* ferry-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 39E78B779A24CBCDB90B4F71 /* ferry-upgraded.png */; };
 		496B9C3BB09EF487F19AC337 /* home-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = E28D241AA833F8C41A9E7925 /* home-unbuilt.png */; };
 		4AC683B404F4C42B15CE73D4 /* carpenter-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 712C08D0D42FE1D657381EC3 /* carpenter-upgraded.png */; };
+		4B2FEB0508A004B0E58A3076 /* festival-ready.json in Resources */ = {isa = PBXBuildFile; fileRef = BAA641DF7BB6542267A5FAB1 /* festival-ready.json */; };
 		4C372967B80A764B29D48D27 /* olive-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 34ADC96836A0B4D3D5E6832D /* olive-unbuilt.png */; };
 		4E2245AD256A60D1954FB706 /* good-tiles.png in Resources */ = {isa = PBXBuildFile; fileRef = 363EC383286E8CFCA3340A7F /* good-tiles.png */; };
 		507809F1ED007109E0A28CA9 /* good-wine.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BCEAFFBEFBD6BE4D194DE73 /* good-wine.png */; };
 		50FE94CC50E1DA1677B154BA /* estate-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = BCB656FE697D7BB5D77A9153 /* estate-upgraded.png */; };
 		511879DC464003EE3F5A7C9F /* guide-elena.png in Resources */ = {isa = PBXBuildFile; fileRef = 9CBBF6814EBFA22DCF726917 /* guide-elena.png */; };
 		5291BDF348D036963AFD398D /* good-oil.png in Resources */ = {isa = PBXBuildFile; fileRef = FF189232EC09F45310EBF3F2 /* good-oil.png */; };
+		538BAAFE7684C0427662A07B /* festival-opening.json in Resources */ = {isa = PBXBuildFile; fileRef = F07B92076F9C6E20192E5DAC /* festival-opening.json */; };
 		53BD91CCED72F323A3DA76CF /* engine-bundle.js in Resources */ = {isa = PBXBuildFile; fileRef = 5E770251AE4C3E477D324725 /* engine-bundle.js */; };
 		56552170499DF787272BA578 /* field-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 5D02799BC1697C15185A2417 /* field-building.png */; };
 		59412EB0CD4D8EAD9F10671A /* square-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 10BC49CD4383D817D7BC8931 /* square-built.png */; };
@@ -119,6 +122,7 @@
 		91FBF327DC95B31E1B12404D /* waterfront-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 456899F7EBBCEE1EB1A20119 /* waterfront-ripe.png */; };
 		930CF9ED1756EEE10DDC6BBD /* bakery-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 4EBD1C8CD55942333C37D54C /* bakery-building.png */; };
 		9462D3559E0D703CA5FBDA06 /* flaxgarden-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 3FFDE9AB895CA9A570FC26E1 /* flaxgarden-unbuilt.png */; };
+		965C5B3D50DA5ECDD1985328 /* festival-campaigns.json in Resources */ = {isa = PBXBuildFile; fileRef = FB4A02F59CEE98603E8DD61F /* festival-campaigns.json */; };
 		9733E9121766F9900248094F /* weaver-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 3A71865C741FC5B745C6171E /* weaver-ripe.png */; };
 		98427D999F789008DBABCC74 /* fishing-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 13CF931CEEAE1001EE28E3E1 /* fishing-upgraded.png */; };
 		9918393E61ADDB2B7C65B3A4 /* pier-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = DA18D0B941CEB754A04F12F6 /* pier-upgraded.png */; };
@@ -184,6 +188,7 @@
 		EA8F55355A01F04126D07A8C /* ManagementViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3EC3767FC59EE472303EBD0 /* ManagementViews.swift */; };
 		ECFB64D0A4D12F11C1DAC24C /* pier-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 1B89C6369F2888E36C92EC9E /* pier-built.png */; };
 		EF9F668A472B8F4E669458A5 /* vessel-coaster-outbound.png in Resources */ = {isa = PBXBuildFile; fileRef = F8CDA2D1A5DFC41E6D803FFA /* vessel-coaster-outbound.png */; };
+		EFDC55086622ED71358EBA2B /* festival-opening.json in Resources */ = {isa = PBXBuildFile; fileRef = F07B92076F9C6E20192E5DAC /* festival-opening.json */; };
 		EFEE41C953772D28B2E2EFAB /* boat-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 2D287AF446E0BCF48D2E1602 /* boat-upgraded.png */; };
 		F17AC2546155EC0EDC9BFA56 /* fishing-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 3BBBEF469D0525ABF71C8367 /* fishing-ripe.png */; };
 		F1BFE9AD4D971AA22FF394D8 /* HarbourScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C784209F2A3F1820681613 /* HarbourScene.swift */; };
@@ -350,6 +355,7 @@
 		AEB83C4F03E7AC928C70260A /* LittleHarbourUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = LittleHarbourUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B4ADB7EAD637D8A196FC1FDE /* specialist-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "specialist-upgraded.png"; sourceTree = "<group>"; };
 		B7C0230CF2E238112AA578B1 /* good-clay.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-clay.png"; sourceTree = "<group>"; };
+		BAA641DF7BB6542267A5FAB1 /* festival-ready.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "festival-ready.json"; sourceTree = "<group>"; };
 		BB685FB0D9107BCB41D787E8 /* lighthouse-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-ripe.png"; sourceTree = "<group>"; };
 		BB90A1DE99EAC4BA1759EB22 /* engine-manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "engine-manifest.json"; sourceTree = "<group>"; };
 		BCB656FE697D7BB5D77A9153 /* estate-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "estate-upgraded.png"; sourceTree = "<group>"; };
@@ -394,6 +400,7 @@
 		EBE0AA7952311A50235A923E /* vessel-coaster-upgraded-homebound.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-coaster-upgraded-homebound.png"; sourceTree = "<group>"; };
 		EF5D0DE810F57AC2665C098F /* weaver-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-built.png"; sourceTree = "<group>"; };
 		F020122BA588912581903FCA /* bakery-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bakery-built.png"; sourceTree = "<group>"; };
+		F07B92076F9C6E20192E5DAC /* festival-opening.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "festival-opening.json"; sourceTree = "<group>"; };
 		F1520684E80DD897CD4D0215 /* waterfront-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "waterfront-upgraded.png"; sourceTree = "<group>"; };
 		F15A4A0BFC142CE2FA597182 /* carpenter-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-unbuilt.png"; sourceTree = "<group>"; };
 		F1CFEC3F16F059EE0F10D98A /* Privacy-policy.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Privacy-policy.txt"; sourceTree = "<group>"; };
@@ -407,6 +414,7 @@
 		F9125B2FCCA544704649BC83 /* square-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "square-unbuilt.png"; sourceTree = "<group>"; };
 		F946F58F8EEC9150D6068EDD /* flaxgarden-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "flaxgarden-ripe.png"; sourceTree = "<group>"; };
 		FAADC719E3F466CD7CC74E8A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FB4A02F59CEE98603E8DD61F /* festival-campaigns.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "festival-campaigns.json"; sourceTree = "<group>"; };
 		FC954D6D6923D924BA3409F4 /* HarbourTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarbourTheme.swift; sourceTree = "<group>"; };
 		FEA964D613C1277D6A7984CB /* boat-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boat-ripe.png"; sourceTree = "<group>"; };
 		FF189232EC09F45310EBF3F2 /* good-oil.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-oil.png"; sourceTree = "<group>"; };
@@ -429,6 +437,9 @@
 			children = (
 				4C6056532A142CAE2FB8B3C2 /* earned-campaigns.json */,
 				558BB41A827967E6AE3F24B0 /* EngineTests.swift */,
+				FB4A02F59CEE98603E8DD61F /* festival-campaigns.json */,
+				F07B92076F9C6E20192E5DAC /* festival-opening.json */,
+				BAA641DF7BB6542267A5FAB1 /* festival-ready.json */,
 				02C3496792698D15EC5E15E9 /* GameStoreTests.swift */,
 				253AE54DDEE82CB08C7A06D9 /* late-town.json */,
 				8F81322D747465B10D09A276 /* PresentationTests.swift */,
@@ -795,6 +806,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				E5777D89EDDD3B465833E758 /* earned-campaigns.json in Resources */,
+				965C5B3D50DA5ECDD1985328 /* festival-campaigns.json in Resources */,
+				EFDC55086622ED71358EBA2B /* festival-opening.json in Resources */,
+				0B0B2AC622FE99C785CEA833 /* festival-ready.json in Resources */,
 				2BE7F523B618E6EF8D77C404 /* late-town.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -982,6 +996,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				538BAAFE7684C0427662A07B /* festival-opening.json in Resources */,
+				4B2FEB0508A004B0E58A3076 /* festival-ready.json in Resources */,
 				17606B7A65A9F177B9BE5760 /* late-town.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1110,7 +1126,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1199,7 +1215,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;

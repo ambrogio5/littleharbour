@@ -111,7 +111,7 @@ import Combine
     func confirmImport() {
         guard let data = pendingImport, let engine else { return }
         do {
-            try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; guidanceFocus = false; category = "Production"
+            try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; guidanceFocus = false; directionFocus = nil; category = "Production"
             try refresh(); lastSaved = Date(); message = "Town ready. Your previous save is kept in Recovery backups."
         } catch { freeze(error) }
     }

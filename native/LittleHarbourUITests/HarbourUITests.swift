@@ -18,6 +18,53 @@ import XCTest
         picker.buttons["System"].tap(); XCTAssertTrue(picker.buttons["System"].isSelected)
         app.buttons["Done"].tap()
     }
+    func testFestivalPreparationThemeAndPassengerNavigation() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        func tapAction(_ identifier: String) {
+            let button = app.buttons[identifier]
+            for _ in 0..<12 { if button.exists && button.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+            XCTAssertTrue(button.waitForExistence(timeout: 5))
+            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
+            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed); button.tap()
+        }
+        tapAction("action-[\"festivalPrepare\",[]]")
+        let theme = app.buttons["festival-theme-craft"]
+        for _ in 0..<8 { if theme.isHittable { break }; app.scrollViews.firstMatch.swipeDown() }
+        tapAction("festival-theme-craft")
+        tapAction("action-[\"festivalSupply\",[\"craft\"]]")
+        let ferry = app.buttons["festival-ferry"]
+        for _ in 0..<10 { if ferry.exists && ferry.isHittable { break }; app.scrollViews.firstMatch.swipeDown() }
+        XCTAssertTrue(ferry.isHittable)
+        let visitors = XCTAttachment(screenshot: app.screenshot()); visitors.name = "Festival visitor goals"; visitors.lifetime = .keepAlways; add(visitors)
+        ferry.tap(); XCTAssertTrue(app.buttons["boat-selector-0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Ferry"].firstMatch.exists)
+    }
+    func testFestivalOpeningShowsRequestsJournalAndCourtyardReward() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        let open = app.buttons["action-[\"festivalCelebrate\",[\"food\"]]"]
+        for _ in 0..<12 { if open.exists && open.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(open.isEnabled); open.tap()
+        XCTAssertTrue(app.staticTexts["festival-orders"].waitForExistence(timeout: 5))
+        let requests = XCTAttachment(screenshot: app.screenshot()); requests.name = "Unlocked festival requests"; requests.lifetime = .keepAlways; add(requests)
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() }
+        app.buttons["Sites"].tap(); let search = app.searchFields.firstMatch; search.tap(); search.typeText("Festival")
+        let courtyard = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Festival courtyard")).firstMatch
+        XCTAssertTrue(courtyard.waitForExistence(timeout: 5)); courtyard.tap()
+        XCTAssertTrue(app.staticTexts["Festival"].firstMatch.waitForExistence(timeout: 5))
+        if app.buttons["Map"].waitForExistence(timeout: 2) {
+            app.buttons["Map"].tap()
+            let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Map"])
+            XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        }
+        let map = XCTAttachment(screenshot: app.screenshot()); map.name = "Decorated festival courtyard"; map.lifetime = .keepAlways; add(map)
+        app.buttons["Town"].tap()
+        XCTAssertTrue(app.buttons["Town journal"].waitForExistence(timeout: 5)); app.buttons["Town journal"].tap()
+        XCTAssertTrue(app.staticTexts["The first harbour festival"].waitForExistence(timeout: 5))
+    }
     func testOpeningProductionNavigationAndSettings() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20))

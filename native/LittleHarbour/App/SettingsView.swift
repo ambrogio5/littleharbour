@@ -28,6 +28,9 @@ struct SettingsView: View {
                     Text("Time pauses outside the app. There are no real-time deadlines or offline penalties. Autosaves run every 15 seconds and after actions.").font(.footnote)
                     Button("Export native town & evolution") { prepareExport() }
                     Button("Export for browser game") { prepareExport(browser: true) }.disabled(store.protectedSave)
+                    if (store.snapshot?.festival.stage ?? 0) > 0 {
+                        Text("Browser exports omit festival progress, decorations and new requests. Goods already contributed stay spent. Use a native export to keep the complete town.").font(.footnote)
+                    }
                     if store.snapshot?.workshops.values.contains(where: { $0.target == 24 }) == true {
                         Text("Browser exports use Keep 12 for targets set to 24. Native exports preserve Keep 24.").font(.footnote)
                     }

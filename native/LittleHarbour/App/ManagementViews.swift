@@ -31,7 +31,7 @@ struct WorkshopAutomation: View {
 }
 
 /// A reusable review surface; changing a picker never executes an economic command.
-private struct ManagementAction: View {
+struct ManagementAction: View {
     @EnvironmentObject private var store: GameStore
     let action: HarbourAction
     @State private var confirm = false
@@ -59,6 +59,14 @@ struct DirectionsPanel: View {
     @EnvironmentObject private var store: GameStore
     var body: some View {
         if let s = store.snapshot {
+            if s.festival.unlocked {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("HARBOUR FESTIVAL", systemImage: "party.popper").font(.caption.bold())
+                    Text(s.festival.title).font(.headline)
+                    Text(s.festival.stage == 4 ? "Your decorated courtyard now hosts new local requests." : "A new chapter: choose your fair, bring coastal visitors and open the celebration.").font(.caption)
+                    Button(s.festival.stage == 4 ? "Festival requests" : "Plan the festival") { store.navigate("Festival") }.frame(minHeight: 44).accessibilityIdentifier("open-festival")
+                }.harbourCard()
+            }
             Text("Choose what your harbour becomes").font(.system(.headline, design: .serif))
             Text("Keep following Elena, or pursue these ambitions at your own pace. Progress comes from your real town and survives saves.").font(.caption).foregroundStyle(HarbourTheme.muted)
             ForEach(s.directions) { direction in
@@ -129,6 +137,13 @@ struct FleetPanel: View {
                             Text("This boat must return before its next mission. You can prepare another boat now.").font(.caption)
                         }.padding(12).background(HarbourTheme.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                     }
+                    if s.festival.stage == 2 {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Festival visitors · Pietra \(s.festival.visits["quarry"] ?? 0)/2 · Island \(s.festival.visits["island"] ?? 0)/2").font(.caption.bold())
+                        Text("Only completed passenger services count. Choose Ferry below; cargo and recalls do not bring visitors.").font(.caption)
+                        Button("Return to festival") { store.navigate("Festival") }.font(.caption).frame(minHeight: 44)
+                    }.padding(12).background(HarbourTheme.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                }
                     missionPicker
                     if let mission { ManagementAction(action: mission) }
                     else { Text(mode == "Passengers" ? "Finish the ferry terminal to carry passengers." : "This mission is not unlocked yet. Continue the coastal projects with Elena.").font(.caption) }
@@ -184,6 +199,71 @@ struct FleetPanel: View {
             store.selectedBerth = action.boatSlot ?? 0
             if args.count > 1, let destination = args[1] as? String, ["quarry", "island"].contains(destination) { route = destination }
             if args.count > 2, let value = args[2] as? Int { tier = value }
+        }
+    }
+}
+
+struct FestivalPanel: View {
+    @EnvironmentObject private var store: GameStore
+    var body: some View {
+        if let s = store.snapshot {
+            let f = s.festival
+            VStack(alignment: .leading, spacing: 12) {
+                Label(f.stage == 4 ? "A CELEBRATION TO KEEP" : "CHAPTER 6 · HARBOUR FESTIVAL", systemImage: "party.popper").font(.caption.bold()).foregroundStyle(HarbourTheme.sea)
+                Text(f.title).font(.system(.title3, design: .serif, weight: .semibold)).accessibilityIdentifier("festival-title")
+                if f.unlocked {
+                    ProgressView(value: Double(f.stage), total: 4).tint(HarbourTheme.sea)
+                    Text("\(f.stage) of 4 stages complete").font(.caption).accessibilityIdentifier("festival-progress")
+                }
+                Text(f.body).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                if !f.unlocked {
+                    Button("Continue with Elena") { store.followGuidance() }.frame(minHeight: 44)
+                } else {
+                    if f.stage < 4 {
+                        Text("Reward: decorated courtyard, a journal memory and two new festival requests to choose from.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                    }
+                    if f.stage == 1 {
+                        HStack {
+                            ForEach(["food", "craft"], id: \.self) { choice in
+                                if let action = s.actions.first(where: { $0.invocation?.0 == "festivalChoose" && $0.invocation?.1.first as? String == choice }) {
+                                    Button(choice == "food" ? "Food fair" : "Craft exhibition") { store.perform(action) }
+                                        .font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 44)
+                                        .background(f.choice == choice ? HarbourTheme.sea.opacity(0.18) : HarbourTheme.surface, in: RoundedRectangle(cornerRadius: 10))
+                                        .disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+                                        .accessibilityAddTraits(f.choice == choice ? .isSelected : []).accessibilityIdentifier("festival-theme-" + choice)
+                                }
+                            }
+                        }
+                    }
+                    ForEach(f.requirements) { supply in
+                        HStack {
+                            ResourceIcon(item: supply.item, size: 24)
+                            Text(goodsNames[supply.item] ?? "Coins")
+                            Spacer(minLength: 4)
+                            VStack(alignment: .trailing) {
+                                Text("\(supply.available) / \(supply.required)").monospacedDigit()
+                                if supply.incoming > 0 { Text("+\(supply.incoming) in progress").font(.caption2) }
+                            }
+                        }.font(.caption)
+                    }
+                    if !f.requirements.isEmpty { Text("Available goods exclude other reservations. Incoming goods must finish before delivery.").font(.caption2).foregroundStyle(HarbourTheme.muted) }
+                    if f.stage == 2 {
+                        ForEach(["quarry", "island"], id: \.self) { route in
+                            HStack { Text(route == "quarry" ? "Pietra Cove visitors" : "Olive Island visitors"); Spacer(); Text("\(f.visits[route] ?? 0) / 2").monospacedDigit() }.font(.subheadline)
+                        }
+                        Button("Choose a boat & passenger service") { store.navigate("Ferry") }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).frame(minHeight: 44).accessibilityIdentifier("festival-ferry")
+                    }
+                    ForEach(s.actions.filter { $0.category == "Festival" && $0.invocation?.0 != "festivalChoose" }) { action in
+                        ManagementAction(action: action)
+                    }
+                    if f.stage < 4 {
+                        Button("Elena · help with the next step") { store.followGuidance() }.frame(minHeight: 44).accessibilityIdentifier("festival-help")
+                    } else {
+                        Text("\(f.orders) festival requests fulfilled").font(.caption).accessibilityIdentifier("festival-orders")
+                        Text("Choose one request. Completing it refreshes both offers; previewing them spends nothing.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                    }
+                }
+            }.padding(12).background(HarbourTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 16))
         }
     }
 }

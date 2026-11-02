@@ -16,6 +16,7 @@ fi
 node native/scripts/bundle-engine.mjs --check
 node native/scripts/verify-art.mjs
 node native/scripts/campaign.mjs --check
+node native/scripts/festival-campaign.mjs --check
 mkdir -p "$HARBOUR_OUTPUT"
 xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
   -configuration Release -destination 'generic/platform=iOS' \

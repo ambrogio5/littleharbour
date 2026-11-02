@@ -1,6 +1,8 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (9)**.
+Candidate: **1.0.0 (10)**.
+
+Build 10 adds Chapter 6, Harbour Festival: choose a food fair or craft exhibition, fund its supplies, welcome passengers from both coasts and open a permanently decorated courtyard. A journal memory and repeatable festival requests continue play afterward. Native save version 3 preserves this extension; browser exports omit festival progress while retaining spent goods. Human pacing and physical acceptance remain pending.
 
 Build 9 adds persistent System/Light/Dark appearance, adaptive panels and gently dimmed world artwork, plus a prominent installed-build label in Settings.
 
@@ -29,7 +31,7 @@ Make a little harbour your own.
 
 Begin with a wheat field, a stone mill and a bakery beside a Mediterranean bay. Turn harvests into cargo, earn the supplies for your first workshop, and choose how your town will grow.
 
-Follow five chapters from the working quay to a living coastline. Restore the waterfront, open a market, plant inland terraces and build a fleet. Furnish homes, support your residents’ plans and welcome the first passenger ferry.
+Follow five chapters from the working quay to a living coastline, then bring the coast together for a harbour festival. Restore the waterfront, open a market, plant inland terraces and build a fleet. Furnish homes, support your residents’ plans and welcome the first passenger ferry. Choose a food fair or craft exhibition, bring visitors from both shores and earn lasting courtyard decorations.
 
 Every building has its place in a layered, painted town. Pan across the hillside, pinch to explore the coast, and tap a site to see its work. Native controls adapt to iPhone and iPad, with building lists and zoom buttons as alternatives to map gestures.
 
@@ -52,7 +54,8 @@ Please play a new town and report the device model, OS version and app version a
 3. Building taps, map zoom/pan, portrait/landscape, iPad split view and large text.
 4. Backgrounding during production and voyages, force-quitting after actions, and resuming.
 5. Exporting a save to Files, importing it, cancelling replacement, and restoring a dated backup.
-6. Longer sessions: warmth, battery use, stutter, text readability and misplaced buildings.
+6. After the first returned passenger service: Town → Harbour festival. Try both supply themes in separate towns, follow visitor goals, open the festival and fulfil its requests. Confirm progress after relaunch.
+7. Longer sessions: warmth, battery use, stutter, text readability and misplaced buildings.
 
 Keep an exported copy before testing recovery. Towns stay on this device; there is no automatic browser/device synchronization.
 

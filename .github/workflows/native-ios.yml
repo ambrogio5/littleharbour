@@ -23,6 +23,7 @@ jobs:
       - run: node --test native/scripts/bridge.test.mjs
       - run: node native/scripts/verify-art.mjs
       - run: node native/scripts/campaign.mjs --check
+      - run: node native/scripts/festival-campaign.mjs --check
   simulator:
     runs-on: macos-15
     timeout-minutes: 40

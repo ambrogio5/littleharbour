@@ -1,12 +1,12 @@
 // Read-only next-step presentation. Every recommendation references the real action registry.
 import * as E from '../dist/engine.js';
 const categories={produce:'Production',trade:'Trade',build:'Build',contracts:'Contracts',waterfront:'Waterfront',market:'Market',inland:'Inland',fleet:'Fleet',neighbourhood:'Neighbourhood',residents:'Residents',ferry:'Ferry'};
-export function nextStep(s,actions,o){
- if(o.complete)return {title:'Choose your next ambition',body:'Your harbour is established. Develop coastal partnerships, invest in local life or refine an automated workshop chain. Each direction uses your existing town and opens its own next steps.',category:'Ambitions',actionID:null,siteID:null,choices:[],waiting:false,requirements:[]};
+export function nextStep(s,actions,o,override=null){
+ if(o.complete&&!override)return {title:'Choose your next ambition',body:'Your harbour is established. Develop coastal partnerships, invest in local life or refine an automated workshop chain. Each direction uses your existing town and opens its own next steps.',category:'Ambitions',actionID:null,siteID:null,choices:[],waiting:false,requirements:[]};
  const find=(fn,test=()=>true)=>actions.filter(a=>a.fn===fn&&test(a.args));
  let targets=[],category=categories[o.target]||'Production',waiting=false,explanation=o.description;
  const pick=(fn,test)=>{targets=find(fn,test);};
- if(E.underConstruction(s,'pier')){category='Build';waiting=true;explanation='The crew is extending the quay. Your next choice opens when construction finishes. You can keep exploring while they work.';}else if(!s.pier){
+ if(override){targets=override.targets;category=override.category;waiting=targets.length===0;}else if(E.underConstruction(s,'pier')){category='Build';waiting=true;explanation='The crew is extending the quay. Your next choice opens when construction finishes. You can keep exploring while they work.';}else if(!s.pier){
   const g=E.openingGuide(s);
   if(g.action==='harvest-replant')pick('harvestReplant');
   else if(g.action==='batch'||g.action==='start')pick('start',a=>a[0]===g.key);

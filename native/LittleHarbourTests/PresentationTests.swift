@@ -27,6 +27,24 @@ import SwiftUI
         XCTAssertEqual(HarbourAppearance.dark.colorScheme, .dark)
         XCTAssertEqual(HarbourAppearance.light.colorScheme, .light)
     }
+    func testFestivalDecorationTracksSavedStagesWithoutMovingTheCourtyard() throws {
+        let engine = try EngineRuntime(), scene = HarbourScene(size: CGSize(width: 900, height: 600))
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json"))
+        try engine.load(Data(contentsOf: url)); let before = try engine.snapshot()
+        scene.apply(before, selected: "courtyard")
+        let court = try XCTUnwrap(scene.world.childNode(withName: "courtyard"))
+        let position = court.position, preparing = try XCTUnwrap(court.childNode(withName: "festival-decoration"))
+        let count = preparing.children.count
+        XCTAssertEqual(before.entities.first { $0.id == "courtyard" }?.category, "Festival")
+        XCTAssertTrue(try engine.call("act", ["[\"festivalCelebrate\",[\"food\"]]"]).toBool())
+        scene.apply(try engine.snapshot(), selected: "courtyard")
+        XCTAssertEqual(court.position, position)
+        XCTAssertGreaterThan(try XCTUnwrap(court.childNode(withName: "festival-decoration")).children.count, count)
+        let saved = try engine.save(); try engine.load(saved); scene.apply(try engine.snapshot(), selected: nil)
+        XCTAssertNotNil(court.childNode(withName: "festival-decoration"))
+        try engine.call("reset", [false]); scene.apply(try engine.snapshot(), selected: nil)
+        XCTAssertNil(court.childNode(withName: "festival-decoration"))
+    }
     func testSiteSelectionRoutesToUsefulWorkAndMatchesRecipeArguments() throws {
         let engine = try EngineRuntime()
         let url = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!

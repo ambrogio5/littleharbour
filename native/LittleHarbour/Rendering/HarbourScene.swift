@@ -18,6 +18,7 @@ import SwiftUI
     private var lastSelectionTime: TimeInterval = -.infinity
     var showLabels = true
     private let textures: NSCache<NSString, SKTexture> = { let c = NSCache<NSString, SKTexture>(); c.totalCostLimit = 48 * 1024 * 1024; return c }()
+    private var festivalSignature = ""
     private var activitySignature = ""
     private var entities: [WorldEntity] = []
     private var current: HarbourSnapshot?
@@ -109,6 +110,7 @@ import SwiftUI
         else { selectionRing.isHidden = true }
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
+        decorateFestival(snapshot.festival)
         animateActivity(snapshot)
         populateTown(snapshot)
         updateLabels()
@@ -122,6 +124,43 @@ import SwiftUI
                 }
                 restoredViewport = nil
             } else { focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
+        }
+    }
+    private func decorateFestival(_ festival: FestivalState) {
+        let signature = "\(festival.stage)-\(festival.choice ?? "")"
+        guard signature != festivalSignature else { return }
+        festivalSignature = signature
+        sprites["courtyard"]?.childNode(withName: "festival-decoration")?.removeFromParent()
+        guard festival.stage > 0, let courtyard = sprites["courtyard"] else { return }
+        let layer = SKNode(); layer.name = "festival-decoration"; layer.zPosition = 2; courtyard.addChild(layer)
+        let wood = UIColor(red: 0.39, green: 0.25, blue: 0.13, alpha: 1)
+        for x in [-130.0, 130.0] {
+            let post = SKShapeNode(rectOf: CGSize(width: 7, height: 170), cornerRadius: 2)
+            post.fillColor = wood; post.strokeColor = .clear; post.position = CGPoint(x: x, y: 15); layer.addChild(post)
+        }
+        let ropePath = CGMutablePath(); ropePath.move(to: CGPoint(x: -130, y: 100)); ropePath.addQuadCurve(to: CGPoint(x: 130, y: 100), control: CGPoint(x: 0, y: 48))
+        let rope = SKShapeNode(path: ropePath); rope.strokeColor = wood; rope.lineWidth = 3; layer.addChild(rope)
+        if festival.stage >= 2 {
+            let colors: [UIColor] = [UIColor(red: 0.15, green: 0.46, blue: 0.49, alpha: 1), UIColor(red: 0.92, green: 0.64, blue: 0.26, alpha: 1), UIColor(red: 0.78, green: 0.32, blue: 0.23, alpha: 1)]
+            for i in 0..<(festival.stage == 4 ? 9 : 5) {
+                let x = CGFloat(-110 + i * (festival.stage == 4 ? 27 : 54)), y = 74 + 26 * pow(x / 130, 2)
+                let path = CGMutablePath(); path.move(to: CGPoint(x: -9, y: 0)); path.addLine(to: CGPoint(x: 9, y: 0)); path.addLine(to: CGPoint(x: 2, y: -25)); path.closeSubpath()
+                let flag = SKShapeNode(path: path); flag.fillColor = colors[i % colors.count]; flag.strokeColor = wood.withAlphaComponent(0.45); flag.lineWidth = 1; flag.position = CGPoint(x: x, y: y); layer.addChild(flag)
+            }
+            let stall = SKSpriteNode(texture: texture(festival.choice == "craft" ? "weaver-built" : "market-built"), size: CGSize(width: 130, height: 130))
+            stall.position = CGPoint(x: -106, y: -32); stall.zPosition = 1; layer.addChild(stall)
+        }
+        if festival.stage >= 3 {
+            for i in 0..<3 {
+                let person = SKSpriteNode(texture: texture(["person-vendor", "person-docker", "person-farmer"][i]), size: CGSize(width: 40, height: 64))
+                person.position = CGPoint(x: -15 + i * 46, y: -75 + i % 2 * 14); person.zPosition = 2; layer.addChild(person)
+            }
+        }
+        if festival.stage == 4 {
+            for x in [-130.0, 130.0] {
+                let glow = SKShapeNode(ellipseOf: CGSize(width: 35, height: 35)); glow.fillColor = UIColor(red: 1, green: 0.76, blue: 0.32, alpha: 0.2); glow.strokeColor = .clear; glow.position = CGPoint(x: x, y: 82); layer.addChild(glow)
+                let lantern = SKShapeNode(rectOf: CGSize(width: 12, height: 17), cornerRadius: 3); lantern.fillColor = UIColor(red: 1, green: 0.83, blue: 0.47, alpha: 1); lantern.strokeColor = wood; lantern.position = glow.position; layer.addChild(lantern)
+            }
         }
     }
     private func rebuildOrnaments(_ style: WorldStyle) {
