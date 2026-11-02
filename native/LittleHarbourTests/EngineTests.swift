@@ -111,4 +111,17 @@ import UIKit
         }
     }
 
+    func testNativeTarget24MigrationAndBrowserExportKeepTownCompatible() throws {
+        let engine = try EngineRuntime()
+        try engine.load(Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json"))))
+        XCTAssertTrue(try engine.call("act", ["[\"setTarget\",[\"mill\",24]]"]).toBool())
+        let saved = try engine.save(); let restored = try EngineRuntime(); try restored.load(saved)
+        XCTAssertEqual(try restored.snapshot().workshops["mill"]?.target, 24)
+        let envelope = try XCTUnwrap(JSONSerialization.jsonObject(with: saved) as? [String: Any])
+        XCTAssertEqual(envelope["nativeVersion"] as? Int, 2)
+        let browser = try EngineRuntime(); try browser.load(restored.save(browser: true))
+        XCTAssertEqual(try browser.snapshot().workshops["mill"]?.target, 12)
+        XCTAssertEqual(try restored.save(), saved, "Exporting must not lower the live native target")
+    }
+
 }

@@ -76,12 +76,17 @@ struct TownEvent: Decodable {
 struct Boat: Decodable {
     struct RepeatRoute: Decodable { let route: String; let tier: Int }
     let `repeat`: RepeatRoute?
-    struct Trip: Decodable { let left, duration: Double; let route: String; let ferry: Bool? }
+    struct Trip: Decodable {
+        let left, duration: Double; let route: String; let ferry: Bool?
+        var progress: Double { max(0, min(1, 1 - left / max(0.001, duration))) }
+        var outward: Bool { progress < 0.5 }
+    }
     let type: String
     let upgrade: String?
     let sails: Bool?
     let trip: Trip?
     var artwork: String { "vessel-" + type + (upgrade != nil || sails == true ? "-upgraded" : "") }
+    var sailingArtwork: String { artwork + (trip?.outward == true ? "-outbound" : "-homebound") }
 }
 struct WorkshopState: Decodable { let target, stock, incoming: Int; let item, status: String }
 struct TownDirection: Decodable, Identifiable {
@@ -236,4 +241,17 @@ struct TownResident {
 extension HarbourAction {
     var boatSlot: Int? { invocation?.1.first as? Int }
     func matches(_ function: String, boat: Int) -> Bool { invocation?.0 == function && boatSlot == boat }
+}
+
+/// Presentation-only coastal journey. Both legs use their true tangent for the wake.
+struct VesselPose {
+    let position: CGPoint
+    let heading: CGFloat
+    static func at(slot: Int, trip: Boat.Trip) -> VesselPose {
+        let distance: Double = trip.route == "quarry" ? 850 : 1350
+        let excursion = sin(trip.progress * .pi)
+        let dx = distance * 0.55
+        return .init(position: CGPoint(x: 1630 + excursion * dx, y: Double(600 - slot * 240) + excursion * distance),
+                     heading: atan2(distance, dx) + (trip.outward ? 0 : .pi))
+    }
 }

@@ -90,7 +90,7 @@ import SwiftUI
                 let badge = SKLabelNode(fontNamed: "AvenirNext-Bold"); badge.fontSize = 22; badge.fontColor = UIColor(red: 0.12, green: 0.35, blue: 0.31, alpha: 1); badge.zPosition = 4002; world.addChild(badge); badges[e.id] = badge
             }
             let boat = e.kind == "boat" ? Int(e.id.dropFirst(4)).flatMap { snapshot.boats.indices.contains($0) ? snapshot.boats[$0] : nil } : nil
-            let artwork = boat?.artwork ?? e.texture
+            let artwork = boat.map { !reduceMotion && $0.trip != nil ? $0.sailingArtwork : $0.artwork } ?? e.texture
             node.size = CGSize(width: boat?.type == "cutter" ? 270 : 320, height: boat?.type == "cutter" ? 270 : 320)
             if node.userData?["texture"] as? String != artwork { node.texture = texture(artwork); node.userData = ["texture": artwork] }
             node.position = mapPosition(e); node.zPosition = 2700 - mapPosition(e).y
@@ -168,10 +168,9 @@ import SwiftUI
             guard let sprite = sprites["boat\(slot)"] else { continue }
             guard let trip = snapshot.boats[slot]?.trip else { sprite.childNode(withName: "wake")?.removeFromParent(); continue }
             if !reduceMotion {
-                let progress = max(0, min(1, 1 - trip.left / trip.duration))
-                let excursion = sin(progress * .pi)
-                sprite.position.x = 1630 + excursion * 90
-                sprite.position.y = CGFloat(2700 - (2100 + slot * 240)) + excursion * (trip.route == "quarry" ? 850 : 1350)
+                let pose = VesselPose.at(slot: slot, trip: trip)
+                let excursion = sin(trip.progress * .pi)
+                sprite.position = pose.position
                 sprite.zPosition = 2700 - sprite.position.y
                 if sprite.childNode(withName: "wake") == nil {
                     let path = CGMutablePath()
@@ -181,7 +180,11 @@ import SwiftUI
                     }
                     let wake = SKShapeNode(path: path); wake.name = "wake"; wake.strokeColor = UIColor(white: 1, alpha: 0.65); wake.lineWidth = 3; wake.zPosition = -1; sprite.addChild(wake)
                 }
-                sprite.childNode(withName: "wake")?.alpha = CGFloat(min(0.85, excursion * 2))
+                if let wake = sprite.childNode(withName: "wake") {
+                    wake.position = CGPoint(x: 0, y: -75)
+                    wake.zRotation = pose.heading - .pi / 2
+                    wake.alpha = CGFloat(min(0.85, excursion * 2))
+                }
             } else { sprite.childNode(withName: "wake")?.removeFromParent() }
         }
         // Labels and selection travel with the real boat, rather than staying at its berth.

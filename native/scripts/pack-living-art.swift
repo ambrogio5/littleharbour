@@ -15,8 +15,8 @@ func write(_ image: CGImage, _ name: String) {
 // Generator atlases have approximate grid gutters. An overlapping crop plus a largest
 // alpha-connected-component extraction keeps the full object and discards neighbouring
 // sprites/isolated pixel debris. It does not invent or recolour any painted detail.
-func cell(_ atlas: CGImage, _ index: Int, topMargin: Int = 48) -> CGImage {
-    let col = index % 2, row = index / 2, cw = atlas.width / 2, ch = atlas.height / 2
+func cell(_ atlas: CGImage, _ index: Int, topMargin: Int = 48, columns: Int = 2) -> CGImage {
+    let col = index % columns, row = index / columns, cw = atlas.width / columns, ch = atlas.height / 2
     let rect = CGRect(x: max(0, col * cw - 24), y: max(0, row * ch - topMargin), width: cw + 48, height: ch + topMargin + 64).intersection(CGRect(x: 0, y: 0, width: atlas.width, height: atlas.height))
     let image = atlas.cropping(to: rect)!, w = image.width, h = image.height
     let c = context(w,h); c.draw(image, in: CGRect(x:0,y:0,width:w,height:h))
@@ -48,13 +48,14 @@ func cell(_ atlas: CGImage, _ index: Int, topMargin: Int = 48) -> CGImage {
     return c.makeImage()!.cropping(to: CGRect(x:minX,y:minY,width:maxX-minX+1,height:maxY-minY+1))!
 }
 
-let groups = [("boats", ["vessel-cutter", "vessel-coaster", "vessel-cutter-upgraded", "vessel-coaster-upgraded"]), ("people", ["guide-elena", "person-farmer", "person-docker", "person-vendor"])]
+let directional = ["outbound", "homebound"].flatMap { direction in ["vessel-cutter", "vessel-coaster", "vessel-cutter-upgraded", "vessel-coaster-upgraded"].map { $0 + "-" + direction } }
+let groups = [("directional-boats", directional), ("boats", ["vessel-cutter", "vessel-coaster", "vessel-cutter-upgraded", "vessel-coaster-upgraded"]), ("people", ["guide-elena", "person-farmer", "person-docker", "person-vendor"])]
 var names = [String]()
 for (file, assets) in groups {
     let input = CGImageSourceCreateWithURL(root.appendingPathComponent("native/art-source/living-harbour-v1/" + file + ".png") as CFURL, nil)!
     let atlas = CGImageSourceCreateImageAtIndex(input, 0, nil)!
     for (index, name) in assets.enumerated() {
-        let image = cell(atlas, index), c = context(512,512)
+        let image = cell(atlas, index, columns: assets.count / 2), c = context(512,512)
         c.interpolationQuality = .high
         let scale = min(472 / CGFloat(image.width),472 / CGFloat(image.height))
         let width = CGFloat(image.width) * scale, height = CGFloat(image.height) * scale
@@ -63,9 +64,9 @@ for (file, assets) in groups {
     }
 }
 func hash(_ path: String) throws -> String { SHA256.hash(data:try Data(contentsOf:root.appendingPathComponent(path))).map{String(format:"%02x",$0)}.joined() }
-let sourcePaths = ["boats.png","people.png","boats-prompt.txt","people-prompt.txt"].map { "native/art-source/living-harbour-v1/" + $0 } + ["native/scripts/pack-living-art.swift"]
+let sourcePaths = ["boats.png","people.png","boats-prompt.txt","people-prompt.txt","directional-boats.png","directional-boats-prompt.txt"].map { "native/art-source/living-harbour-v1/" + $0 } + ["native/scripts/pack-living-art.swift"]
 let hashes = try Dictionary(uniqueKeysWithValues:sourcePaths.map{($0,try hash($0))})
 let outputHashes = try Dictionary(uniqueKeysWithValues:names.map{($0,try hash("native/LittleHarbour/Resources/Art/"+$0+".png"))})
 let manifest: [String:Any] = ["version":1,"size":512,"textures":names,"hashes":hashes,"outputHashes":outputHashes]
 try JSONSerialization.data(withJSONObject:manifest,options:[.prettyPrinted,.sortedKeys,.withoutEscapingSlashes]).write(to:output.appendingPathComponent("living-manifest.json"))
-print("Packed 4 vessels, Elena and 3 townspeople with preserved alpha.")
+print("Packed 12 vessel views, Elena and 3 townspeople with preserved alpha.")

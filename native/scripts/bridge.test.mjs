@@ -16,7 +16,7 @@ test('Every exposed enabled economic action equals the original engine transacti
  const generated=context.Harbour;let count=0;
  for(const fixture of fixtures){
   B.load(JSON.stringify(fixture));generated.load(JSON.stringify(fixture));assert.deepEqual(JSON.parse(generated.snapshot()),snapshot(),'generated and ESM snapshots match');const ids=snapshot().actions.filter(a=>a.enabled).map(a=>a.id);
-  for(const id of ids){
+  for(const id of ids.filter(id=>{const [fn,args]=JSON.parse(id);return !(fn==='setTarget'&&args[1]===24);})){
    B.load(JSON.stringify(fixture));generated.load(JSON.stringify(fixture));const [fn,args]=JSON.parse(id),expected=structuredClone(fixture);
    assert(E[fn](expected,...args),id); assert(B.act(id),id);assert(generated.act(id),'generated '+id);
    assert.deepEqual(nativeTown(),E.parseSave(JSON.stringify(expected)),id);assert.deepEqual(JSON.parse(generated.browserSave()),nativeTown(),'generated '+id);count++;
@@ -123,4 +123,27 @@ test('Mission previews are read-only and launching berth two leaves berth one un
  const options=snapshot().actions.filter(a=>a.fn==='startVoyage'&&a.args[0]===1);assert(options.length===6);assert.equal(B.save(),before);
  const mission=options.find(a=>a.enabled);assert(mission);assert(B.act(mission.id));assert(snapshot().boats[1].trip);assert.equal(JSON.stringify(snapshot().boats[0]),boat);
  const launched=B.save();assert.equal(B.act(mission.id),false);assert.equal(B.save(),launched);
+});
+
+
+test('Native Keep 24 fills through original production costs and survives exports and reloads',()=>{
+ const fixture=structuredClone(late);fixture.stock.flour=0;fixture.targets={};B.load(JSON.stringify(fixture));
+ assert(B.act(JSON.stringify(['setTarget',['mill',24]])));assert.equal(snapshot().workshops.mill.target,24);
+ const saved=B.save(), envelope=JSON.parse(saved);assert.equal(envelope.nativeVersion,2);assert.deepEqual(envelope.stockTargets,{mill:24});assert.equal(envelope.town.targets.mill,12);
+ const browser=E.parseSave(B.browserSave());assert.equal(browser.targets.mill,12);assert.equal(B.save(),saved);B.load(saved);
+ const reference=E.parseSave(B.browserSave());reference.targets.mill=24;
+ for(let i=0;i<240;i++){E.tick(reference,1);B.tick(1);}
+ assert.equal(snapshot().stock.flour,24);assert.equal(snapshot().jobs.length,0);
+ reference.targets.mill=12;assert.deepEqual(nativeTown(),reference);
+ const finished=B.save();B.load(finished);assert.equal(snapshot().workshops.mill.target,24);
+ assert(B.act(JSON.stringify(['setTarget',['mill',12]])));assert.equal(JSON.parse(B.save()).nativeVersion,1);assert.equal(snapshot().workshops.mill.target,12);
+});
+test('Native stock target migration rejects malformed overrides transactionally and respects pause',()=>{
+ B.load(JSON.stringify(late));assert(B.act(JSON.stringify(['setTarget',['mill',24]])));B.speed(0);const before=B.save(),valid=JSON.parse(before);B.tick(60);assert.equal(B.save(),before);
+ for(const targets of [null,[],{mill:48},{mill:-1},{unknown:24},{bakery:24}]){
+  assert.throws(()=>B.load(JSON.stringify({...valid,stockTargets:targets})));assert.equal(B.save(),before);
+ }
+ assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion:1})));assert.equal(B.save(),before);
+ assert.throws(()=>B.load(JSON.stringify({...valid,nativeVersion:3})));assert.equal(B.save(),before);
+ B.reset();assert.equal(JSON.parse(B.save()).nativeVersion,1);assert.equal(B.act(JSON.stringify(['setTarget',['field',24]])),false);
 });

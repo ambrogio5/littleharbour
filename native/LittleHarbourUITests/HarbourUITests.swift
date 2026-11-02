@@ -255,7 +255,7 @@ import XCTest
         let industry = app.buttons["direction-industry"]
         for _ in 0..<12 { if industry.exists && industry.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertTrue(industry.isEnabled); industry.tap()
-        let target = app.buttons["automation-field-6"]
+        let target = app.buttons["automation-field-24"]
         for _ in 0..<12 { if target.exists && target.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertTrue(target.isEnabled); target.tap()
         // The ambition advances to flour; the wheat target is stored by the real engine.

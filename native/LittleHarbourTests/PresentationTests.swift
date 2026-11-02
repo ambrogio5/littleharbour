@@ -189,7 +189,48 @@ import UIKit
             let image = try XCTUnwrap(UIImage(data: bytes)?.cgImage)
             XCTAssertEqual(image.width, 512); XCTAssertNotEqual(image.alphaInfo, .none)
         }
-        XCTAssertEqual(data.count, 8)
+        for direction in ["outbound", "homebound"] {
+            for hull in ["vessel-cutter", "vessel-coaster", "vessel-cutter-upgraded", "vessel-coaster-upgraded"] {
+                let url = try XCTUnwrap(Bundle.main.url(forResource: hull + "-" + direction, withExtension: "png"))
+                let bytes = try Data(contentsOf: url); data.insert(bytes)
+                let image = try XCTUnwrap(UIImage(data: bytes)?.cgImage)
+                XCTAssertEqual(image.width, 512); XCTAssertNotEqual(image.alphaInfo, .none)
+            }
+        }
+        XCTAssertEqual(data.count, 16)
+    }
+
+    func testNavigatingBoatsFaceTheirTravelDirectionAndResetAtBerth() throws {
+        for slot in 0..<2 {
+            let engine = try EngineRuntime(), scene = HarbourScene(size: CGSize(width: 800, height: 1000))
+            try engine.load(Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json"))))
+            XCTAssertTrue(try engine.call("act", ["[\"startVoyage\",[\(slot),\"quarry\",1]]"]).toBool())
+            let duration = try XCTUnwrap(engine.snapshot().boats[slot]?.trip?.duration)
+            try engine.call("tick", [duration * 0.25]); let outbound = try engine.snapshot()
+            scene.apply(outbound, selected: "boat\(slot)")
+            let sprite = try XCTUnwrap(scene.world.childNode(withName: "boat\(slot)"))
+            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-outbound") == true)
+            let outward = try XCTUnwrap(outbound.boats[slot]?.trip), pose = VesselPose.at(slot: slot, trip: outward)
+            XCTAssertEqual(sprite.position.x, pose.position.x, accuracy: 0.001)
+            XCTAssertEqual(sprite.position.y, pose.position.y, accuracy: 0.001)
+            let later = Boat.Trip(left: outward.left - 0.01, duration: duration, route: "quarry", ferry: false)
+            let movement = VesselPose.at(slot: slot, trip: later).position
+            XCTAssertGreaterThan((movement.x - pose.position.x) * cos(pose.heading) + (movement.y - pose.position.y) * sin(pose.heading), 0)
+            XCTAssertEqual(try XCTUnwrap(sprite.childNode(withName: "wake")).zRotation, pose.heading - .pi / 2, accuracy: 0.001)
+            try engine.call("tick", [duration * 0.5]); scene.apply(try engine.snapshot(), selected: nil)
+            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-homebound") == true)
+            let back = VesselPose.at(slot: slot, trip: try XCTUnwrap(engine.snapshot().boats[slot]?.trip))
+            XCTAssertEqual(back.heading - pose.heading, .pi, accuracy: 0.001)
+            XCTAssertEqual(sprite.zRotation, 0, "Directional views keep masts upright; never rotate the painted billboard")
+            try engine.call("speed", [0]); let paused = sprite.position
+            try engine.call("tick", [10]); scene.apply(try engine.snapshot(), selected: nil); XCTAssertEqual(sprite.position, paused)
+            scene.reduceMotion = true; scene.apply(try engine.snapshot(), selected: nil)
+            XCTAssertNil(sprite.childNode(withName: "wake"))
+            XCTAssertEqual(sprite.userData?["texture"] as? String, try engine.snapshot().boats[slot]?.artwork)
+            scene.reduceMotion = false; try engine.call("speed", [1]); try engine.call("tick", [duration]); scene.apply(try engine.snapshot(), selected: nil)
+            XCTAssertNil(try engine.snapshot().boats[slot]?.trip); XCTAssertNil(sprite.childNode(withName: "wake"))
+            XCTAssertEqual(sprite.userData?["texture"] as? String, try engine.snapshot().boats[slot]?.artwork)
+        }
     }
 
 }

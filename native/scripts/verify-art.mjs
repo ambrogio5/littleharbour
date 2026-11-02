@@ -30,7 +30,8 @@ for(const good of resources.goods){
 console.log('Verified 24 painted resources covering every economic item and coins.');
 
 const living=JSON.parse(fs.readFileSync(new URL('living-manifest.json',base),'utf8'));
-const livingNames=['guide-elena','person-farmer','person-docker','person-vendor','vessel-cutter','vessel-coaster','vessel-cutter-upgraded','vessel-coaster-upgraded'].sort();
+const directionalNames=['outbound','homebound'].flatMap(direction=>['vessel-cutter','vessel-coaster','vessel-cutter-upgraded','vessel-coaster-upgraded'].map(name=>name+'-'+direction));
+const livingNames=[...directionalNames,'guide-elena','person-farmer','person-docker','person-vendor','vessel-cutter','vessel-coaster','vessel-cutter-upgraded','vessel-coaster-upgraded'].sort();
 if(JSON.stringify([...living.textures].sort())!==JSON.stringify(livingNames))throw Error('Guide, townspeople or fleet artwork missing');
 for(const[file,hash]of Object.entries(living.hashes))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Living artwork source changed: '+file);
 for(const name of living.textures){
@@ -38,7 +39,7 @@ for(const name of living.textures){
  if(png.readUInt32BE(16)!==512||png.readUInt32BE(20)!==512||png[25]!==6)throw Error('Living artwork must be 512px RGBA: '+name);
  if(crypto.createHash('sha256').update(png).digest('hex')!==living.outputHashes[name])throw Error('Living artwork changed: '+name);
 }
-console.log('Verified 8 living-harbour textures and their generated sources.');
+console.log('Verified 16 living-harbour textures and their generated sources.');
 
 const landscape=JSON.parse(fs.readFileSync(new URL('landscape-manifest.json',base),'utf8'));
 for(const[file,hash]of Object.entries(landscape.hashes))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Landscape source changed: '+file);

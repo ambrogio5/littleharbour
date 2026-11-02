@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Inline controls use the same validated engine commands as manual production.
 struct WorkshopAutomation: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var store: GameStore
     let recipe: String
     var body: some View {
@@ -11,7 +12,7 @@ struct WorkshopAutomation: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Automatic stock", systemImage: "arrow.triangle.2.circlepath").font(.subheadline.bold())
                     Text("\(goodsNames[workshop.item] ?? workshop.item): \(workshop.stock) stored · \(workshop.incoming) in progress").font(.caption)
-                    HStack {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 2 : 4), spacing: 8) {
                         ForEach(actions) { action in
                             let target = action.invocation?.1.last as? Int ?? 0
                             Button(target == 0 ? "Off" : "Keep \(target)") { store.perform(action) }
@@ -123,7 +124,7 @@ struct FleetPanel: View {
                 if s.boats.indices.contains(slot), let boat = s.boats[slot] {
                     if let trip = boat.trip {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("\(trip.ferry == true ? "Passengers" : "Cargo") → \(destination(trip.route)) · \(Int(ceil(trip.left)))s remaining").font(.subheadline.bold()).accessibilityIdentifier("voyage-status")
+                            Text("\(trip.ferry == true ? "Passengers" : "Cargo") · \(trip.outward ? "To" : "Returning from") \(destination(trip.route)) · \(Int(ceil(trip.left)))s remaining").font(.subheadline.bold()).accessibilityIdentifier("voyage-status")
                             ProgressView(value: max(0, min(1, 1 - trip.left / max(1, trip.duration))))
                             Text("This boat must return before its next mission. You can prepare another boat now.").font(.caption)
                         }.padding(12).background(HarbourTheme.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))

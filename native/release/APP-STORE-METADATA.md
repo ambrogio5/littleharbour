@@ -1,10 +1,8 @@
-## Build 6 — landscape and open-play QA update
-
-A denser landscape layout, painted surrounding hills and sea, stock targets inside workshops, and boat-first cargo/circuit/ferry planning. Town ambitions adds three optional directions over saved milestones and existing economic systems. No ads or purchases. Physical acceptance and final App Store materials remain pending. See `../docs/LANDSCAPE-AND-OPEN-PLAY.md` for scope and limitations.
-
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (5)**.
+Candidate: **1.0.0 (7)**.
+
+Builds 6–7 add a denser landscape layout, extended painted scenery, boat-first cargo/circuit/ferry planning with directional sailing artwork, workshop stock targets up to 24, and three optional town ambitions. Keep 24 is preserved in native saves; browser exports use the browser-compatible maximum of 12. Physical acceptance and final App Store materials remain pending. See `../docs/LANDSCAPE-AND-OPEN-PLAY.md` for scope and limitations.
 
 Release target: **free App Store download**, confirmed by the owner on 1 November 2026. TestFlight remains available for prerelease testing; it is not the chosen final destination. Nothing in this file has been submitted to App Store Connect.
 
