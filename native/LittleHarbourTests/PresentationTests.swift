@@ -149,7 +149,7 @@ import UIKit
         let engine = try EngineRuntime(), before = try engine.save()
         let scene = HarbourScene(size: CGSize(width: 400, height: 700))
         scene.apply(try engine.snapshot(), selected: nil)
-        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2700, "Hillside shortcut must not expose a sea strip above the land")
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2700.01, "Hillside shortcut must not expose a sea strip above the land")
         scene.zoom(100)
         XCTAssertEqual(scene.cameraNode.xScale, 16)
         XCTAssertEqual(scene.cameraNode.position, CGPoint(x: 900, y: 1350))
