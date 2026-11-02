@@ -1129,7 +1129,7 @@ function nextStep(s,actions,o){
   if(!s.specialisation)pick('specialise');
   else if(!s.specialists.includes(E.PATHS[s.specialisation].station)){
    const path=E.PATHS[s.specialisation];
-   if(!s.businesses.includes(path.requires))pick('build',a=>a[0]===path.requires);else pick('invest');
+   if(!s.businesses.includes(path.requires))pick('build',a=>a[0]===path.requires);else if(E.underConstruction(s,path.requires)){category='Build';waiting=true;}else pick('invest');
   }else if(E.underConstruction(s,E.PATHS[s.specialisation].station)||E.underConstruction(s,'charter'))waiting=true;
   else if(s.contractsDone.length>=2)pick('establishCharter');
   else if(s.contract)pick('dispatchContract');
@@ -1199,6 +1199,16 @@ function nextStep(s,actions,o){
   if(requirements.some(r=>['coins','wood','stone'].includes(r.item)&&r.available<r.required)){
    const dispatch=find('dispatch')[0];if(dispatch?.enabled)return result(dispatch,'Earn coins and building materials for '+target.title.toLowerCase()+'.');
    for(const [item,n]of Object.entries(dispatch?.cost||{})){const a=need(item,n);if(a)return result(a,'Prepare a shipment to earn the materials for '+target.title.toLowerCase()+'.');}
+  }
+  const pending=(item,amount,path=[])=>{
+   if(path.includes(item)||E.available(s,item,target.goal)>=amount)return false;
+   if(E.incoming(s,item)>0)return true;
+   return Object.entries(E.RECIPES).some(([key,r])=>r.output[item]&&E.unlocked(s,key)&&Object.entries(r.cost).some(([input,n])=>pending(input,n,[...path,item])));
+  };
+  const cargo=find('dispatch')[0]?.cost||{};
+  const waitingForCargo=requirements.some(r=>['coins','wood','stone'].includes(r.item)&&r.available<r.required)&&Object.entries(cargo).some(([item,n])=>pending(item,n));
+  if(requirements.some(r=>pending(r.item,r.required))||waitingForCargo){
+   return {title:'Wait for your workshops',body:s.speed===0?'Your town is paused. Resume time to finish the queued supplies.':'Supplies are already in production for '+target.title.toLowerCase()+'. Let the current batches finish; your next action will appear here.',category:'Production',actionID:null,choices:[],siteID:null,waiting:true,requirements};
   }
   return {...result(target,target.reason||o.description),waiting:false};
  }

@@ -89,3 +89,16 @@ test('Every campaign recommendation points to current actions and remains read-o
  }
  console.log(`${checked} progression guidance snapshots checked across both earned campaigns.`);
 });
+
+test('Queued ingredients for later goals are explained as waiting, not another unavailable task',()=>{
+ const campaigns=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'));
+ B.reset();let found=false;
+ for(const step of campaigns[0].steps){
+  if(step.action)B.act(step.action);if(step.ticks)for(let t=0;t<step.ticks;t++)B.tick(1);
+  if(snapshot().guidance.title==='Wait for your workshops'){
+   const g=snapshot().guidance;assert.equal(g.category,'Production');assert.equal(g.waiting,true);assert.deepEqual(g.choices,[]);
+   B.speed(0);assert.match(snapshot().guidance.body,/paused/);found=true;break;
+  }
+ }
+ assert(found,'An earned post-opening ingredient chain should explicitly explain its pending production');
+});

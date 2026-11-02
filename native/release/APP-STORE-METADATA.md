@@ -1,6 +1,6 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (4)**.
+Candidate: **1.0.0 (5)**.
 
 Release target: **free App Store download**, confirmed by the owner on 1 November 2026. TestFlight remains available for prerelease testing; it is not the chosen final destination. Nothing in this file has been submitted to App Store Connect.
 
@@ -33,7 +33,7 @@ Play at your own pace. Time pauses when you leave, with no offline penalties or 
 
 No login, server, subscription or purchase is required. All gameplay and artwork are included in the binary. The original economic simulation runs locally in Apple’s JavaScriptCore; the app does not download or execute remote code and does not use a web view.
 
-Opening route: Production → Harvest & replant → mill flour → bake bread → Trade → ship cargo. The current chapter objective provides continuing guidance. Settings & saves includes privacy information, save import/export and backed-up new-town recovery. Native saves and browser-compatible exports are distinct choices.
+Opening route: Production → Harvest & replant → mill flour → bake bread → Trade → ship cargo. Elena’s Next step card provides focused guidance, including missing ingredients, queued work and choices. Settings & saves includes privacy information, save import/export and backed-up new-town recovery. Native saves and browser-compatible exports are distinct choices.
 
 The iPad interface uses a side inspector when there is sufficient window width. Narrow windows and iPhones use an activity sheet with a Map button. Sites and Explore provide alternatives to pan/pinch gestures. Reduce Motion is respected. Version 1.0 has no audio.
 
@@ -41,11 +41,12 @@ The iPad interface uses a side inspector when there is sufficient window width. 
 
 Please play a new town and report the device model, OS version and app version alongside any problem. Focus on:
 
-1. First harvest, flour, bread and cargo; selecting fishing or olives; continuing chapter objectives.
-2. Building taps, map zoom/pan, portrait/landscape, iPad split view and large text.
-3. Backgrounding during production and voyages, force-quitting after actions, and resuming.
-4. Exporting a save to Files, importing it, cancelling replacement, and restoring a dated backup.
-5. Longer sessions: warmth, battery use, stutter, text readability and misplaced buildings.
+1. Elena’s Next step: harvest, flour, bread and cargo; choosing fishing or olives; waiting for queued supplies and resuming a paused town.
+2. Repeated taps and switching Production, Trade and Build inside the phone activity panel.
+3. Building taps, map zoom/pan, portrait/landscape, iPad split view and large text.
+4. Backgrounding during production and voyages, force-quitting after actions, and resuming.
+5. Exporting a save to Files, importing it, cancelling replacement, and restoring a dated backup.
+6. Longer sessions: warmth, battery use, stutter, text readability and misplaced buildings.
 
 Keep an exported copy before testing recovery. Towns stay on this device; there is no automatic browser/device synchronization.
 

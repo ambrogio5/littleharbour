@@ -60,13 +60,17 @@ struct HarbourView: View {
             .background(harbourPaper)
             .onAppear { hasSideInspector = wide; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
             .onChange(of: wide) { _, value in hasSideInspector = value; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !value { showInspector = true } } }
-            .sheet(isPresented: $showInspector) { NavigationStack { InspectorView().navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .cancellationAction) { Button("Next step") { store.followGuidance() }.accessibilityIdentifier("toolbar-next-step") }; ToolbarItem(placement: .confirmationAction) { Button("Map") { showInspector = false } }; ToolbarItem(placement: .bottomBar) {
-                HStack(spacing: 8) {
-                    ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
-                        Button { store.navigate(item.0) } label: { Label(item.0, systemImage: item.1).font(.caption.weight(.semibold)).frame(maxWidth: .infinity, minHeight: 44).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 10)) }.accessibilityIdentifier("inspector-nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
-                    }
-                }
-            } } }.presentationDetents([.large]).presentationCornerRadius(28).presentationDragIndicator(.visible) }
+            .sheet(isPresented: $showInspector) {
+                NavigationStack {
+                    InspectorView()
+                        .safeAreaInset(edge: .bottom, spacing: 0) { inspectorNavigation }
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) { Button("Next step") { store.followGuidance() }.accessibilityIdentifier("toolbar-next-step") }
+                            ToolbarItem(placement: .confirmationAction) { Button("Map") { showInspector = false } }
+                        }
+                }.presentationDetents([.large]).presentationCornerRadius(28).presentationDragIndicator(.visible)
+            }
         }
         .tint(harbourInk)
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -106,6 +110,18 @@ struct HarbourView: View {
         }
     }
 
+    private var inspectorNavigation: some View {
+        HStack(spacing: 8) {
+            ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
+                Button { store.navigate(item.0) } label: {
+                    VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(.semibold)) }
+                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .background(store.category == item.0 ? HarbourTheme.sea.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 12))
+                }.accessibilityIdentifier("inspector-nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
+            }
+        }.padding(.horizontal, 16).padding(.vertical, 8).foregroundStyle(harbourInk).background(harbourPaper)
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
     private var header: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {

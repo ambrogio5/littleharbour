@@ -137,6 +137,8 @@ import XCTest
         let coast = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); coast.name = "Painted developed harbour"; coast.lifetime = .keepAlways; add(coast)
         app.buttons["Explore"].tap(); app.buttons["explore-all"].tap()
         let town = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); town.name = "Painted whole town"; town.lifetime = .keepAlways; add(town)
+        app.buttons["Explore"].tap(); app.buttons["Working coast"].tap()
+        let fleet = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); fleet.name = "Distinct painted working fleet"; fleet.lifetime = .keepAlways; add(fleet)
         app.buttons["nav-Build"].tap()
         XCTAssertTrue(app.staticTexts["Build"].firstMatch.waitForExistence(timeout: 5))
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
