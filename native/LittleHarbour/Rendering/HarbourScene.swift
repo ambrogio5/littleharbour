@@ -11,6 +11,11 @@ import SwiftUI
     private var labelPlates: [String: SKShapeNode] = [:]
     private var badges: [String: SKLabelNode] = [:]
     private var selectedID: String?
+    private var residents: [String: SKSpriteNode] = [:]
+    private var residentRoutes: [TownResident] = []
+    private var residentTime: TimeInterval = 0
+    private var previousFrame: TimeInterval?
+    private var lastSelectionTime: TimeInterval = -.infinity
     var showLabels = true
     private let textures: NSCache<NSString, SKTexture> = { let c = NSCache<NSString, SKTexture>(); c.totalCostLimit = 48 * 1024 * 1024; return c }()
     private var activitySignature = ""
@@ -55,7 +60,7 @@ import SwiftUI
     }
     func persistViewport() {
         guard initialFocus, let preferences = viewportPreferences else { return }
-        let value = MapViewport(version: 1, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
+        let value = MapViewport(version: 2, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
         if value.isValid, let data = try? JSONEncoder().encode(value), preferences.data(forKey: viewportKey) != data { preferences.set(data, forKey: viewportKey) }
     }
     // Presentation anchors align fixed coastal landmarks to the painted shore.
@@ -85,7 +90,10 @@ import SwiftUI
                 let plate = SKShapeNode(); plate.fillColor = UIColor(red: 0.99, green: 0.97, blue: 0.91, alpha: 0.94); plate.strokeColor = UIColor(red: 0.25, green: 0.39, blue: 0.36, alpha: 0.18); plate.lineWidth = 1; plate.zPosition = 4000; world.addChild(plate); labelPlates[e.id] = plate
                 let badge = SKLabelNode(fontNamed: "AvenirNext-Bold"); badge.fontSize = 22; badge.fontColor = UIColor(red: 0.12, green: 0.35, blue: 0.31, alpha: 1); badge.zPosition = 4002; world.addChild(badge); badges[e.id] = badge
             }
-            if node.userData?["texture"] as? String != e.texture { node.texture = texture(e.texture); node.userData = ["texture": e.texture] }
+            let boat = e.kind == "boat" ? Int(e.id.dropFirst(4)).flatMap { snapshot.boats.indices.contains($0) ? snapshot.boats[$0] : nil } : nil
+            let artwork = boat?.artwork ?? e.texture
+            node.size = CGSize(width: boat?.type == "cutter" ? 270 : 320, height: boat?.type == "cutter" ? 270 : 320)
+            if node.userData?["texture"] as? String != artwork { node.texture = texture(artwork); node.userData = ["texture": artwork] }
             node.position = mapPosition(e); node.zPosition = 2700 - mapPosition(e).y
             node.alpha = e.stage == "unbuilt" ? 0.74 : 1
             labels[e.id]?.text = e.displayLabel
@@ -103,6 +111,7 @@ import SwiftUI
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
         animateActivity(snapshot)
+        populateTown(snapshot)
         updateLabels()
         if !initialFocus && size.width > 0 && size.height > 0 {
             initialFocus = true
@@ -110,7 +119,7 @@ import SwiftUI
                 if let region = viewport.region { focus(region) }
                 else {
                     focusedRegion = nil; cameraNode.position = CGPoint(x: viewport.x, y: viewport.y)
-                    cameraNode.setScale(min(8, viewport.scale)); clampCamera()
+                    cameraNode.setScale(min(16, viewport.scale)); clampCamera()
                 }
                 restoredViewport = nil
             } else { focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
@@ -132,7 +141,7 @@ import SwiftUI
             let y = 1430 + i / 4 * 138; lantern.position = CGPoint(x: 260 + i % 4 * 159, y: 2700 - y); lantern.zPosition = CGFloat(y + 1); ornaments.addChild(lantern)
         }
         for i in 0..<min(4, max(0, style.tradeTraffic - 1)) {
-            let boat = SKSpriteNode(texture: texture("boat-built"), size: CGSize(width: 125, height: 125))
+            let boat = SKSpriteNode(texture: texture(i.isMultiple(of: 2) ? "vessel-cutter" : "vessel-coaster"), size: CGSize(width: 125, height: 125))
             boat.position = CGPoint(x: 1680 + i % 2 * 70, y: 2700 - (1370 + i * 150)); boat.zPosition = 3000; ornaments.addChild(boat)
         }
     }
@@ -202,14 +211,21 @@ import SwiftUI
         case "market": frame = CGRect(x: 860, y: 1030, width: 860, height: 880)
         case "coast": frame = CGRect(x: 1080, y: 100, width: 720, height: 1120)
         case "harbour": frame = CGRect(x: 230, y: 300, width: 1250, height: 900)
-        default: frame = CGRect(x: 0, y: 0, width: 1800, height: 2700)
+        default: frame = CGRect(x: -120, y: -180, width: 2040, height: 3060)
         }
         guard size.width > 0, size.height > 0 else { return }
         cameraNode.position = CGPoint(x: frame.midX, y: frame.midY)
         let horizontal = frame.width / size.width, vertical = frame.height / size.height
         // Districts favour readable buildings on tall screens; Whole town fits all geography.
         cameraNode.setScale((region == "all" ? max(horizontal, vertical) : sqrt(horizontal * vertical)) * 1.04)
-        clampCamera(); persistViewport()
+        clampCamera()
+        // District shortcuts frame the painted land; expanded margins are for manual exploration.
+        if region != "all" {
+            let halfW = min(900, size.width * cameraNode.xScale / 2), halfH = min(1350, size.height * cameraNode.yScale / 2)
+            cameraNode.position.x = max(halfW, min(1800 - halfW, cameraNode.position.x))
+            cameraNode.position.y = max(halfH, min(2700 - halfH, cameraNode.position.y))
+        }
+        persistViewport()
     }
     private func updateLabels() {
         var candidates: [MapLabelLayout.Candidate] = []
@@ -237,7 +253,7 @@ import SwiftUI
     func zoom(_ multiplier: CGFloat, persist: Bool = true) {
         guard multiplier.isFinite, multiplier > 0 else { return }
         focusedRegion = nil
-        cameraNode.setScale(min(8, max(0.65, cameraNode.xScale * multiplier))); clampCamera()
+        cameraNode.setScale(min(16, max(0.65, cameraNode.xScale * multiplier))); clampCamera()
         if persist { persistViewport() }
     }
     func pan(by delta: CGPoint) {
@@ -248,19 +264,58 @@ import SwiftUI
         clampCamera()
     }
     func clampCamera() {
-        let halfW = min(900, size.width * cameraNode.xScale / 2), halfH = min(1350, size.height * cameraNode.yScale / 2)
-        cameraNode.position.x = max(halfW, min(1800 - halfW, cameraNode.position.x))
-        cameraNode.position.y = max(halfH, min(2700 - halfH, cameraNode.position.y))
+        let halfW = min(1200, size.width * cameraNode.xScale / 2), halfH = min(1700, size.height * cameraNode.yScale / 2)
+        cameraNode.position.x = max(-300 + halfW, min(2100 - halfW, cameraNode.position.x))
+        cameraNode.position.y = max(-350 + halfH, min(3050 - halfH, cameraNode.position.y))
         updateLabels(); onZoomChange?(cameraNode.xScale)
     }
-    func tap(at screen: CGPoint, in view: SKView) {
-        let candidates = entities.map { entity -> (WorldEntity, CGFloat) in
-            let renderedPosition = sprites[entity.id]?.position ?? CGPoint(x: entity.x, y: 2700 - entity.y)
-            let point = convertPoint(toView: renderedPosition)
-            return (entity, hypot(point.x - screen.x, point.y - screen.y))
-        }
-        if let hit = candidates.min(by: { $0.1 < $1.1 }), hit.1 <= max(24, 100 / cameraNode.xScale) { onSelect?(hit.0) }
+    /// Uses the visible building silhouette area, including roofs, instead of a tiny centre target.
+    func site(at point: CGPoint) -> WorldEntity? {
+        let tolerance = min(70, 18 * cameraNode.xScale)
+        return entities.compactMap { entity -> (WorldEntity, CGFloat)? in
+            guard let sprite = sprites[entity.id] else { return nil }
+            let dx = abs(point.x - sprite.position.x), dy = abs(point.y - sprite.position.y)
+            let radius = sprite.size.width * 0.43
+            guard dx <= radius + tolerance, dy <= radius + tolerance else { return nil }
+            let score = hypot(dx / (radius + tolerance), dy / (radius + tolerance))
+            return score <= 1.15 ? (entity, score) : nil
+        }.min { $0.1 < $1.1 }?.0
     }
+    func tap(at screen: CGPoint, in view: SKView) {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastSelectionTime > 0.35, let hit = site(at: convertPoint(fromView: screen)) else { return }
+        lastSelectionTime = now; onSelect?(hit)
+    }
+    private func populateTown(_ snapshot: HarbourSnapshot) {
+        residentRoutes = TownResident.routes(in: snapshot)
+        let ids = Set(residentRoutes.map(\.id))
+        for id in residents.keys.filter({ !ids.contains($0) }) { residents.removeValue(forKey: id)?.removeFromParent() }
+        for route in residentRoutes where residents[route.id] == nil {
+            let person = SKSpriteNode(texture: texture(route.artwork), size: CGSize(width: 86, height: 86))
+            person.name = "resident-" + route.id; person.anchorPoint = CGPoint(x: 0.5, y: 0.08)
+            residents[route.id] = person; world.addChild(person)
+        }
+        positionResidents()
+    }
+    private func positionResidents() {
+        for route in residentRoutes {
+            guard let person = residents[route.id] else { continue }
+            let phase = reduceMotion ? route.offset : residentTime / route.duration + route.offset
+            let cycle = phase.truncatingRemainder(dividingBy: 2)
+            let progress = cycle <= 1 ? cycle : 2 - cycle
+            let p = CGPoint(x: route.start.x + (route.end.x - route.start.x) * progress, y: route.start.y + (route.end.y - route.start.y) * progress)
+            let bob = !reduceMotion && current?.speed != 0 ? abs(sin(residentTime * 5 + route.offset)) * 2 : 0
+            person.position = CGPoint(x: p.x, y: 2700 - p.y + bob)
+            person.zPosition = p.y + 1
+            person.xScale = cycle <= 1 ? 1 : -1
+        }
+    }
+    override func update(_ currentTime: TimeInterval) {
+        let elapsed = previousFrame.map { max(0, min(0.1, currentTime - $0)) } ?? 0
+        previousFrame = currentTime
+        if !reduceMotion && (current?.speed ?? 0) > 0 { residentTime += elapsed; positionResidents() }
+    }
+
 }
 
 struct HarbourMap: UIViewRepresentable {
@@ -277,7 +332,7 @@ struct HarbourMap: UIViewRepresentable {
         let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pan(_:)))
         let pinch = UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:)))
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:)))
-        tap.require(toFail: pan); view.addGestureRecognizer(pan); view.addGestureRecognizer(pinch); view.addGestureRecognizer(tap)
+        tap.require(toFail: pan); tap.require(toFail: pinch); view.addGestureRecognizer(pan); view.addGestureRecognizer(pinch); view.addGestureRecognizer(tap)
         view.accessibilityIdentifier = "world-map"
         view.isAccessibilityElement = true; view.accessibilityLabel = "Little Harbour town map"
         view.accessibilityHint = "Use Sites to search and select buildings with VoiceOver. District and zoom buttons are above the map."

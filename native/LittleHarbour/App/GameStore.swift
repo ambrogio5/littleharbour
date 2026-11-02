@@ -9,6 +9,10 @@ import Combine
     @Published var importSummary = ""
     @Published var category = "Production"
     @Published var selectedSite: String?
+    @Published var guidanceFocus = false
+    @Published private(set) var lastPerformedActionID: String?
+    private var lastActionAt = -Double.infinity
+    private let actionClock: () -> Double
     @Published var modalOpen = false
     @Published var active = true
     @Published var lastSaved: Date?
@@ -18,7 +22,8 @@ import Combine
     private var checkpoint = 0.0
     private var refreshClock = 0.0
     private var feedbackUntil = 0.0
-    init(repository: SaveRepository? = nil, arguments: [String] = ProcessInfo.processInfo.arguments, environment: [String: String] = ProcessInfo.processInfo.environment) {
+    init(repository: SaveRepository? = nil, arguments: [String] = ProcessInfo.processInfo.arguments, environment: [String: String] = ProcessInfo.processInfo.environment, actionClock: @escaping () -> Double = { ProcessInfo.processInfo.systemUptime }) {
+        self.actionClock = actionClock
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         // UI tests can choose a separate disposable town, never a player's save.
         let testing = arguments.contains("--ui-testing") || arguments.contains("--persistence-testing")
@@ -36,8 +41,12 @@ import Combine
             try refresh(); flush()
         } catch { saves.protect(); protectedSave = true; message = error.localizedDescription }
     }
-    func refresh() throws { snapshot = try engine?.snapshot() }
+    func refresh() throws {
+        snapshot = try engine?.snapshot()
+        if guidanceFocus, let next = snapshot?.guidance { category = next.category }
+    }
     func pulse() {
+        if lastPerformedActionID != nil && actionClock() - lastActionAt >= 0.65 { lastPerformedActionID = nil }
         let now = ProcessInfo.processInfo.systemUptime, dt = min(0.5, max(0, now - lastTick)); lastTick = now
         if feedbackUntil > 0 && now >= feedbackUntil && !protectedSave { message = nil; feedbackUntil = 0 }
         guard active, !modalOpen, !protectedSave, snapshot?.speed != 0, let engine else { return }
@@ -55,8 +64,13 @@ import Combine
     private func freeze(_ error: Error) { protectedSave = true; saves.protect(); message = error.localizedDescription }
     func perform(_ action: HarbourAction) {
         guard !protectedSave, let engine else { return }
+        let now = actionClock()
+        // A guidance refresh can put a different action beneath the same finger.
+        guard now - lastActionAt >= 0.65 else { return }
+        guard let current = snapshot?.actions.first(where: { $0.id == action.id }), current.enabled, current.title == action.title else { return }
         do {
             guard try engine.call("act", [action.id]).toBool() else { message = "This action has changed. Review its current requirements."; return }
+            lastActionAt = now; lastPerformedActionID = action.id
             try refresh(); flush()
             if !protectedSave {
                 message = snapshot?.log.first ?? "Done. Your town is saved."
@@ -94,7 +108,7 @@ import Combine
     func confirmImport() {
         guard let data = pendingImport, let engine else { return }
         do {
-            try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; category = "Production"
+            try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; guidanceFocus = false; category = "Production"
             try refresh(); lastSaved = Date(); message = "Town ready. Your previous save is kept in Recovery backups."
         } catch { freeze(error) }
     }
@@ -108,6 +122,7 @@ import Combine
         else { throw HarbourError.message("No town is available to export.") }
         try data.write(to: url, options: .atomic); return url
     }
-    func navigate(_ category: String) { selectedSite = nil; self.category = category }
-    func select(_ entity: WorldEntity) { selectedSite = entity.id; category = entity.category }
+    func navigate(_ category: String) { guidanceFocus = false; selectedSite = nil; self.category = category }
+    func followGuidance() { guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
+    func select(_ entity: WorldEntity) { guidanceFocus = false; selectedSite = entity.id; category = entity.category }
 }

@@ -1,0 +1,31 @@
+{
+  "hashes" : {
+    "native/art-source/living-harbour-v1/boats-prompt.txt" : "3c72ef7c32f35b154311bb042c911bde020475f64f6f716b247aa892f5d750ce",
+    "native/art-source/living-harbour-v1/boats.png" : "185f2926815b45aa9e44ff305a9bde42ef44f4629fc038899d9af3777dcacdf6",
+    "native/art-source/living-harbour-v1/people-prompt.txt" : "a67b6026b2c0ae18a5cfa821ed4ef5e20af1ff37f2351514131988d976d524f4",
+    "native/art-source/living-harbour-v1/people.png" : "a1b95e91d65ec658a564492f5c72633bacfe62c873e640dc40220ecc73431f53",
+    "native/scripts/pack-living-art.swift" : "7390c1354c450761bc51a7ebf41138bfd3b66f75b0c35752a05abd89ba09bece"
+  },
+  "outputHashes" : {
+    "guide-elena" : "8167a095bcc95de4b10a052b70e13d18408ec68aba771d7d9430f85f714de231",
+    "person-docker" : "80dcf80569871a7eecd3f7d36d02c7a4529cf63e042908d7c8d0c0e22a82e649",
+    "person-farmer" : "8ca1d240fc894f4bd7013f5ab3afca6f39e4f55770ec76a033201077fdcc4f79",
+    "person-vendor" : "1f39a1f30a1e5db71ad6064aefc3bb9af048cbe0c89b8b2a6e5a84956decef2a",
+    "vessel-coaster" : "c65673d44ce8f3a11d4b5ff5b500ab81b1bf098c1fdbe12b21b59c86a23a76b1",
+    "vessel-coaster-upgraded" : "1e0376daf4c327640dac9df32969d52b99703cdc42838775facab4d091488589",
+    "vessel-cutter" : "3f5563c23140531f53434bbbe87ae685187566d7779689b9c24e054beacd4dd0",
+    "vessel-cutter-upgraded" : "3d4c3eb3be4beb3a1848b4c14ccd537c5c75ade4dccbeb2c9256f950ae760447"
+  },
+  "size" : 512,
+  "textures" : [
+    "vessel-cutter",
+    "vessel-coaster",
+    "vessel-cutter-upgraded",
+    "vessel-coaster-upgraded",
+    "guide-elena",
+    "person-farmer",
+    "person-docker",
+    "person-vendor"
+  ],
+  "version" : 1
+}

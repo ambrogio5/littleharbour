@@ -64,4 +64,32 @@ import XCTest
             store.flush(); XCTAssertEqual(try repository.original(), before)
         }
     }
+    func testRapidRepeatDoesNotQueueTwiceButDeliberateRepeatWorks() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var clock = 10.0
+        let store = GameStore(repository: SaveRepository(directory: directory), arguments: [], environment: [:], actionClock: { clock })
+        store.perform(try XCTUnwrap(store.snapshot?.actions.first { $0.id == "[\"harvestReplant\",[]]" }))
+        let mill = try XCTUnwrap(store.snapshot?.actions.first { $0.id == "[\"start\",[\"mill\"]]" })
+        store.perform(mill); XCTAssertEqual(store.snapshot?.jobs.count, 1, "A changed next-action under the same finger cannot fire immediately")
+        clock += 0.7; store.perform(mill)
+        let once = try store.saves.original(), count = store.snapshot?.jobs.count
+        store.perform(mill); XCTAssertEqual(try store.saves.original(), once)
+        XCTAssertEqual(store.snapshot?.jobs.count, count)
+        clock += 0.7; store.perform(mill)
+        XCTAssertEqual(store.snapshot?.jobs.count, (count ?? 0) + 1)
+    }
+    func testGuideNavigationIsReadOnlyAndFollowsTheNextRealAction() throws {
+        try withStore { store, repository in
+            let before = try repository.original()
+            store.followGuidance()
+            XCTAssertTrue(store.guidanceFocus); XCTAssertEqual(store.category, "Production")
+            XCTAssertEqual(try repository.original(), before)
+            let harvest = try XCTUnwrap(store.snapshot?.actions.first { $0.id == store.snapshot?.guidance.actionID })
+            store.perform(harvest)
+            XCTAssertEqual(store.snapshot?.guidance.actionID, "[\"start\",[\"mill\"]]")
+            store.navigate("Trade"); XCTAssertFalse(store.guidanceFocus); XCTAssertNil(store.selectedSite)
+        }
+    }
+
 }

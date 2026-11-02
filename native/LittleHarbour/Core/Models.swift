@@ -43,6 +43,14 @@ struct WorldEntity: Decodable, Identifiable {
         return "Production"
     }
 }
+struct NextStep: Decodable {
+    struct Requirement: Decodable, Identifiable { let item: String; let required, available: Int; var id: String { item } }
+    let title, body, category: String
+    let actionID, siteID: String?
+    let choices: [String]
+    let waiting: Bool
+    let requirements: [Requirement]
+}
 struct Objective: Decodable {
     let title, description, chapterName: String
     let chapter: Int
@@ -68,7 +76,10 @@ struct TownEvent: Decodable {
 struct Boat: Decodable {
     struct Trip: Decodable { let left, duration: Double; let route: String; let ferry: Bool? }
     let type: String
+    let upgrade: String?
+    let sails: Bool?
     let trip: Trip?
+    var artwork: String { "vessel-" + type + (upgrade != nil || sails == true ? "-upgraded" : "") }
 }
 struct HarbourSnapshot: Decodable {
     let coins, speed, deliveries: Int
@@ -76,6 +87,7 @@ struct HarbourSnapshot: Decodable {
     let stock: [String: Int]
     let jobs: [ProductionJob]
     let objective: Objective
+    let guidance: NextStep
     let entities: [WorldEntity]
     let actions: [HarbourAction]
     let evolution: LivingTown
@@ -83,6 +95,10 @@ struct HarbourSnapshot: Decodable {
     let event: TownEvent?
     let log: [String]
     let boats: [Boat?]
+    func artwork(for entity: WorldEntity) -> String {
+        guard entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)), boats.indices.contains(slot), let boat = boats[slot] else { return entity.texture }
+        return boat.artwork
+    }
     var categories: [String] {
         let order = ["Production", "Queues", "Trade", "Build", "Contracts", "Waterfront", "Market", "Inland", "Fleet", "Circuits", "Lighthouse", "Destinations", "Neighbourhood", "Town layout", "Residents", "Ferry", "Refits", "Automation", "Reservations"]
         return order.filter { category in actions.contains { $0.category == category } }
@@ -159,8 +175,10 @@ struct MapViewport: Codable, Equatable {
     let region: String?
     var isValid: Bool {
         let knownRegion = region.map { ["all", "inland", "neighbourhood", "market", "coast", "harbour"].contains($0) } ?? true
-        return version == 1 && x.isFinite && y.isFinite && scale.isFinite
-            && (0...1800).contains(x) && (0...2700).contains(y) && (0.65...64).contains(scale)
+        let withinBounds = version == 1 ? (0...1800).contains(x) && (0...2700).contains(y)
+            : (-300...2100).contains(x) && (-350...3050).contains(y)
+        return [1, 2].contains(version) && x.isFinite && y.isFinite && scale.isFinite
+            && withinBounds && (0.65...64).contains(scale)
             && knownRegion
     }
     static func decode(_ data: Data?) -> MapViewport? {
@@ -179,5 +197,23 @@ struct MapLabelLayout {
             occupied.append(candidate.frame); result.insert(candidate.id)
         }
         return result
+    }
+}
+
+/// Cosmetic town life follows built sites; it never spends or produces resources.
+struct TownResident {
+    let id, artwork: String
+    let start, end: CGPoint
+    let duration, offset: Double
+    static func routes(in snapshot: HarbourSnapshot) -> [TownResident] {
+        let built = Set(snapshot.entities.filter { $0.stage == "built" || $0.stage == "upgraded" || $0.stage == "ripe" }.map(\.id))
+        var routes = [
+            TownResident(id: "farmer", artwork: "person-farmer", start: CGPoint(x: 560, y: 540), end: CGPoint(x: 780, y: 640), duration: 19, offset: 0.2),
+            TownResident(id: "baker", artwork: "person-vendor", start: CGPoint(x: 970, y: 975), end: CGPoint(x: 1200, y: 975), duration: 22, offset: 0.6)
+        ]
+        if built.contains("pier") { routes.append(.init(id: "docker", artwork: "person-docker", start: CGPoint(x: 720, y: 2050), end: CGPoint(x: 900, y: 2100), duration: 24, offset: 0.4)) }
+        if snapshot.entities.contains(where: { $0.kind == "market" && $0.stage == "built" }) { routes.append(.init(id: "trader", artwork: "person-vendor", start: CGPoint(x: 1320, y: 1325), end: CGPoint(x: 1480, y: 1325), duration: 23, offset: 0.8)) }
+        if snapshot.entities.contains(where: { $0.kind == "home" && $0.stage != "unbuilt" && $0.stage != "building" }) { routes.append(.init(id: "neighbour", artwork: "person-farmer", start: CGPoint(x: 430, y: 1170), end: CGPoint(x: 450, y: 1510), duration: 29, offset: 0.3)) }
+        return routes
     }
 }

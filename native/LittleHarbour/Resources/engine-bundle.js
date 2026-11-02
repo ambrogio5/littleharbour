@@ -11,6 +11,7 @@ const {worldEntities}=require("dist/world-model.js");
 const {currentObjective}=require("dist/progression.js");
 const {projectPlan,queueProject}=require("dist/project-planning.js");
 const {sampleTown}=require("dist/demo-town.js");
+const {nextStep}=require("native/guidance.js");
 let town=E.fresh(), evolution=V.createEvolution();
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
@@ -20,7 +21,7 @@ function registry(s){
  const out=[];
  function add(category,title,fn,args=[],cost=null,reason='',goal=null,destructive=false){
   let enabled=false;try{const copy=clone(s),before=JSON.stringify(copy);enabled=!!mutate(copy,fn,args)&&JSON.stringify(copy)!==before;}catch{}
-  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive});
+  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
  }
  add('Production','Harvest & replant','harvestReplant',[],null,'Wait for the wheat to ripen.');
  for(const [key,r]of Object.entries(E.RECIPES))if(E.unlocked(s,key)){
@@ -127,7 +128,8 @@ function queuePlan(goal){const next=clone(town),result=queueProject(next,goal);t
 function snapshot(){
  const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;return e;});
  for(const [id,x,y,label]of [['boatyard',1080,1390,'Boatyard'],['estate',790,790,'Vineyard & cellar']])entities.push({id,x,y,zone:id==='estate'?'inland':'market',kind:id,label,select:id,stage:town.specialists.includes(id)?(E.underConstruction(town,id)?'building':'built'):'unbuilt',level:town.specialists.includes(id)?1:0});
- return JSON.stringify({coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective:currentObjective(town),entities,actions:registry(town),evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
+ const actions=registry(town),objective=currentObjective(town);
+ return JSON.stringify({guidance:nextStep(town,actions,objective),coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
 }
 
 Object.assign(exports,{load,save,browserSave,reset,tick,speed,act,resolve,reserve,plan,queuePlan,snapshot});
@@ -1106,5 +1108,103 @@ function sampleTown(){
 }
 
 Object.assign(exports,{sampleTown});
+},
+"native/guidance.js":function(exports,require){
+// Read-only next-step presentation. Every recommendation references the real action registry.
+const E=require("dist/engine.js");
+const categories={produce:'Production',trade:'Trade',build:'Build',contracts:'Contracts',waterfront:'Waterfront',market:'Market',inland:'Inland',fleet:'Fleet',neighbourhood:'Neighbourhood',residents:'Residents',ferry:'Ferry'};
+function nextStep(s,actions,o){
+ const find=(fn,test=()=>true)=>actions.filter(a=>a.fn===fn&&test(a.args));
+ let targets=[],category=categories[o.target]||'Production',waiting=false,explanation=o.description;
+ const pick=(fn,test)=>{targets=find(fn,test);};
+ if(E.underConstruction(s,'pier')){category='Build';waiting=true;explanation='The crew is extending the quay. Your next choice opens when construction finishes. You can keep exploring while they work.';}else if(!s.pier){
+  const g=E.openingGuide(s);
+  if(g.action==='harvest-replant')pick('harvestReplant');
+  else if(g.action==='batch'||g.action==='start')pick('start',a=>a[0]===g.key);
+  else if(g.action==='dispatch')pick('dispatch');
+  else if(g.action==='upgrade')pick('upgrade');
+  else if(g.tab==='build')pick('build');
+  else {category='Production';waiting=true;}
+ }else if(o.chapter===2&&o.target!=='waterfront'){
+  if(!s.specialisation)pick('specialise');
+  else if(!s.specialists.includes(E.PATHS[s.specialisation].station)){
+   const path=E.PATHS[s.specialisation];
+   if(!s.businesses.includes(path.requires))pick('build',a=>a[0]===path.requires);else pick('invest');
+  }else if(E.underConstruction(s,E.PATHS[s.specialisation].station)||E.underConstruction(s,'charter'))waiting=true;
+  else if(s.contractsDone.length>=2)pick('establishCharter');
+  else if(s.contract)pick('dispatchContract');
+  else pick('acceptContract',a=>!s.contractsDone.includes(a[0]));
+ }else if(o.target==='waterfront'){
+  if(s.waterfront.left)waiting=true;else pick(s.waterfront.funded?'supplyWaterfront':'fundWaterfront');
+ }else if(o.chapter===3){
+  if(!E.inlandEligible(s)){
+   if(!s.market.access)pick('marketAccess');
+   else if(s.market.left)waiting=true;
+   else if(!Object.keys(s.market.businesses).length)pick('buildMarketBusiness');
+   else pick('dispatchMarket',a=>s.market.businesses[a[0]]?.deliveries<3);
+  }else{
+   category='Inland';
+   if(!s.inland.access)pick('inlandAccess');
+   else if(s.inland.left)waiting=true;
+   else if(!s.inland.terraces.some(Boolean))pick('buildTerrace');
+   else if(!s.inland.terraces.some(t=>t&&!t.left))waiting=true;
+   else if(!s.inland.kiln)pick('buildKiln');
+   else if(s.inland.kiln.left)waiting=true;
+   else if(!s.inland.shipments){if(s.selectedOrder!=='inland')pick('selectOrder',a=>E.orders(s).find(r=>r.id===a[0])?.cost.preserves);else pick('dispatch');}
+   else pick('buildCourtyard');
+  }
+ }else if(o.chapter===4&&s.fleet.lighthouse.stage<3){
+  if(!s.fleet.boats[0])pick('buyBoat',a=>a[0]===0);
+  else if(s.fleet.lighthouse.left)waiting=true;
+  else if((s.fleet.visits.quarry>0&&s.fleet.lighthouse.stage===0)||(s.fleet.visits.quarry>=3&&s.fleet.visits.island>=3))pick('buildLighthouseStage');
+  else {const route=s.fleet.visits.quarry<3?'quarry':'island';pick('startVoyage',a=>!s.fleet.boats[a[0]]?.trip&&a[1]===route&&a[2]===1);if(!targets.length)waiting=true;}
+ }else if(o.chapter===4){
+  category='Neighbourhood';
+  if(!s.neighbourhood.access)pick('openNeighbourhood');
+  else{
+   const has=t=>s.neighbourhood.plots.some(p=>p?.type===t);
+   const missing=['carpenter','flaxgarden','weaver','home','sailmaker'].find(t=>!has(t));
+   if(missing){if(s.neighbourhood.plots.some(p=>p&&!p.type))pick('buildNeighbourhood',a=>a[1]===missing);else pick('buyNeighbourhoodPlot');}
+   else if(!s.neighbourhood.plots.some(p=>p?.type==='home'&&p.level))pick('upgradeNeighbourhoodHome');
+   else if(!s.fleet.boats.some(b=>b?.sails)){pick('refitBoatSails',a=>!s.fleet.boats[a[0]]?.trip);if(!targets.length)waiting=true;}
+   else if(!s.residents.proposal)pick('chooseResidentsProposal');
+   else if(s.residents.delivered<3)pick('deliverResidentsSupplies');
+   else waiting=true;
+  }
+ }else if(o.chapter===5){
+  if(s.ferry.left)waiting=true;
+  else if(s.ferry.stage<3)pick(s.ferry.funded?'deliverFerrySupplies':'fundFerryStage');
+  else {pick('startFerryService',a=>!s.fleet.boats[a[0]]?.trip);if(!targets.length)waiting=true;}
+ }
+ // A choice stays a choice: no automatic spending, route selection or specialisation.
+ if(targets.length>1){
+  return {title:o.title,body:o.description,category:targets[0].category,actionID:null,choices:targets.map(a=>a.id),siteID:null,waiting:false,requirements:[]};
+ }
+ const target=targets[0];
+ const requirements=Object.entries(target?.cost||{}).map(([item,required])=>({item,required,available:Math.max(0,E.available(s,item,target.goal))}));
+ const siteFor=a=>a.fn==='harvestReplant'?'field':a.fn==='start'?({press:'olive',olives:'olive',saw:'boatyard',fittings:'boatyard',grapes:'estate',wine:'estate',clay:'claypit',jars:'kiln',tiles:'kiln',fruitPreserves:'kiln',vegetablePreserves:'kiln'}[a.args[0]]||a.args[0]):null;
+ const result=(a,body)=>({title:a.title,body,category:a.category,actionID:a.id,choices:[a.id],siteID:siteFor(a),waiting:false,requirements});
+ if(target?.enabled)return result(target,o.description);
+ // Follow actual missing ingredients, counting reserved and incoming goods. No fake resource grants.
+ const need=(item,amount,path=[])=>{
+  if(path.includes(item)||E.available(s,item,target?.goal)+E.incoming(s,item)>=amount)return null;
+  if(item==='wheat'&&s.ripe)return find('harvestReplant')[0];
+  const recipes=Object.entries(E.RECIPES).filter(([key,r])=>r.output[item]&&E.unlocked(s,key));
+  for(const [key]of recipes){const a=find('start',args=>args[0]===key)[0];if(a?.enabled)return a;}
+  for(const [,r]of recipes)for(const [input,n]of Object.entries(r.cost)){const a=need(input,n,[...path,item]);if(a)return a;}
+  return null;
+ };
+ if(target){
+  for(const r of requirements){const a=need(r.item,r.required);if(a)return result(a,'To '+target.title.toLowerCase()+', prepare the missing supplies. '+o.description);}
+  if(requirements.some(r=>['coins','wood','stone'].includes(r.item)&&r.available<r.required)){
+   const dispatch=find('dispatch')[0];if(dispatch?.enabled)return result(dispatch,'Earn coins and building materials for '+target.title.toLowerCase()+'.');
+   for(const [item,n]of Object.entries(dispatch?.cost||{})){const a=need(item,n);if(a)return result(a,'Prepare a shipment to earn the materials for '+target.title.toLowerCase()+'.');}
+  }
+  return {...result(target,target.reason||o.description),waiting:false};
+ }
+ return {title:waiting?'Work is underway':o.title,body:s.speed===0?'Your town is paused. Resume time to continue production, building and voyages.':explanation,category,actionID:null,choices:[],siteID:null,waiting,requirements};
+}
+
+Object.assign(exports,{nextStep});
 },
 };const cache={};function require(id){if(cache[id])return cache[id];const e={};cache[id]=e;factories[id](e,require);return e;}globalThis.Harbour=require("native/bridge.js");})();

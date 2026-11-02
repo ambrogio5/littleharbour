@@ -58,3 +58,34 @@ test('Native scene preserves separate specialist plots and every state has packa
   for(const e of entities){const type=e.id==='kiln'?'kiln':e.id==='claypit'?'clay':['courtyard','civic'].includes(e.id)?'square':e.kind;for(const phase of ['unbuilt','building','built','upgraded','ripe'])assert(fs.existsSync(new URL(`../LittleHarbour/Resources/Art/${type}-${phase}.png`,import.meta.url)),type+'-'+phase);}
  }
 });
+test('Elena follows opening production, waiting and deliberate choices without changing saves',()=>{
+ B.reset();let s=snapshot();assert.equal(s.guidance.actionID,'["harvestReplant",[]]');
+ const before=B.save();snapshot();assert.equal(B.save(),before);
+ B.act(s.guidance.actionID);s=snapshot();assert.equal(s.guidance.actionID,'["start",["mill"]]');
+ B.act(s.guidance.actionID);B.act(s.guidance.actionID);s=snapshot();assert.equal(s.guidance.waiting,true);assert.deepEqual(s.guidance.choices,[]);
+ B.speed(0);assert.match(snapshot().guidance.body,/paused/i);B.speed(1);B.tick(8);
+ assert.equal(snapshot().guidance.actionID,'["start",["bakery"]]');
+ const town=E.fresh();Object.assign(town,{deliveries:2,coins:1000,pier:true,expansion:'fishing',businesses:['fishing'],construction:[{type:'pier',left:5}]});
+ B.load(JSON.stringify(town));assert.equal(snapshot().guidance.waiting,true);assert.deepEqual(snapshot().guidance.choices,[]);
+ B.tick(8);s=snapshot();assert.equal(s.guidance.choices.length,2);assert(s.guidance.choices.every(id=>JSON.parse(id)[0]==='specialise'));
+});
+test('Every campaign recommendation points to current actions and remains read-only',()=>{
+ const campaigns=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/earned-campaigns.json',import.meta.url),'utf8'));
+ let checked=0;
+ for(const campaign of campaigns){
+  B.reset();
+  for(const step of campaign.steps){
+   if(step.action)assert(B.act(step.action),step.action);
+   if(step.ticks)for(let t=0;t<step.ticks;t++)B.tick(1);
+   if(step.reload)B.load(B.save());
+   if(step.action||step.reload){
+    const before=B.save(),s=snapshot(),g=s.guidance;
+    assert.equal(B.save(),before);assert(g.title&&g.body);assert(Array.isArray(g.requirements));
+    for(const id of g.choices){const a=s.actions.find(a=>a.id===id);assert(a,id);assert.equal(a.category,g.category);}
+    if(g.actionID)assert(g.choices.includes(g.actionID));
+    assert(!g.waiting||g.choices.length===0);checked++;
+   }
+  }
+ }
+ console.log(`${checked} progression guidance snapshots checked across both earned campaigns.`);
+});

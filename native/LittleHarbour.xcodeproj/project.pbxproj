@@ -21,7 +21,9 @@
 		1E83845C7889C46AE1D9C7DA /* olive-building.png in Resources */ = {isa = PBXBuildFile; fileRef = A69DED0BCD397A200FEC1DD6 /* olive-building.png */; };
 		1E83A7442B475CA2AFF11B7B /* clay-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = F34591BCA9CF2932CC534D2A /* clay-upgraded.png */; };
 		2222FB33FB993F01B28A0B2E /* good-provisions.png in Resources */ = {isa = PBXBuildFile; fileRef = A18662A945570F94F46DEA80 /* good-provisions.png */; };
+		237A1506E8A617E23BFC1D42 /* vessel-cutter-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 15C09F10CAA466A8825D8A7A /* vessel-cutter-upgraded.png */; };
 		23805242F0137FD259B9147F /* good-wheat.png in Resources */ = {isa = PBXBuildFile; fileRef = 2712AA86ADF0E64E8C6FC36A /* good-wheat.png */; };
+		238EAC69B6828904F5C3C730 /* living-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = DD9229F3A9B19CB32AB4EBBD /* living-manifest.json */; };
 		271E445B2EC42E497EA04794 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 688359CF75DAE244FECB76CF /* manifest.json */; };
 		29C286F72B9CE1642355FF19 /* bakery-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 1B3D0C6EAF37F8CEBFDEDE44 /* bakery-unbuilt.png */; };
 		29E897A9463CFF21B00601AF /* Privacy-policy.txt in Resources */ = {isa = PBXBuildFile; fileRef = F1CFEC3F16F059EE0F10D98A /* Privacy-policy.txt */; };
@@ -29,6 +31,7 @@
 		2A6DC37ACD37C690B0947EBC /* resource-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = E5A02441EB19785B0992032A /* resource-manifest.json */; };
 		2AE07CA8F3FF4B14380305A0 /* good-jars.png in Resources */ = {isa = PBXBuildFile; fileRef = 610A2A2779DCF3560B1750C4 /* good-jars.png */; };
 		2BE7F523B618E6EF8D77C404 /* late-town.json in Resources */ = {isa = PBXBuildFile; fileRef = 253AE54DDEE82CB08C7A06D9 /* late-town.json */; };
+		2C607D4F01C941F430131BBC /* person-vendor.png in Resources */ = {isa = PBXBuildFile; fileRef = 72B2F7B4E4D48701A4E7CD9C /* person-vendor.png */; };
 		2CAB06DC6732B6AC8CCFEFC4 /* weaver-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 38A4C63E1CEB3FBCF60DE4BD /* weaver-unbuilt.png */; };
 		2D5DC8899ED9FEBC1EED80B2 /* ferry-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 33F89E0A80BFE3A7F33887A3 /* ferry-ripe.png */; };
 		2EE0B29D3D7FA74B33C3BC0B /* market-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = CA40515FB3D5BA583E7C3CB9 /* market-unbuilt.png */; };
@@ -42,6 +45,7 @@
 		3D707CCBC16DB3538697F8F0 /* good-flour.png in Resources */ = {isa = PBXBuildFile; fileRef = 9B767745731AA272F8469F3C /* good-flour.png */; };
 		40113165C79FB972B295676C /* carpenter-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 584A80767475AFC45DF324D5 /* carpenter-building.png */; };
 		4025266BB62446A2B41E8850 /* boatyard-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = EA83BB0CD301D77473E90CC7 /* boatyard-unbuilt.png */; };
+		402532B78F4CF9C35B86CD20 /* person-docker.png in Resources */ = {isa = PBXBuildFile; fileRef = BDB251B7F74AECDA9ADD7961 /* person-docker.png */; };
 		40F78BE391643C7889CFAEE6 /* orchard-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = CFEAC969CCE1057ED358DE4A /* orchard-ripe.png */; };
 		41040F2390D784950E32A47C /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21138813E847D6A2DCB51792 /* Models.swift */; };
 		43640C24A875A80826C00CC2 /* estate-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = F8A78001B6A682C4D6B1CD22 /* estate-ripe.png */; };
@@ -61,6 +65,7 @@
 		4E2245AD256A60D1954FB706 /* good-tiles.png in Resources */ = {isa = PBXBuildFile; fileRef = 363EC383286E8CFCA3340A7F /* good-tiles.png */; };
 		507809F1ED007109E0A28CA9 /* good-wine.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BCEAFFBEFBD6BE4D194DE73 /* good-wine.png */; };
 		50FE94CC50E1DA1677B154BA /* estate-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = BCB656FE697D7BB5D77A9153 /* estate-upgraded.png */; };
+		511879DC464003EE3F5A7C9F /* guide-elena.png in Resources */ = {isa = PBXBuildFile; fileRef = 9CBBF6814EBFA22DCF726917 /* guide-elena.png */; };
 		5291BDF348D036963AFD398D /* good-oil.png in Resources */ = {isa = PBXBuildFile; fileRef = FF189232EC09F45310EBF3F2 /* good-oil.png */; };
 		53BD91CCED72F323A3DA76CF /* engine-bundle.js in Resources */ = {isa = PBXBuildFile; fileRef = 5E770251AE4C3E477D324725 /* engine-bundle.js */; };
 		56552170499DF787272BA578 /* field-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 5D02799BC1697C15185A2417 /* field-building.png */; };
@@ -70,6 +75,7 @@
 		5DCEE91A2C11D0EABD3B8EFC /* sailmaker-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 424666A061C0832D07126E47 /* sailmaker-unbuilt.png */; };
 		5F63C418977E76346978C45B /* bakery-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 381EEDEE0F2F2129D9CF992F /* bakery-ripe.png */; };
 		602237D992CD5B3620F79923 /* specialist-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = E3AEA5516216FCAC7985A798 /* specialist-unbuilt.png */; };
+		62350D851C6C1687A2A8FCD5 /* vessel-cutter.png in Resources */ = {isa = PBXBuildFile; fileRef = 95B0A2976189431255AF099A /* vessel-cutter.png */; };
 		62E00BD31AFD97877C44B640 /* flaxgarden-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = F674DA5B2BA9746339E85924 /* flaxgarden-upgraded.png */; };
 		65C6E7379E3DC504EF03C96A /* garden-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 2C3BDA81A35BADA196539F11 /* garden-building.png */; };
 		670B8AFF6D83F22F0CA0C6D3 /* market-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 3107A4E2068811C08FCBA259 /* market-upgraded.png */; };
@@ -138,6 +144,7 @@
 		C092634C6490BFA9E7FC58E3 /* home-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 04A008D65FB5455D92B1A238 /* home-built.png */; };
 		C2F94357B28B5174C6F9E1B4 /* terrain.png in Resources */ = {isa = PBXBuildFile; fileRef = 18661657F8DC68A40EFD22A6 /* terrain.png */; };
 		C7A8EC5965E290A570DE7C3D /* fishing-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 9AC8AF742CE6A1A8BABFEEB6 /* fishing-building.png */; };
+		C9ACE48CFCF4BD70F23BB478 /* vessel-coaster-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 27740359B873C0979CB8635C /* vessel-coaster-upgraded.png */; };
 		C9F5507DF76237A9D223235D /* good-olives.png in Resources */ = {isa = PBXBuildFile; fileRef = E69828870656F2E9A657C6FC /* good-olives.png */; };
 		CAAFD51A5431B217545764CE /* GameStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C3496792698D15EC5E15E9 /* GameStoreTests.swift */; };
 		CCA2F53D5B6F114290FE3596 /* estate-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 41B14851BF267286CEBEC928 /* estate-built.png */; };
@@ -152,6 +159,7 @@
 		D803ACBE73045594AEA31182 /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258D297D37B6E94A0360D1ED /* GameStore.swift */; };
 		D8F30EC87D29C091DBBF9FB0 /* square-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E4809C35DA9D2A7A427C964 /* square-ripe.png */; };
 		DEA539D4BAFF5C61EB6D6D3B /* boatyard-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = E41A01748C9F121F358AD212 /* boatyard-ripe.png */; };
+		DF951B4F8F94478C2581B114 /* vessel-coaster.png in Resources */ = {isa = PBXBuildFile; fileRef = 39E9182F6EF242B0DB765ED1 /* vessel-coaster.png */; };
 		DFA4B31EB396DBF6FFF2E74E /* market-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 1E22016E26C222C601E2EC6A /* market-built.png */; };
 		E0EE50900A9408F3D9B83D15 /* market-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = EA070ACCCF0886DF4054DA77 /* market-ripe.png */; };
 		E1AF70F27BDD602D73140E35 /* garden-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = EBA9E43B9943F3177CD45669 /* garden-ripe.png */; };
@@ -169,6 +177,7 @@
 		F17AC2546155EC0EDC9BFA56 /* fishing-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 3BBBEF469D0525ABF71C8367 /* fishing-ripe.png */; };
 		F1BFE9AD4D971AA22FF394D8 /* HarbourScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C784209F2A3F1820681613 /* HarbourScene.swift */; };
 		F1CE258E0B2AAF137169FBA2 /* engine-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = BB90A1DE99EAC4BA1759EB22 /* engine-manifest.json */; };
+		F21752522EA595272BA73186 /* person-farmer.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A12F4DE5C9EFB47FFA5D214 /* person-farmer.png */; };
 		F24B59238EC48463E15D7C2D /* good-bread.png in Resources */ = {isa = PBXBuildFile; fileRef = A6498111D304E385F229191F /* good-bread.png */; };
 		F320F0735F210D03FF74A807 /* lighthouse-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = BB685FB0D9107BCB41D787E8 /* lighthouse-ripe.png */; };
 		F345E3DF75E785A4DA8EE74A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2AB3F92EA33522AF38350534 /* PrivacyInfo.xcprivacy */; };
@@ -210,7 +219,9 @@
 		12ABDFF55959D7B0D6F88098 /* SaveRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveRepositoryTests.swift; sourceTree = "<group>"; };
 		13CF931CEEAE1001EE28E3E1 /* fishing-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-upgraded.png"; sourceTree = "<group>"; };
 		14D569576167276006AE7EDD /* good-coins.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-coins.png"; sourceTree = "<group>"; };
+		15C09F10CAA466A8825D8A7A /* vessel-cutter-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-cutter-upgraded.png"; sourceTree = "<group>"; };
 		18661657F8DC68A40EFD22A6 /* terrain.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = terrain.png; sourceTree = "<group>"; };
+		1A12F4DE5C9EFB47FFA5D214 /* person-farmer.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "person-farmer.png"; sourceTree = "<group>"; };
 		1B3D0C6EAF37F8CEBFDEDE44 /* bakery-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bakery-unbuilt.png"; sourceTree = "<group>"; };
 		1B89C6369F2888E36C92EC9E /* pier-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "pier-built.png"; sourceTree = "<group>"; };
 		1E22016E26C222C601E2EC6A /* market-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "market-built.png"; sourceTree = "<group>"; };
@@ -222,6 +233,7 @@
 		253AE54DDEE82CB08C7A06D9 /* late-town.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "late-town.json"; sourceTree = "<group>"; };
 		258D297D37B6E94A0360D1ED /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		2712AA86ADF0E64E8C6FC36A /* good-wheat.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-wheat.png"; sourceTree = "<group>"; };
+		27740359B873C0979CB8635C /* vessel-coaster-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-coaster-upgraded.png"; sourceTree = "<group>"; };
 		2AB3F92EA33522AF38350534 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2C238B3E1A7E47EB5B43DC26 /* specialist-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "specialist-building.png"; sourceTree = "<group>"; };
 		2C3BDA81A35BADA196539F11 /* garden-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "garden-building.png"; sourceTree = "<group>"; };
@@ -236,6 +248,7 @@
 		38A4C63E1CEB3FBCF60DE4BD /* weaver-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-unbuilt.png"; sourceTree = "<group>"; };
 		38D2C545FA728D8DC6D04051 /* clay-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "clay-ripe.png"; sourceTree = "<group>"; };
 		39E78B779A24CBCDB90B4F71 /* ferry-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "ferry-upgraded.png"; sourceTree = "<group>"; };
+		39E9182F6EF242B0DB765ED1 /* vessel-coaster.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-coaster.png"; sourceTree = "<group>"; };
 		3A71865C741FC5B745C6171E /* weaver-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-ripe.png"; sourceTree = "<group>"; };
 		3AC6EDDB77C810FC2CA9870D /* kiln-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kiln-ripe.png"; sourceTree = "<group>"; };
 		3BBBEF469D0525ABF71C8367 /* fishing-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-ripe.png"; sourceTree = "<group>"; };
@@ -285,6 +298,7 @@
 		6F4AA985637C02571F2C4CFF /* HarbourUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarbourUITests.swift; sourceTree = "<group>"; };
 		6F4C09C57C840523F83598E0 /* boatyard-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boatyard-building.png"; sourceTree = "<group>"; };
 		712C08D0D42FE1D657381EC3 /* carpenter-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-upgraded.png"; sourceTree = "<group>"; };
+		72B2F7B4E4D48701A4E7CD9C /* person-vendor.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "person-vendor.png"; sourceTree = "<group>"; };
 		74304F97C441174AEFC8A4F8 /* good-fish.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-fish.png"; sourceTree = "<group>"; };
 		81AA05F654BC784B5DDC287D /* orchard-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "orchard-unbuilt.png"; sourceTree = "<group>"; };
 		82C784209F2A3F1820681613 /* HarbourScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarbourScene.swift; sourceTree = "<group>"; };
@@ -293,11 +307,13 @@
 		8F81322D747465B10D09A276 /* PresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationTests.swift; sourceTree = "<group>"; };
 		919AD18303E1354065E2B929 /* garden-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "garden-built.png"; sourceTree = "<group>"; };
 		9594FAEBB52EF6099FC42B2A /* boat-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boat-unbuilt.png"; sourceTree = "<group>"; };
+		95B0A2976189431255AF099A /* vessel-cutter.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-cutter.png"; sourceTree = "<group>"; };
 		9757A82889703FE130535BB0 /* sailmaker-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "sailmaker-building.png"; sourceTree = "<group>"; };
 		9A1AD5CD8D68F9EE56A912AF /* carpenter-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-built.png"; sourceTree = "<group>"; };
 		9A2912ACE3D3DBFEE1E3B216 /* mill-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "mill-unbuilt.png"; sourceTree = "<group>"; };
 		9AC8AF742CE6A1A8BABFEEB6 /* fishing-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-building.png"; sourceTree = "<group>"; };
 		9B767745731AA272F8469F3C /* good-flour.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-flour.png"; sourceTree = "<group>"; };
+		9CBBF6814EBFA22DCF726917 /* guide-elena.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "guide-elena.png"; sourceTree = "<group>"; };
 		9F83B79D7857CDA96FC8E091 /* orchard-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "orchard-building.png"; sourceTree = "<group>"; };
 		9F8EE1CE07E531BCFFFD257C /* good-stone.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-stone.png"; sourceTree = "<group>"; };
 		A0341553241BABF1A899ABC9 /* olive-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "olive-upgraded.png"; sourceTree = "<group>"; };
@@ -321,6 +337,7 @@
 		BB685FB0D9107BCB41D787E8 /* lighthouse-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-ripe.png"; sourceTree = "<group>"; };
 		BB90A1DE99EAC4BA1759EB22 /* engine-manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "engine-manifest.json"; sourceTree = "<group>"; };
 		BCB656FE697D7BB5D77A9153 /* estate-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "estate-upgraded.png"; sourceTree = "<group>"; };
+		BDB251B7F74AECDA9ADD7961 /* person-docker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "person-docker.png"; sourceTree = "<group>"; };
 		BDF98975EC1B85B31CCCA41A /* lighthouse-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-unbuilt.png"; sourceTree = "<group>"; };
 		BFB6B886D9863EE488D246E7 /* ferry-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "ferry-built.png"; sourceTree = "<group>"; };
 		C096A57BBB174332F10C7BBE /* good-planks.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-planks.png"; sourceTree = "<group>"; };
@@ -338,6 +355,7 @@
 		D8030236BAEE6A4C4C4C22FD /* field-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "field-built.png"; sourceTree = "<group>"; };
 		DA18D0B941CEB754A04F12F6 /* pier-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "pier-upgraded.png"; sourceTree = "<group>"; };
 		DC655B623831437A1DFC1672 /* boat-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "boat-building.png"; sourceTree = "<group>"; };
+		DD9229F3A9B19CB32AB4EBBD /* living-manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "living-manifest.json"; sourceTree = "<group>"; };
 		DE9A78E19770D3D6015EB2A4 /* weaver-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-upgraded.png"; sourceTree = "<group>"; };
 		DEB94C1ED0B7BC461239E3E0 /* lighthouse-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-built.png"; sourceTree = "<group>"; };
 		DFD59D7C2D5E672D10B7144F /* field-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "field-upgraded.png"; sourceTree = "<group>"; };
@@ -532,6 +550,7 @@
 				2712AA86ADF0E64E8C6FC36A /* good-wheat.png */,
 				6BCEAFFBEFBD6BE4D194DE73 /* good-wine.png */,
 				D093EA0240E76E99A8593EA2 /* good-wood.png */,
+				9CBBF6814EBFA22DCF726917 /* guide-elena.png */,
 				6429EF5D25900CA0020D0801 /* home-building.png */,
 				04A008D65FB5455D92B1A238 /* home-built.png */,
 				69F55610CB7A6002A1331973 /* home-ripe.png */,
@@ -547,6 +566,7 @@
 				BB685FB0D9107BCB41D787E8 /* lighthouse-ripe.png */,
 				BDF98975EC1B85B31CCCA41A /* lighthouse-unbuilt.png */,
 				118F0C07E0C6BD3905E77E39 /* lighthouse-upgraded.png */,
+				DD9229F3A9B19CB32AB4EBBD /* living-manifest.json */,
 				688359CF75DAE244FECB76CF /* manifest.json */,
 				6A6732BE932603C453E95DCF /* market-building.png */,
 				1E22016E26C222C601E2EC6A /* market-built.png */,
@@ -569,6 +589,9 @@
 				CFEAC969CCE1057ED358DE4A /* orchard-ripe.png */,
 				81AA05F654BC784B5DDC287D /* orchard-unbuilt.png */,
 				691E548908DA14A504BA23AD /* orchard-upgraded.png */,
+				BDB251B7F74AECDA9ADD7961 /* person-docker.png */,
+				1A12F4DE5C9EFB47FFA5D214 /* person-farmer.png */,
+				72B2F7B4E4D48701A4E7CD9C /* person-vendor.png */,
 				5665EF0DE3AF773E0550408B /* pier-building.png */,
 				1B89C6369F2888E36C92EC9E /* pier-built.png */,
 				6AD4108957EBADE4B4A4A41A /* pier-ripe.png */,
@@ -591,6 +614,10 @@
 				F9125B2FCCA544704649BC83 /* square-unbuilt.png */,
 				C1F9A538C655C05B9633767F /* square-upgraded.png */,
 				18661657F8DC68A40EFD22A6 /* terrain.png */,
+				27740359B873C0979CB8635C /* vessel-coaster-upgraded.png */,
+				39E9182F6EF242B0DB765ED1 /* vessel-coaster.png */,
+				15C09F10CAA466A8825D8A7A /* vessel-cutter-upgraded.png */,
+				95B0A2976189431255AF099A /* vessel-cutter.png */,
 				87185CC8050B9D923AAEB5A9 /* waterfront-building.png */,
 				D72CB13F02DA2B5F186EB2C2 /* waterfront-built.png */,
 				456899F7EBBCEE1EB1A20119 /* waterfront-ripe.png */,
@@ -827,6 +854,7 @@
 				23805242F0137FD259B9147F /* good-wheat.png in Resources */,
 				507809F1ED007109E0A28CA9 /* good-wine.png in Resources */,
 				43A3AB466EA824AE49CDB339 /* good-wood.png in Resources */,
+				511879DC464003EE3F5A7C9F /* guide-elena.png in Resources */,
 				A68C0F39081F901C9E730B52 /* home-building.png in Resources */,
 				C092634C6490BFA9E7FC58E3 /* home-built.png in Resources */,
 				BE0B653DBA54545A4D748C7F /* home-ripe.png in Resources */,
@@ -842,6 +870,7 @@
 				F320F0735F210D03FF74A807 /* lighthouse-ripe.png in Resources */,
 				8976940D949976C1A65E0669 /* lighthouse-unbuilt.png in Resources */,
 				44DCCD35D57C339C15A8AC87 /* lighthouse-upgraded.png in Resources */,
+				238EAC69B6828904F5C3C730 /* living-manifest.json in Resources */,
 				271E445B2EC42E497EA04794 /* manifest.json in Resources */,
 				8D90AEA6936EA81B21919709 /* market-building.png in Resources */,
 				DFA4B31EB396DBF6FFF2E74E /* market-built.png in Resources */,
@@ -864,6 +893,9 @@
 				40F78BE391643C7889CFAEE6 /* orchard-ripe.png in Resources */,
 				708763A092D9A888BA6AEB74 /* orchard-unbuilt.png in Resources */,
 				9BD83DE6146F4F43C50EF46F /* orchard-upgraded.png in Resources */,
+				402532B78F4CF9C35B86CD20 /* person-docker.png in Resources */,
+				F21752522EA595272BA73186 /* person-farmer.png in Resources */,
+				2C607D4F01C941F430131BBC /* person-vendor.png in Resources */,
 				698DF324DFCDF4B30AD354B0 /* pier-building.png in Resources */,
 				ECFB64D0A4D12F11C1DAC24C /* pier-built.png in Resources */,
 				E9BD6D570431A287467F3C2D /* pier-ripe.png in Resources */,
@@ -886,6 +918,10 @@
 				8B4393499A29045189CCA6F2 /* square-unbuilt.png in Resources */,
 				8D4D8358374D4543C21CADFF /* square-upgraded.png in Resources */,
 				C2F94357B28B5174C6F9E1B4 /* terrain.png in Resources */,
+				C9ACE48CFCF4BD70F23BB478 /* vessel-coaster-upgraded.png in Resources */,
+				DF951B4F8F94478C2581B114 /* vessel-coaster.png in Resources */,
+				237A1506E8A617E23BFC1D42 /* vessel-cutter-upgraded.png in Resources */,
+				62350D851C6C1687A2A8FCD5 /* vessel-cutter.png in Resources */,
 				E9BCA5E924CAF7DD4E96FA14 /* waterfront-building.png in Resources */,
 				BAB4996D63FF272F3AFFCB3F /* waterfront-built.png in Resources */,
 				91FBF327DC95B31E1B12404D /* waterfront-ripe.png in Resources */,
@@ -1030,7 +1066,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1119,7 +1155,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;

@@ -84,7 +84,7 @@ import UIKit
     }
     func testCameraPreferencesRejectUnknownVersionsAndUnsafeCoordinates() throws {
         for value in [
-            MapViewport(version: 2, x: 900, y: 1350, scale: 1, region: nil),
+            MapViewport(version: 3, x: 900, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: -1, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 0, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 1, region: "unknown")
@@ -139,6 +139,57 @@ import UIKit
         XCTAssertEqual(scene.cameraNode.position.x, scene.mapPosition(mill).x, accuracy: 0.01)
         // Keep the full viewport on the map if the site's centre is near an edge.
         XCTAssertLessThan(abs(scene.cameraNode.position.y - scene.mapPosition(mill).y), 560)
+    }
+
+    func testWiderMapMigratesOldViewportAndKeepsEconomyUnchanged() throws {
+        let old = MapViewport(version: 1, x: 900, y: 1350, scale: 8, region: nil)
+        XCTAssertEqual(MapViewport.decode(try JSONEncoder().encode(old)), old)
+        let edge = MapViewport(version: 2, x: -250, y: 3000, scale: 16, region: nil)
+        XCTAssertEqual(MapViewport.decode(try JSONEncoder().encode(edge)), edge)
+        let engine = try EngineRuntime(), before = try engine.save()
+        let scene = HarbourScene(size: CGSize(width: 400, height: 700))
+        scene.apply(try engine.snapshot(), selected: nil)
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2700, "Hillside shortcut must not expose a sea strip above the land")
+        scene.zoom(100)
+        XCTAssertEqual(scene.cameraNode.xScale, 16)
+        XCTAssertEqual(scene.cameraNode.position, CGPoint(x: 900, y: 1350))
+        scene.zoom(0.01); scene.pan(by: CGPoint(x: 100000, y: 100000))
+        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.x, -300)
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y, 3050)
+        XCTAssertEqual(try engine.save(), before)
+    }
+    func testPeopleFollowTownDevelopmentPauseAndReducedMotion() throws {
+        let engine = try EngineRuntime(), scene = HarbourScene(size: CGSize(width: 400, height: 700))
+        scene.apply(try engine.snapshot(), selected: nil)
+        XCTAssertEqual(TownResident.routes(in: try engine.snapshot()).count, 2)
+        let farmer = try XCTUnwrap(scene.world.childNode(withName: "resident-farmer")), initial = farmer.position
+        scene.update(1); scene.update(1.1); XCTAssertNotEqual(farmer.position, initial)
+        try engine.call("speed", [0]); scene.apply(try engine.snapshot(), selected: nil)
+        let paused = farmer.position; scene.update(2); scene.update(3); XCTAssertEqual(farmer.position, paused)
+        try engine.call("speed", [1]); scene.reduceMotion = true; scene.apply(try engine.snapshot(), selected: nil)
+        let still = farmer.position; scene.update(4); scene.update(5); XCTAssertEqual(farmer.position, still)
+        try engine.load(Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json"))))
+        scene.apply(try engine.snapshot(), selected: nil)
+        XCTAssertGreaterThan(TownResident.routes(in: try engine.snapshot()).count, 2)
+        XCTAssertNotNil(scene.world.childNode(withName: "resident-docker"))
+        XCTAssertNotNil(scene.world.childNode(withName: "resident-trader"))
+    }
+    func testBuildingRoofsCanBeSelectedAndEmptySeaCannot() throws {
+        let snapshot = try EngineRuntime().snapshot(), scene = HarbourScene(size: CGSize(width: 400, height: 700))
+        scene.apply(snapshot, selected: nil); scene.zoom(0.2)
+        let mill = try XCTUnwrap(snapshot.entities.first { $0.id == "mill" }), position = scene.mapPosition(mill)
+        XCTAssertEqual(scene.site(at: CGPoint(x: position.x, y: position.y + 120))?.id, "mill")
+        XCTAssertNil(scene.site(at: CGPoint(x: -250, y: -300)))
+    }
+    func testGuidePeopleAndDistinctFleetArtworkArePackaged() throws {
+        var data = Set<Data>()
+        for name in ["guide-elena", "person-farmer", "person-docker", "person-vendor", "vessel-cutter", "vessel-cutter-upgraded", "vessel-coaster", "vessel-coaster-upgraded"] {
+            let url = try XCTUnwrap(Bundle.main.url(forResource: name, withExtension: "png"))
+            let bytes = try Data(contentsOf: url); data.insert(bytes)
+            let image = try XCTUnwrap(UIImage(data: bytes)?.cgImage)
+            XCTAssertEqual(image.width, 512); XCTAssertNotEqual(image.alphaInfo, .none)
+        }
+        XCTAssertEqual(data.count, 8)
     }
 
 }

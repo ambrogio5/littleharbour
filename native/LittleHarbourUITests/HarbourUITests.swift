@@ -135,7 +135,7 @@ import XCTest
         let explore = XCTAttachment(screenshot: app.screenshot()); explore.name = "Painted district guide"; explore.lifetime = .keepAlways; add(explore)
         app.buttons["Home harbour"].tap()
         let coast = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); coast.name = "Painted developed harbour"; coast.lifetime = .keepAlways; add(coast)
-        app.buttons["Explore"].tap(); app.buttons["Whole town"].tap()
+        app.buttons["Explore"].tap(); app.buttons["explore-all"].tap()
         let town = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); town.name = "Painted whole town"; town.lifetime = .keepAlways; add(town)
         app.buttons["nav-Build"].tap()
         XCTAssertTrue(app.staticTexts["Build"].firstMatch.waitForExistence(timeout: 5))
@@ -183,6 +183,39 @@ import XCTest
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Your town belongs to you")).firstMatch.exists)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .trait])
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Offline privacy policy"; screenshot.lifetime = .keepAlways; add(screenshot)
+    }
+
+    func testGuideGivesOneNextActionAndTracksProduction() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["objective"].waitForExistence(timeout: 20)); app.buttons["objective"].tap()
+        XCTAssertTrue(app.staticTexts["next-step-title"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["next-step-title"].label, "Harvest & replant")
+        XCTAssertFalse(app.textFields["Search actions"].exists)
+        let before = XCTAttachment(screenshot: app.screenshot()); before.name = "Elena clear next step"; before.lifetime = .keepAlways; add(before)
+        let harvest = app.buttons["harvest"]; XCTAssertTrue(harvest.isHittable); harvest.tap()
+        XCTAssertEqual(app.staticTexts["next-step-title"].label, "Mill flour")
+        XCTAssertFalse(app.buttons["harvest"].exists)
+        let after = XCTAttachment(screenshot: app.screenshot()); after.name = "Guide follows the real production chain"; after.lifetime = .keepAlways; add(after)
+    }
+    func testActivityNavigationSwitchesWithoutReturningToMap() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["nav-Production"].tap()
+        let trade = app.buttons["inspector-nav-Trade"].exists ? app.buttons["inspector-nav-Trade"] : app.buttons["nav-Trade"]
+        trade.tap(); XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
+        let build = app.buttons["inspector-nav-Build"].exists ? app.buttons["inspector-nav-Build"] : app.buttons["nav-Build"]
+        build.tap(); XCTAssertTrue(app.staticTexts["Build"].firstMatch.waitForExistence(timeout: 5))
+        let next = app.buttons["toolbar-next-step"].exists ? app.buttons["toolbar-next-step"] : app.buttons["show-next-step"]
+        next.tap(); XCTAssertEqual(app.staticTexts["next-step-title"].label, "Harvest & replant")
+    }
+    func testPausedGuideExplainsHowToResumeAndWholeTownFits() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["fit-town"].waitForExistence(timeout: 20)); app.buttons["fit-town"].tap()
+        let map = app.otherElements["world-map"], fitted = map.value as? String
+        app.buttons["Zoom out"].tap(); XCTAssertNotEqual(map.value as? String, fitted)
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["objective"].tap()
+        let resume = app.buttons["guidance-resume"]
+        for _ in 0..<4 { if resume.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(resume.isHittable); resume.tap(); XCTAssertFalse(resume.exists)
     }
 
 }
