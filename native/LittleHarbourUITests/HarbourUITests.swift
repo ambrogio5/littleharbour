@@ -250,6 +250,7 @@ import XCTest
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
         app.buttons["Town"].tap(); app.buttons["town-ambitions"].tap()
+        XCTAssertTrue(app.staticTexts["Choose what your harbour becomes"].waitForExistence(timeout: 5))
         let goals = XCTAttachment(screenshot: app.screenshot()); goals.name = "Three optional town ambitions"; goals.lifetime = .keepAlways; add(goals)
         let industry = app.buttons["direction-industry"]
         for _ in 0..<12 { if industry.exists && industry.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
@@ -268,7 +269,10 @@ import XCTest
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
-        app.buttons["Town"].tap(); app.buttons["Fleet"].tap(); app.buttons["boat-selector-1"].tap()
+        app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        let boat = app.buttons["boat-selector-1"]
+        XCTAssertTrue(boat.waitForExistence(timeout: 5)); boat.tap()
+        XCTAssertTrue(boat.isSelected, "The whole boat card must select its berth")
         let type = app.segmentedControls["mission-type"]
         for _ in 0..<8 { if type.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         type.buttons["Circuit"].tap()

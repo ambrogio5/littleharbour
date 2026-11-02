@@ -113,6 +113,7 @@ struct FleetPanel: View {
                             }.frame(maxWidth: .infinity).padding(8)
                                 .background(slot == berth ? HarbourTheme.sea.opacity(0.14) : .white.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
                                 .overlay { RoundedRectangle(cornerRadius: 14).stroke(slot == berth ? HarbourTheme.sea : .clear, lineWidth: 2) }
+                                .contentShape(Rectangle())
                         }.buttonStyle(.plain).accessibilityIdentifier("boat-selector-\(berth)").accessibilityAddTraits(slot == berth ? .isSelected : [])
                     }
                 }
