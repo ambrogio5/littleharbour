@@ -1,0 +1,276 @@
+import Foundation
+
+struct HarbourAction: Decodable, Identifiable {
+    let id, category, title, detail, reason: String
+    let enabled, destructive: Bool
+    let goal: String?
+}
+struct WorldEntity: Decodable, Identifiable {
+    let id, zone, kind, label, stage: String
+    let x, y: Double
+    let level: Int
+    let ripe: Bool?
+    let tab, select: String?
+    var displayLabel: String {
+        guard id.hasPrefix("plot"), stage != "unbuilt" else { return label }
+        return ["home": "Town house", "carpenter": "Carpenter", "weaver": "Weaving studio", "sailmaker": "Sail loft", "square": "Public square", "flaxgarden": "Flax garden"][kind] ?? label
+    }
+    var texture: String {
+        let type: String
+        switch id {
+        case "specialist": type = "specialist"
+        case "kiln": type = "kiln"
+        case "claypit": type = "clay"
+        case "courtyard", "civic": type = "square"
+        default: type = kind
+        }
+        let phase = stage == "unbuilt" || stage == "building" ? stage : (ripe == true ? "ripe" : (level > 1 ? "upgraded" : "built"))
+        return type + "-" + phase
+    }
+    var category: String {
+        if tab == "festival" { return "Festival" }
+        if id == "pier" { return stage == "unbuilt" ? "Build" : "Trade" }
+        if id == "waterfront" { return "Waterfront" }
+        if id == "lighthouse" { return "Lighthouse" }
+        if id == "ferry" { return "Ferry" }
+        if id == "civic" { return "Residents" }
+        if ["specialist", "boatyard", "estate"].contains(id) && stage == "unbuilt" || (["olive", "fishing"].contains(id) && stage == "unbuilt") { return "Build" }
+        if id == "boat0" || id == "boat1" { return "Fleet" }
+        if stage == "built", ["kiln", "claypit", "terrace0", "terrace1", "boatyard", "estate"].contains(id) { return "Production" }
+        if id.hasPrefix("plot"), stage == "built", ["carpenter", "weaver", "sailmaker", "flaxgarden"].contains(kind) { return "Production" }
+        if id.hasPrefix("plot") { return "Neighbourhood" }
+        if tab == "market" { return "Market" }
+        if tab == "inland" { return "Inland" }
+        return "Production"
+    }
+}
+struct NextStep: Decodable {
+    struct Requirement: Decodable, Identifiable { let item: String; let required, available: Int; var id: String { item } }
+    let title, body, category: String
+    let actionID, siteID: String?
+    let choices: [String]
+    let waiting: Bool
+    let requirements: [Requirement]
+}
+struct Objective: Decodable {
+    let title, description, chapterName: String
+    let chapter: Int
+    let target: String?
+}
+struct ProductionJob: Decodable, Identifiable {
+    let id, name: String
+    let left, duration: Double
+}
+struct LivingTown: Decodable {
+    let axes: [String: Int]
+    let season, choiceCount: Int
+}
+struct WorldStyle: Decodable {
+    let identity: String
+    let oliveDensity, lanterns, marketStalls, tradeTraffic, repairedFacades: Int
+}
+struct TownEvent: Decodable {
+    struct Option: Decodable, Identifiable { let id, label: String }
+    let title, description: String
+    let options: [Option]
+}
+struct Boat: Decodable {
+    struct RepeatRoute: Decodable { let route: String; let tier: Int }
+    let `repeat`: RepeatRoute?
+    struct Trip: Decodable {
+        let left, duration: Double; let route: String; let ferry: Bool?
+        var progress: Double { max(0, min(1, 1 - left / max(0.001, duration))) }
+        var outward: Bool { progress < 0.5 }
+    }
+    let type: String
+    let upgrade: String?
+    let sails: Bool?
+    let trip: Trip?
+    var artwork: String { "vessel-" + type + (upgrade != nil || sails == true ? "-upgraded" : "") }
+    var sailingArtwork: String { artwork + (trip?.outward == true ? "-outbound" : "-homebound") }
+}
+struct WorkshopState: Decodable { let target, stock, incoming: Int; let item, status: String }
+struct TownDirection: Decodable, Identifiable {
+    let id, title, goal, body, category: String
+    let progress, total: Int
+    let choices: [String]
+    let unlocked: Bool
+    let siteID: String?
+}
+struct FestivalState: Decodable {
+    struct Supply: Decodable, Identifiable {
+        let item: String
+        let required, available, incoming: Int
+        var id: String { item }
+    }
+    let unlocked: Bool
+    let stage, orders: Int
+    let choice: String?
+    let visits: [String: Int]
+    let title, body: String
+    let requirements: [Supply]
+}
+struct HarbourSnapshot: Decodable {
+    let festival: FestivalState
+    let workshops: [String: WorkshopState]
+    let directions: [TownDirection]
+    let townFocus: String?
+    let berthCount: Int
+    let coins, speed, deliveries: Int
+    let seconds: Double
+    let stock: [String: Int]
+    let jobs: [ProductionJob]
+    let objective: Objective
+    let guidance: NextStep
+    let entities: [WorldEntity]
+    let actions: [HarbourAction]
+    let evolution: LivingTown
+    let style: WorldStyle
+    let event: TownEvent?
+    let log: [String]
+    let boats: [Boat?]
+    func artwork(for entity: WorldEntity) -> String {
+        guard entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)), boats.indices.contains(slot), let boat = boats[slot] else { return entity.texture }
+        return boat.artwork
+    }
+    var categories: [String] {
+        let order = ["Festival", "Production", "Queues", "Trade", "Build", "Contracts", "Waterfront", "Market", "Inland", "Fleet", "Circuits", "Lighthouse", "Destinations", "Neighbourhood", "Town layout", "Residents", "Ferry", "Refits", "Automation", "Reservations"]
+        return order.filter { category in actions.contains { $0.category == category } }
+    }
+}
+struct ProjectPlan: Decodable {
+    struct Requirement: Decodable, Identifiable {
+        let item: String
+        let required, available, incoming, missing: Int
+        var id: String { item }
+    }
+    struct Recipe: Decodable, Identifiable {
+        let key, station: String
+        let batches, queueable: Int
+        let seconds: Double
+        var id: String { key }
+        var name: String {
+            ["field":"Grow wheat", "mill":"Mill flour", "bakery":"Bake bread", "press":"Press olive oil", "saw":"Saw planks", "fittings":"Make boat fittings", "orchard0":"Harvest upper orchard", "garden0":"Harvest upper garden", "orchard1":"Harvest lower orchard", "garden1":"Harvest lower garden"][key] ?? key.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression).capitalized
+        }
+    }
+    struct Blocker: Decodable { let message: String }
+    let title: String
+    let ready: Bool
+    let requirements: [Requirement]
+    let recipes: [Recipe]
+    let blockers: [Blocker]
+}
+let goodsNames = ["wheat":"Wheat", "flour":"Flour", "bread":"Bread", "olives":"Olives", "oil":"Olive oil", "fish":"Fish", "wood":"Timber", "stone":"Stone", "planks":"Planks", "boatparts":"Boat fittings", "grapes":"Grapes", "wine":"Wine", "provisions":"Provisions", "clay":"Clay", "fruit":"Fruit", "vegetables":"Vegetables", "jars":"Jars", "tiles":"Tiles", "preserves":"Preserves", "flax":"Flax", "cloth":"Cloth", "furniture":"Furniture", "sails":"Sails"]
+
+extension HarbourAction {
+    // Match structured engine arguments rather than translated display text.
+    var invocation: (String, [Any])? {
+        guard let raw = try? JSONSerialization.jsonObject(with: Data(id.utf8)) as? [Any], raw.count == 2,
+              let name = raw[0] as? String, let args = raw[1] as? [Any] else { return nil }
+        return (name, args)
+    }
+    var verb: String {
+        guard let (name, _) = invocation else { return "Continue" }
+        if name == "festivalPrepare" { return "Prepare courtyard" }
+        if name == "festivalSupply" { return "Contribute supplies" }
+        if name == "festivalCelebrate" { return "Open the festival" }
+        if name == "festivalOrder" { return "Fulfil request" }
+        if name == "harvestReplant" { return "Harvest & replant" }
+        if name == "start" { return "Start production" }
+        if name.hasPrefix("dispatch") { return "Send shipment" }
+        if name.hasPrefix("startFerry") { return "Launch service" }
+        if name.hasPrefix("startVoyage") || name == "startCircuit" { return "Set sail" }
+        if name.hasPrefix("build") || name == "invest" { return "Start building" }
+        if name.hasPrefix("fund") { return "Fund project" }
+        if name.hasPrefix("select") || name.hasPrefix("choose") { return "Choose" }
+        if name.hasPrefix("buy") { return "Purchase" }
+        if name.hasPrefix("upgrade") || name.hasPrefix("install") { return "Upgrade" }
+        if name.hasPrefix("cancel") || name == "abandonContract" { return "Review cancellation" }
+        if name.hasPrefix("remove") { return "Review redevelopment" }
+        if name.hasPrefix("deliver") || name.hasPrefix("supply") { return "Deliver supplies" }
+        return "Continue"
+    }
+    func belongs(to site: WorldEntity?) -> Bool {
+        guard let site, let (name, args) = invocation else { return true }
+        let first = args.first as? String ?? ""
+        if site.id == "field" { return name == "harvestReplant" || first == "field" }
+        let recipes: [String: [String]] = ["mill":["mill"], "bakery":["bakery"], "olive":["olives","press"], "fishing":["fishing"], "boatyard":["saw","fittings"], "estate":["grapes","wine"], "kiln":["jars","tiles","fruitPreserves","vegetablePreserves"], "claypit":["clay"], "terrace0":["orchard0","garden0"], "terrace1":["orchard1","garden1"], "carpenter":["furniture"], "weaver":["cloth"], "sailmaker":["sails"], "flaxgarden":["flax"]]
+        if name == "start" || name == "setTarget" { return recipes[site.id.hasPrefix("plot") ? site.kind : site.id]?.contains(first) == true }
+        if site.id.hasPrefix("plot"), let plot = Int(site.id.dropFirst(4)) { return (args.first as? Int) == plot }
+        if ["boat0", "boat1"].contains(site.id), let berth = Int(site.id.dropFirst(4)) { return (args.first as? Int) == berth }
+        if name == "build" { return first == site.id }
+        if site.id == "pier" { return name == "upgrade" || category == "Trade" }
+        // A system panel is already scoped to its harbour district.
+        return category == site.category && !["Production", "Build", "Neighbourhood", "Fleet"].contains(category)
+    }
+}
+
+
+/// Device-local presentation state, independent of the economic save envelope.
+struct MapViewport: Codable, Equatable {
+    let version: Int
+    let x, y, scale: Double
+    let region: String?
+    var isValid: Bool {
+        let knownRegion = region.map { ["all", "inland", "neighbourhood", "market", "coast", "harbour"].contains($0) } ?? true
+        let withinBounds = version == 1 ? (0...1800).contains(x) && (0...2700).contains(y)
+            : version == 2 ? (-300...2100).contains(x) && (-350...3050).contains(y)
+            : (-2450...3550).contains(x) && (-650...3350).contains(y)
+        return [1, 2, 3].contains(version) && x.isFinite && y.isFinite && scale.isFinite
+            && withinBounds && (0.65...64).contains(scale)
+            && knownRegion
+    }
+    static func decode(_ data: Data?) -> MapViewport? {
+        guard let data, data.count <= 1024, let value = try? JSONDecoder().decode(Self.self, from: data), value.isValid else { return nil }
+        return value
+    }
+}
+
+/// Deterministic label collision handling: selection first, then ready work.
+struct MapLabelLayout {
+    struct Candidate { let id: String; let frame: CGRect; let priority: Int }
+    static func visible(_ candidates: [Candidate]) -> Set<String> {
+        var occupied: [CGRect] = [], result = Set<String>()
+        for candidate in candidates.sorted(by: { $0.priority == $1.priority ? $0.id < $1.id : $0.priority > $1.priority }) {
+            guard !occupied.contains(where: { $0.intersects(candidate.frame) }) else { continue }
+            occupied.append(candidate.frame); result.insert(candidate.id)
+        }
+        return result
+    }
+}
+
+/// Cosmetic town life follows built sites; it never spends or produces resources.
+struct TownResident {
+    let id, artwork: String
+    let start, end: CGPoint
+    let duration, offset: Double
+    static func routes(in snapshot: HarbourSnapshot) -> [TownResident] {
+        let built = Set(snapshot.entities.filter { $0.stage == "built" || $0.stage == "upgraded" || $0.stage == "ripe" }.map(\.id))
+        var routes = [
+            TownResident(id: "farmer", artwork: "person-farmer", start: CGPoint(x: 560, y: 540), end: CGPoint(x: 780, y: 640), duration: 19, offset: 0.2),
+            TownResident(id: "baker", artwork: "person-vendor", start: CGPoint(x: 970, y: 975), end: CGPoint(x: 1200, y: 975), duration: 22, offset: 0.6)
+        ]
+        if built.contains("pier") { routes.append(.init(id: "docker", artwork: "person-docker", start: CGPoint(x: 720, y: 2050), end: CGPoint(x: 900, y: 2100), duration: 24, offset: 0.4)) }
+        if snapshot.entities.contains(where: { $0.kind == "market" && $0.stage == "built" }) { routes.append(.init(id: "trader", artwork: "person-vendor", start: CGPoint(x: 1320, y: 1325), end: CGPoint(x: 1480, y: 1325), duration: 23, offset: 0.8)) }
+        if snapshot.entities.contains(where: { $0.kind == "home" && $0.stage != "unbuilt" && $0.stage != "building" }) { routes.append(.init(id: "neighbour", artwork: "person-farmer", start: CGPoint(x: 430, y: 1170), end: CGPoint(x: 450, y: 1510), duration: 29, offset: 0.3)) }
+        return routes
+    }
+}
+
+extension HarbourAction {
+    var boatSlot: Int? { invocation?.1.first as? Int }
+    func matches(_ function: String, boat: Int) -> Bool { invocation?.0 == function && boatSlot == boat }
+}
+
+/// Presentation-only coastal journey. Both legs use their true tangent for the wake.
+struct VesselPose {
+    let position: CGPoint
+    let heading: CGFloat
+    static func at(slot: Int, trip: Boat.Trip) -> VesselPose {
+        let distance: Double = trip.route == "quarry" ? 850 : 1350
+        let excursion = sin(trip.progress * .pi)
+        let dx = distance * 0.55
+        return .init(position: CGPoint(x: 1630 + excursion * dx, y: Double(600 - slot * 240) + excursion * distance),
+                     heading: atan2(distance, dx) + (trip.outward ? 0 : .pi))
+    }
+}

@@ -1,5 +1,7 @@
 # Little Harbour — V4 / Playtest 19
 
+Native iPhone/iPad beta source and the committed Xcode project are in [`native/`](native/README.md). The native v0.2 update adds painted Mediterranean sprites and a redesigned management UI; see its [graphics/UX report](native/docs/GRAPHICS-UX.md), build instructions and remaining release requirements. The browser game below retains its existing engine and saves.
+
 ## Roadmap increment · v0.20.0
 
 This version protects unreadable/future saves with exact-byte export and verified device backups, requires passing Node/browser/packaging checks before Pages publication, and uses one runtime stylesheet. Autosave checkpoints are 15 seconds with immediate action and lifecycle flushes; rendering never writes saves.
@@ -15,7 +17,7 @@ A solo browser prototype for an original premium Mediterranean town-building gam
 
 Play the [hosted game](https://little-harbour-prototype.ambrogiocremona.chatgpt.site). Source and development history are mirrored to [ambrogio5/littleharbour](https://github.com/ambrogio5/littleharbour).
 
-Run `npm run standalone`, then open the generated `Little-Harbour-V3-Playtest.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS distribution is not implemented.
+Run `npm run standalone`, then open the generated `Little-Harbour-V3-Playtest.html` next to the project folder in a modern desktop Safari or Chrome browser. It contains all code and artwork and requires no installation or network connection. The source application in `dist/` uses JavaScript modules and is intended to be served over HTTP. Native iOS/iPadOS source is available in `native/`; signed distribution is not yet prepared.
 
 The opening panel explains the loop. Follow “Show next step” below the map whenever you need direction. Drag the unified map in any direction; pinch or use + / − to zoom. Whole town fits all areas, Home returns to the harbour, and the minimap jumps between districts. On phones, production controls sit below the map. The Back to map button returns to the settlement.
 

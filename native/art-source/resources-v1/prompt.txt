@@ -1,0 +1,13 @@
+Use case: stylized-concept. Asset type: one production game resource-icon sprite atlas for Little Harbour, a premium-looking cosy Mediterranean town-building game. Generate one portrait 4-column by 6-row atlas on a genuinely transparent background. Every cell contains exactly one fully isolated resource icon, centred with generous transparent gutters; no object crosses its cell. No labels, lettering, badges, UI panels, frames, checkerboard or scenery.
+
+Style: exquisite hand-painted 2.5D game inventory objects, sculptural readable silhouettes, warm natural Mediterranean daylight from upper left, terracotta / golden wheat / olive green / linen / turquoise accents, subtle soft contact shadows. Painterly realism with slightly generous proportions, clearly readable at 32 pixels. Match sunlit limestone villages and terracotta roofs, not glossy plastic or flat vector emoji. All objects at the same three-quarter viewing angle, consistent scale and lighting, each filling about 70% of its square cell. Each composite item should be a connected compact cluster with no stray decorative debris.
+
+Exact cell order, left to right, then top to bottom:
+Row 1: a tied sheaf of golden wheat; an open cream linen sack of white flour; two rustic golden sourdough loaves; two silver-blue fresh fish on a compact reed tray.
+Row 2: a small wicker basket of green and black olives; a small green glass bottle of golden olive oil; a rich purple grape bunch with a single leaf; a dark wine bottle beside a small red-wine goblet.
+Row 3: a compact bundle of rough timber logs; a neatly stacked bundle of sawn wooden planks; three rough pale limestone blocks; three compact ochre clay lumps.
+Row 4: a stack of curved terracotta roof tiles; two empty terracotta storage jars; a tied bundle of flowering flax stems; a folded roll of blue woven cloth.
+Row 5: a neatly folded cream canvas sail with coiled rope; a compact wooden ship's pulley and bronze fittings; a wicker basket of oranges and peaches; a wicker basket of leafy greens and carrots.
+Row 6: two glass preserves jars with cloth caps and visible orange jam; a compact provision basket containing bread, a cheese wedge and vegetables; a small elegant wooden chair and matching stool; a small stack of warm gold trade coins.
+
+Keep all 24 cells distinct and in this exact order. Pure transparent alpha between icons and at all outer margins. No people. No words or numbers. The output is source art for deterministic cropping into individual resource icons, so maintain a regular 4 by 6 layout and generous spacing.

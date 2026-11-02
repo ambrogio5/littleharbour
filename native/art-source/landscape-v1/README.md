@@ -1,0 +1,7 @@
+# Extended Mediterranean surroundings
+
+Generated with the built-in image-generation tool in referenced-image edit mode. The exact prompts are in `prompts.txt`. `surround-portrait.png` extends the original `Resources/Art/terrain.png`; `surround-wide.png` extends that result horizontally. Both generated originals are retained without retouching. The wide 1536×1024 PNG is copied unchanged to `Resources/Art/terrain-surround.png`.
+
+SpriteKit places this background in world rectangle (-2450, -650, 6000, 4000), behind the original 1800×2700 playable terrain. A roughly 100-unit shader feather blends the original image boundary. The original terrain, independent buildings, anchors, saved plots and economic land remain unchanged. Camera limits account for the entire visible rectangle so panning/zooming cannot expose the outer bitmap edge. Device-local viewport version 3 accepts and clamps older version 1/2 preferences; town saves retain their existing schemas.
+
+The surroundings are decorative terrain, not newly purchasable plots. They provide woodland, hills, coast and sea beyond the old hard rectangle. Generated outpainting is approximate, rather than a surveyed geographic continuation. The background has less detail per world unit than the central town. Prompts, source and runtime texture hashes are checked by `native/scripts/verify-art.mjs`; ordinary owner provenance/art approval remains part of release review.

@@ -1,0 +1,19 @@
+{
+  "mode": "referenced-image edit / outpainting",
+  "worldRect": {
+    "x": -2450,
+    "y": -650,
+    "width": 6000,
+    "height": 4000
+  },
+  "hashes": {
+    "native/art-source/landscape-v1/prompts.txt": "febc1244893af44ca3e6b6d4fea491e15283f6c4a80f0a9336f08c6648ff4be0",
+    "native/art-source/landscape-v1/surround-portrait.png": "fc16dce11018137dbfffab8bc05136339840c84423c89be68e604f685e745f1d",
+    "native/art-source/landscape-v1/surround-wide.png": "ae669b7713680a0ea02e1c1445c7d2109434c97d4fb2e3d71bb4ed935cc66550"
+  },
+  "outputHashes": {
+    "terrain-surround": "ae669b7713680a0ea02e1c1445c7d2109434c97d4fb2e3d71bb4ed935cc66550"
+  },
+  "width": 1536,
+  "height": 1024
+}

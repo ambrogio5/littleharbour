@@ -1,0 +1,25 @@
+# Landscape and open-play improvements — builds 6–8
+
+The owner’s iPhone Duo landscape screenshot showed large chrome, duplicate guidance, a narrow rectangular map and long fleet action lists. This revision targets those issues without modifying deployed browser sources or the economy.
+
+## Player-facing changes
+
+- Wide windows use a single compact toolbar and a 44-point navigation bar. The inspector is 34% of available width, capped at 360 points, with compact headings, site art and inventory. Touch targets remain at least 44 points. Safe areas remain reserved for system controls. Accessibility text uses the more spacious panel layout.
+- Elena no longer appears twice in a wide layout. Her detailed supply list can expand when needed. Focused optional goals hide irrelevant search/filter controls and move the map to the current production site.
+- Painted woodland, hills, coast and sea extend beyond the original map. The original buildings and playable land retain their anchors. The viewport is bounded by the surrounding artwork, including its edges at maximum zoom-out. Version 1/2 camera settings are accepted by the version-3 presentation reader and clamped safely. The canonical economy remains browser version 13. Native version 2 stores the optional Keep 24 extension; native version 1 remains supported.
+- Automatic stock targets are alongside each unlocked production recipe: Off, Keep 6, Keep 12 and Keep 24. Current stock, queued output and waiting/paused status explain what automation is doing. Normal ingredient costs, existing reservations and queue rules still apply. The separate automation destination is removed from the town menu. Keep 24 uses the original production worker, costs and queue limits; it increases the stored-goods target, not queue slots. Native version 2 persists the validated target override while retaining a browser-compatible town. Browser exports cap that target at 12 and disclose the change; the native town is not changed by export.
+- Moving hulls use separate outward/homeward artwork, and their wakes follow the travel tangent. Upright masts and labels are preserved; pause and Reduced Motion remain respected.
+- Fleet begins with two berth cards. Pick a boat, choose cargo/circuit/ferry, choose a destination and cargo size, then review one mission and launch it. Merely selecting a boat or mission does not spend resources. Repeat cargo routes, their stop control, upgrades and confirmed recall belong to the selected boat. Terminal construction is still available from Ferry. The separate Circuits menu is removed; circuits remain a mission type.
+- Town ambitions offers coastal partnerships, local prosperity and workshop automation. Goals link to actual registered actions and report earned progress. Once settlement/civic/refit goals are reached, rotating commissions, neighbourhood orders and delivery milestones provide continuing directions. Completion of the five main chapters opens this board. Goals are derived from the saved town; there is no separate reward currency or sixth story chapter. The currently opened ambition is session navigation, not an additional save field.
+
+## Build 8 framing correction
+
+The owner’s follow-up identified a blank strip below navigation and a floating, poorly framed toolbar on iPhone Duo. The root now fills the available safe-area rectangle explicitly; the map takes the remaining height between the toolbar and dock. Idle feedback no longer reserves an extra bottom inset, and all remaining feedback insets use zero spacing. Landscape navigation uses icons and labels on one row, with full rectangular hit targets. The top camera controls share the header surface instead of a separate shadowed capsule. Thin matching separators frame the play area. System status/home regions remain protected. No town, migration or economic behavior changes.
+
+The existing landscape UI test now checks map-to-toolbar/dock spacing, minimum map coverage and the remaining home-area allowance. See PR #14 for this build’s final test and device-install results.
+
+## Verification and limits
+
+See the current PR for final counts and local build records. Regression coverage includes original browser tests, adapter parity, both earned five-chapter campaigns, JavaScriptCore, save recovery, landscape gestures, inline automation, independent berth-two missions and read-only ambition navigation. Simulator screenshots are reviewed for both phone and tablet layouts. Physical-device acceptance remains required; an installed QA build is not evidence of sustained play, battery performance or VoiceOver quality.
+
+The outpainted surroundings are decorative, at lower resolution than the central playable terrain, with an approximate geographic join. No additional buildable plots are claimed. Original source images, exact prompts and packaging hashes are committed under `art-source/landscape-v1`. The final free App Store release still needs the owner’s production signing/identity, public support/privacy details, store questionnaire/screenshots and review. No store upload, merge or browser deployment is performed here.

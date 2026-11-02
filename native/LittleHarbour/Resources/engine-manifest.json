@@ -1,10 +1,13 @@
 {
-  "native/bridge.js": "238ed5faf699f78440f89dc36b26128bc9262beed1e9aead397a13f60347c802",
+  "native/bridge.js": "75414bd44685619983123afc2af8bccb32e4076b30be25054f53377e247cd481",
   "dist/engine.js": "55f6f2b9df7fa4850a4702835417b2aedb375dad91c0a1cf9cc8c655cba588e5",
   "dist/catalog.js": "f2cdddac328dfea75a618bb74f6563b333429817a49b123895ea51ee7fef3c2e",
   "dist/lab/evolution.js": "cb63acae292cc50791cc3838949894538314288a56d7c85492852007fd13e118",
   "dist/world-model.js": "85cffd46eb74b35112b62aa02aa9842c9bc4a8d6f00e35f9b3877f80ca3663e8",
   "dist/progression.js": "27880ddd7d7531f6f2edc91773d87af020e02f10e22acef2c6a01e68953480be",
   "dist/project-planning.js": "f145809a0844cfb151cd5b4fb48c267a65671613449fd911459510aee50e4d0f",
-  "dist/demo-town.js": "1a8e2253b862e9108d026fcd6c1f17fa0b380a8fc4a73afb74aa618543c6b4dd"
+  "dist/demo-town.js": "1a8e2253b862e9108d026fcd6c1f17fa0b380a8fc4a73afb74aa618543c6b4dd",
+  "native/guidance.js": "9509f8ba04ad1dcc41676d51835f02b65ce44ef8e97aeff91526a21044056c27",
+  "native/directions.js": "1e96fb2032cc1cde13dba2b576f5d7282a25901d817e74461c4295d88a8389e0",
+  "native/festival.js": "1c08a14a815ac66e5e831e168b2926821e7144fc6f0657b83e14fd2cbef69d8b"
 }
