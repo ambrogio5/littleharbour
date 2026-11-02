@@ -230,6 +230,14 @@ import XCTest
         defer { XCUIDevice.shared.orientation = .portrait }
         let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.windows.firstMatch.frame.width > app.windows.firstMatch.frame.height }, object: app)
         XCTAssertEqual(XCTWaiter.wait(for: [landscape], timeout: 10), .completed)
+        // The map meets the toolbar and dock; no empty feedback inset reserves a row.
+        let mapFrame = app.otherElements["world-map"].frame
+        let dockFrame = app.buttons["nav-Production"].frame
+        let settingsFrame = app.buttons["Settings and saves"].frame
+        XCTAssertLessThanOrEqual(dockFrame.minY - mapFrame.maxY, 3)
+        XCTAssertLessThanOrEqual(mapFrame.minY - settingsFrame.maxY, 5)
+        XCTAssertGreaterThan(mapFrame.height, app.windows.firstMatch.frame.height * 0.65)
+        XCTAssertLessThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 40, "Only the system home area should remain below the dock")
         app.buttons["fit-town"].tap()
         app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
         let boat = app.buttons["boat-selector-1"]

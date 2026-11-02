@@ -63,7 +63,7 @@ struct SettingsView: View {
                     Text("Built for unhurried play: no advertising, in-app purchases, account or online services. Your device may include app data in its system backups, according to your backup settings.").font(.footnote)
                 }
             }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.sea).navigationTitle("Settings & saves").toolbar { Button("Done") { store.cancelImport(); dismiss() } }
-            .safeAreaInset(edge: .bottom) { FeedbackBanner() }
+            .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
                 do {
                     guard let url = try result.get().first else { return }

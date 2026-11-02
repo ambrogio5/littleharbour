@@ -42,7 +42,8 @@ struct HarbourView: View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 700 && geometry.size.height >= 300
             VStack(spacing: 0) {
-                if wide { landscapeHeader } else { header }
+                Group { if wide { landscapeHeader } else { header } }
+                    .overlay(alignment: .bottom) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
                 HStack(spacing: 0) {
                     VStack(spacing: 0) {
                         // Keep native control hit regions outside the UIKit/SpriteKit surface.
@@ -51,12 +52,15 @@ struct HarbourView: View {
                         ZStack(alignment: .bottomLeading) {
                             HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
                             if !wide || !store.guidanceFocus { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
-                        }.clipped()
-                    }
+                        }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
+                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     if wide { InspectorView().environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
-                }
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                if !wide && !showInspector && !showSettings { FeedbackBanner() }
                 dock(wide: wide).environment(\.densePanels, wide)
+                    .overlay(alignment: .top) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             .background(harbourPaper)
             .onAppear { hasSideInspector = wide; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
             .onChange(of: wide) { _, value in hasSideInspector = value; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !value { showInspector = true } } }
@@ -108,9 +112,7 @@ struct HarbourView: View {
             if store.directionFocus != nil, let entity = store.snapshot?.entities.first(where: { $0.id == id }) { scene.focusSite(entity) }
         }
         .onReceive(timer) { _ in store.pulse() }
-        .safeAreaInset(edge: .bottom) {
-            if !hasSideInspector && !showInspector && !showSettings { FeedbackBanner() }
-        }
+        .background(harbourPaper.ignoresSafeArea())
     }
 
     private var landscapeHeader: some View {
@@ -119,7 +121,7 @@ struct HarbourView: View {
             cameraControls(wide: true)
             HStack(spacing: 3) { ResourceIcon(item: "coins", size: 22); Text("\(store.snapshot?.coins ?? 0)").font(.subheadline.bold()).monospacedDigit() }
             Button { showSettings = true } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
-        }.padding(.horizontal, 10).foregroundStyle(harbourInk).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        }.padding(.horizontal, 10).padding(.vertical, 2).foregroundStyle(harbourInk).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private var inspectorNavigation: some View {
         HStack(spacing: 8) {
@@ -152,7 +154,7 @@ struct HarbourView: View {
             Button { scene.focus("all") } label: { Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44) }.accessibilityLabel("Whole town").accessibilityIdentifier("fit-town")
             Button { scene.zoom(1.25) } label: { Image(systemName: "minus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom out")
             Button { scene.zoom(0.8) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom in")
-        }.font(.subheadline.weight(.semibold)).padding(.horizontal, 8).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18)).shadow(color: harbourInk.opacity(0.12), radius: 12, y: 4)
+        }.font(.subheadline.weight(.semibold)).padding(.horizontal, wide ? 0 : 8).foregroundStyle(harbourInk)
     }
     private func objective(wide: Bool, compact: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -186,14 +188,29 @@ struct HarbourView: View {
         }.padding(compact ? 6 : 15).frame(maxWidth: 540, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
     }
     private func dock(wide: Bool) -> some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 4) {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
-                Button { store.navigate(item.0); if !wide { showInspector = true } } label: { VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(store.category == item.0 ? .bold : .medium)) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 15)).padding(.horizontal, 3) }
-                    .accessibilityIdentifier("nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
+                Button { store.navigate(item.0); if !wide { showInspector = true } } label: {
+                    dockLabel(item.0, symbol: item.1, wide: wide, selected: store.category == item.0)
+                }.accessibilityIdentifier("nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
             }
-            Button { pendingCategory = nil; showTown = true } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }.accessibilityLabel("Town")
-            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54) }.accessibilityLabel("Simulation speed").accessibilityValue(store.snapshot?.speed == 0 ? "Paused" : store.snapshot?.speed == 3 ? "Three times normal" : "Normal")
-        }.foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, wide ? 0 : 5).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            Button { pendingCategory = nil; showTown = true } label: {
+                dockLabel("Town", symbol: "square.grid.2x2", wide: wide, selected: !["Production", "Trade", "Build"].contains(store.category))
+            }.accessibilityLabel("Town")
+            Button { showSpeed = true } label: {
+                dockLabel(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×", symbol: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle", wide: wide)
+            }.accessibilityLabel("Simulation speed").accessibilityValue(store.snapshot?.speed == 0 ? "Paused" : store.snapshot?.speed == 3 ? "Three times normal" : "Normal")
+        }.buttonStyle(.plain).foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, 2).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+    private func dockLabel(_ title: String, symbol: String, wide: Bool, selected: Bool = false) -> some View {
+        // One row in landscape preserves map height; portrait retains familiar stacked tabs.
+        let layout = wide && !typeSize.isAccessibilitySize ? AnyLayout(HStackLayout(spacing: 6)) : AnyLayout(VStackLayout(spacing: 3))
+        return layout {
+            Image(systemName: symbol).font(.system(size: 18))
+            Text(title).font(.caption.weight(selected ? .bold : .medium)).lineLimit(1)
+        }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 50)
+            .background(selected ? HarbourTheme.sea.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 10))
+            .contentShape(Rectangle())
     }
     private func category(for target: String?) -> String {
         ["produce":"Production", "trade":"Trade", "build":"Build", "contracts":"Contracts", "waterfront":"Waterfront", "market":"Market", "inland":"Inland", "fleet":"Fleet", "neighbourhood":"Neighbourhood", "residents":"Residents", "ferry":"Ferry"][target ?? ""] ?? "Production"
@@ -295,7 +312,7 @@ struct InspectorView: View {
             .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
-        .safeAreaInset(edge: .bottom) { FeedbackBanner() }
+        .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
         .confirmationDialog("Confirm this investment", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } }), titleVisibility: .visible) {
             if let action = pendingAction { Button(action.title, role: .destructive) { store.perform(action); pendingAction = nil } }
             Button("Cancel", role: .cancel) { pendingAction = nil }
@@ -475,7 +492,7 @@ struct ProjectView: View {
                 }
             }.background(HarbourTheme.paper).foregroundStyle(HarbourTheme.ink).tint(HarbourTheme.sea)
             .navigationTitle("Plan supplies").navigationBarTitleDisplayMode(.inline).toolbar { Button("Done") { dismiss() } }
-            .safeAreaInset(edge: .bottom) { FeedbackBanner() }
+            .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
         }
     }
 }

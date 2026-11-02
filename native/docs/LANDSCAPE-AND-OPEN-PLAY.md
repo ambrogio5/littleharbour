@@ -1,4 +1,4 @@
-# Landscape and open-play improvements — builds 6–7
+# Landscape and open-play improvements — builds 6–8
 
 The owner’s iPhone Duo landscape screenshot showed large chrome, duplicate guidance, a narrow rectangular map and long fleet action lists. This revision targets those issues without modifying deployed browser sources or the economy.
 
@@ -11,6 +11,12 @@ The owner’s iPhone Duo landscape screenshot showed large chrome, duplicate gui
 - Moving hulls use separate outward/homeward artwork, and their wakes follow the travel tangent. Upright masts and labels are preserved; pause and Reduced Motion remain respected.
 - Fleet begins with two berth cards. Pick a boat, choose cargo/circuit/ferry, choose a destination and cargo size, then review one mission and launch it. Merely selecting a boat or mission does not spend resources. Repeat cargo routes, their stop control, upgrades and confirmed recall belong to the selected boat. Terminal construction is still available from Ferry. The separate Circuits menu is removed; circuits remain a mission type.
 - Town ambitions offers coastal partnerships, local prosperity and workshop automation. Goals link to actual registered actions and report earned progress. Once settlement/civic/refit goals are reached, rotating commissions, neighbourhood orders and delivery milestones provide continuing directions. Completion of the five main chapters opens this board. Goals are derived from the saved town; there is no separate reward currency or sixth story chapter. The currently opened ambition is session navigation, not an additional save field.
+
+## Build 8 framing correction
+
+The owner’s follow-up identified a blank strip below navigation and a floating, poorly framed toolbar on iPhone Duo. The root now fills the available safe-area rectangle explicitly; the map takes the remaining height between the toolbar and dock. Idle feedback no longer reserves an extra bottom inset, and all remaining feedback insets use zero spacing. Landscape navigation uses icons and labels on one row, with full rectangular hit targets. The top camera controls share the header surface instead of a separate shadowed capsule. Thin matching separators frame the play area. System status/home regions remain protected. No town, migration or economic behavior changes.
+
+The existing landscape UI test now checks map-to-toolbar/dock spacing, minimum map coverage and the remaining home-area allowance. See PR #14 for this build’s final test and device-install results.
 
 ## Verification and limits
 

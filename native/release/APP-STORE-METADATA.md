@@ -1,6 +1,8 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (7)**.
+Candidate: **1.0.0 (8)**.
+
+Build 8 removes idle feedback spacing, anchors the map between framed top/bottom bars and uses single-row landscape navigation.
 
 Builds 6–7 add a denser landscape layout, extended painted scenery, boat-first cargo/circuit/ferry planning with directional sailing artwork, workshop stock targets up to 24, and three optional town ambitions. Keep 24 is preserved in native saves; browser exports use the browser-compatible maximum of 12. Physical acceptance and final App Store materials remain pending. See `../docs/LANDSCAPE-AND-OPEN-PLAY.md` for scope and limitations.
 
