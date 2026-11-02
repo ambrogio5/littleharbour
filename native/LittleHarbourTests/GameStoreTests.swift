@@ -92,4 +92,22 @@ import XCTest
         }
     }
 
+    func testOptionalAmbitionsAndBoatSelectionDoNotSpendOrOverwriteTheTown() throws {
+        try withStore { store, repository in
+            let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            let before = try repository.original()
+            let direction = try XCTUnwrap(store.snapshot?.directions.first { $0.id == "industry" })
+            store.followDirection(direction)
+            XCTAssertEqual(store.category, "Production"); XCTAssertEqual(store.selectedSite, "field")
+            XCTAssertFalse(store.guidanceFocus); XCTAssertEqual(store.directionFocus, "industry")
+            store.selectedBerth = 1; store.navigate("Fleet")
+            XCTAssertNil(store.directionFocus); XCTAssertEqual(store.selectedBerth, 1)
+            XCTAssertEqual(try repository.original(), before)
+            let action = try XCTUnwrap(store.snapshot?.actions.first { $0.matches("startVoyage", boat: 1) && $0.enabled })
+            store.perform(action)
+            XCTAssertNil(store.snapshot?.boats[0]?.trip); XCTAssertNotNil(store.snapshot?.boats[1]?.trip)
+        }
+    }
+
 }

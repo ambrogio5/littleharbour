@@ -90,6 +90,7 @@
 		708763A092D9A888BA6AEB74 /* orchard-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 81AA05F654BC784B5DDC287D /* orchard-unbuilt.png */; };
 		74E546552703883DBC423C40 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558BB41A827967E6AE3F24B0 /* EngineTests.swift */; };
 		75367659FE7ADEA0F996B5F9 /* lighthouse-building.png in Resources */ = {isa = PBXBuildFile; fileRef = E8B0CC45F4B02F94AAE362DA /* lighthouse-building.png */; };
+		775AB577574C3E8909630CB3 /* terrain-surround.png in Resources */ = {isa = PBXBuildFile; fileRef = 3C475001E2DBAF0B89988EB9 /* terrain-surround.png */; };
 		77A37745F614A837BB2C7154 /* carpenter-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 9A1AD5CD8D68F9EE56A912AF /* carpenter-built.png */; };
 		780669CE64EE9542E7B5E5AE /* mill-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 378219A0335EFBF77F6D4D49 /* mill-upgraded.png */; };
 		78473EF5C6260E92BA64BB0C /* good-fruit.png in Resources */ = {isa = PBXBuildFile; fileRef = 1FD560C71313E3BA33FF9F29 /* good-fruit.png */; };
@@ -102,6 +103,7 @@
 		84F4C68507C1C9BEEA28DD58 /* PresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F81322D747465B10D09A276 /* PresentationTests.swift */; };
 		865CEFC4E928D946150B99E8 /* garden-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 919AD18303E1354065E2B929 /* garden-built.png */; };
 		8718784D725E730600FC7F44 /* mill-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 57F24299774091157E4ED86F /* mill-building.png */; };
+		88DF25A30CCBD7AAE0EE2A76 /* landscape-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = BF14A33064D7D667B1BB763F /* landscape-manifest.json */; };
 		8976940D949976C1A65E0669 /* lighthouse-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = BDF98975EC1B85B31CCCA41A /* lighthouse-unbuilt.png */; };
 		89C39D411978BC7D8D612CD2 /* clay-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 23FC239726D0F02B05B3713F /* clay-unbuilt.png */; };
 		8A8FA612866D7BFE99A3C2E9 /* sailmaker-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 04D36F56EDDC6A9B447576E8 /* sailmaker-built.png */; };
@@ -172,6 +174,7 @@
 		E807E79D73672AB2B3F62741 /* specialist-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 2C238B3E1A7E47EB5B43DC26 /* specialist-building.png */; };
 		E9BCA5E924CAF7DD4E96FA14 /* waterfront-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 87185CC8050B9D923AAEB5A9 /* waterfront-building.png */; };
 		E9BD6D570431A287467F3C2D /* pier-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 6AD4108957EBADE4B4A4A41A /* pier-ripe.png */; };
+		EA8F55355A01F04126D07A8C /* ManagementViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3EC3767FC59EE472303EBD0 /* ManagementViews.swift */; };
 		ECFB64D0A4D12F11C1DAC24C /* pier-built.png in Resources */ = {isa = PBXBuildFile; fileRef = 1B89C6369F2888E36C92EC9E /* pier-built.png */; };
 		EFEE41C953772D28B2E2EFAB /* boat-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 2D287AF446E0BCF48D2E1602 /* boat-upgraded.png */; };
 		F17AC2546155EC0EDC9BFA56 /* fishing-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 3BBBEF469D0525ABF71C8367 /* fishing-ripe.png */; };
@@ -252,6 +255,7 @@
 		3A71865C741FC5B745C6171E /* weaver-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-ripe.png"; sourceTree = "<group>"; };
 		3AC6EDDB77C810FC2CA9870D /* kiln-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kiln-ripe.png"; sourceTree = "<group>"; };
 		3BBBEF469D0525ABF71C8367 /* fishing-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-ripe.png"; sourceTree = "<group>"; };
+		3C475001E2DBAF0B89988EB9 /* terrain-surround.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "terrain-surround.png"; sourceTree = "<group>"; };
 		3D7E663F6043745D7BB9EA1E /* waterfront-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "waterfront-unbuilt.png"; sourceTree = "<group>"; };
 		3E0FA05E3E2D4924CA122561 /* carpenter-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-ripe.png"; sourceTree = "<group>"; };
 		3ECE1B3A6902CE6623C643ED /* kiln-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kiln-building.png"; sourceTree = "<group>"; };
@@ -339,9 +343,11 @@
 		BCB656FE697D7BB5D77A9153 /* estate-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "estate-upgraded.png"; sourceTree = "<group>"; };
 		BDB251B7F74AECDA9ADD7961 /* person-docker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "person-docker.png"; sourceTree = "<group>"; };
 		BDF98975EC1B85B31CCCA41A /* lighthouse-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-unbuilt.png"; sourceTree = "<group>"; };
+		BF14A33064D7D667B1BB763F /* landscape-manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "landscape-manifest.json"; sourceTree = "<group>"; };
 		BFB6B886D9863EE488D246E7 /* ferry-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "ferry-built.png"; sourceTree = "<group>"; };
 		C096A57BBB174332F10C7BBE /* good-planks.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-planks.png"; sourceTree = "<group>"; };
 		C1F9A538C655C05B9633767F /* square-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "square-upgraded.png"; sourceTree = "<group>"; };
+		C3EC3767FC59EE472303EBD0 /* ManagementViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagementViews.swift; sourceTree = "<group>"; };
 		CA3606949E68223EE1D52934 /* good-grapes.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "good-grapes.png"; sourceTree = "<group>"; };
 		CA40515FB3D5BA583E7C3CB9 /* market-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "market-unbuilt.png"; sourceTree = "<group>"; };
 		CF3DA21A40197AD557635F97 /* field-ripe.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "field-ripe.png"; sourceTree = "<group>"; };
@@ -561,6 +567,7 @@
 				3AC6EDDB77C810FC2CA9870D /* kiln-ripe.png */,
 				213C2F516756B7B4B94735A6 /* kiln-unbuilt.png */,
 				ABCD19C24D093D7B638C7E3A /* kiln-upgraded.png */,
+				BF14A33064D7D667B1BB763F /* landscape-manifest.json */,
 				E8B0CC45F4B02F94AAE362DA /* lighthouse-building.png */,
 				DEB94C1ED0B7BC461239E3E0 /* lighthouse-built.png */,
 				BB685FB0D9107BCB41D787E8 /* lighthouse-ripe.png */,
@@ -613,6 +620,7 @@
 				5E4809C35DA9D2A7A427C964 /* square-ripe.png */,
 				F9125B2FCCA544704649BC83 /* square-unbuilt.png */,
 				C1F9A538C655C05B9633767F /* square-upgraded.png */,
+				3C475001E2DBAF0B89988EB9 /* terrain-surround.png */,
 				18661657F8DC68A40EFD22A6 /* terrain.png */,
 				27740359B873C0979CB8635C /* vessel-coaster-upgraded.png */,
 				39E9182F6EF242B0DB765ED1 /* vessel-coaster.png */,
@@ -639,6 +647,7 @@
 				FC954D6D6923D924BA3409F4 /* HarbourTheme.swift */,
 				A964824D40E34BD603544185 /* HarbourView.swift */,
 				E43F8497EE877836B89B7B84 /* LittleHarbourApp.swift */,
+				C3EC3767FC59EE472303EBD0 /* ManagementViews.swift */,
 				03D700F95B66DD1204369C3A /* SettingsView.swift */,
 			);
 			path = App;
@@ -865,6 +874,7 @@
 				30C61C6D1AE486DA417D1C3D /* kiln-ripe.png in Resources */,
 				6B2C22A578FDF859806EA424 /* kiln-unbuilt.png in Resources */,
 				B680F47A688BF76CDD576961 /* kiln-upgraded.png in Resources */,
+				88DF25A30CCBD7AAE0EE2A76 /* landscape-manifest.json in Resources */,
 				75367659FE7ADEA0F996B5F9 /* lighthouse-building.png in Resources */,
 				9B19BEC7CC918F06ECECAA55 /* lighthouse-built.png in Resources */,
 				F320F0735F210D03FF74A807 /* lighthouse-ripe.png in Resources */,
@@ -917,6 +927,7 @@
 				D8F30EC87D29C091DBBF9FB0 /* square-ripe.png in Resources */,
 				8B4393499A29045189CCA6F2 /* square-unbuilt.png in Resources */,
 				8D4D8358374D4543C21CADFF /* square-upgraded.png in Resources */,
+				775AB577574C3E8909630CB3 /* terrain-surround.png in Resources */,
 				C2F94357B28B5174C6F9E1B4 /* terrain.png in Resources */,
 				C9ACE48CFCF4BD70F23BB478 /* vessel-coaster-upgraded.png in Resources */,
 				DF951B4F8F94478C2581B114 /* vessel-coaster.png in Resources */,
@@ -975,6 +986,7 @@
 				8C5952BFFA06739A2319AE2A /* HarbourTheme.swift in Sources */,
 				BCEC6850DA63EC205ED55F04 /* HarbourView.swift in Sources */,
 				B2E084E68B5CA06E8E23C493 /* LittleHarbourApp.swift in Sources */,
+				EA8F55355A01F04126D07A8C /* ManagementViews.swift in Sources */,
 				41040F2390D784950E32A47C /* Models.swift in Sources */,
 				B5A46B28252DB6A3A792169A /* SaveRepository.swift in Sources */,
 				43F75671F8C3E5E0942516C9 /* SettingsView.swift in Sources */,
@@ -1066,7 +1078,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1155,7 +1167,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;

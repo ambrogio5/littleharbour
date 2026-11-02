@@ -1,3 +1,7 @@
+## Build 6 — landscape and open-play QA update
+
+A denser landscape layout, painted surrounding hills and sea, stock targets inside workshops, and boat-first cargo/circuit/ferry planning. Town ambitions adds three optional directions over saved milestones and existing economic systems. No ads or purchases. Physical acceptance and final App Store materials remain pending. See `../docs/LANDSCAPE-AND-OPEN-PLAY.md` for scope and limitations.
+
 # Little Harbour — release metadata draft
 
 Candidate: **1.0.0 (5)**.

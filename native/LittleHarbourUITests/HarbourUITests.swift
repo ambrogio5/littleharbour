@@ -206,7 +206,7 @@ import XCTest
         trade.tap(); XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
         let build = app.buttons["inspector-nav-Build"].exists ? app.buttons["inspector-nav-Build"] : app.buttons["nav-Build"]
         build.tap(); XCTAssertTrue(app.staticTexts["Build"].firstMatch.waitForExistence(timeout: 5))
-        let next = app.buttons["toolbar-next-step"].exists ? app.buttons["toolbar-next-step"] : app.buttons["show-next-step"]
+        let next = app.buttons["toolbar-next-step"].exists ? app.buttons["toolbar-next-step"] : app.buttons["objective"]
         next.tap(); XCTAssertEqual(app.staticTexts["next-step-title"].label, "Harvest & replant")
     }
     func testPausedGuideExplainsHowToResumeAndWholeTownFits() throws {
@@ -218,6 +218,66 @@ import XCTest
         let resume = app.buttons["guidance-resume"]
         for _ in 0..<4 { if resume.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertTrue(resume.isHittable); resume.tap(); XCTAssertFalse(resume.exists)
+    }
+
+    func testBoatFirstMissionsAndDenseLandscape() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.windows.firstMatch.frame.width > app.windows.firstMatch.frame.height }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [landscape], timeout: 10), .completed)
+        app.buttons["fit-town"].tap()
+        app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        let boat = app.buttons["boat-selector-1"]
+        XCTAssertTrue(boat.waitForExistence(timeout: 5)); boat.tap()
+        XCTAssertFalse(app.staticTexts["voyage-status"].exists, "Selecting a boat only previews missions")
+        let overview = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); overview.name = "Dense landscape and expanded coastline"; overview.lifetime = .keepAlways; add(overview)
+        let mission = app.buttons["action-[\"startVoyage\",[1,\"quarry\",1]]"]
+        for _ in 0..<8 { if mission.exists && mission.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(mission.isEnabled); mission.tap()
+        for _ in 0..<8 { if boat.isHittable { break }; app.scrollViews.firstMatch.swipeDown() }
+        XCTAssertTrue(boat.label.contains("At sea")); XCTAssertFalse(app.buttons["boat-selector-0"].label.contains("At sea"))
+        let sailing = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); sailing.name = "Independent second boat mission"; sailing.lifetime = .keepAlways; add(sailing)
+    }
+    func testInlineAutomationAndOptionalAmbitions() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        app.buttons["Town"].tap(); app.buttons["town-ambitions"].tap()
+        let goals = XCTAttachment(screenshot: app.screenshot()); goals.name = "Three optional town ambitions"; goals.lifetime = .keepAlways; add(goals)
+        let industry = app.buttons["direction-industry"]
+        for _ in 0..<12 { if industry.exists && industry.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(industry.isEnabled); industry.tap()
+        let target = app.buttons["automation-field-6"]
+        for _ in 0..<12 { if target.exists && target.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(target.isEnabled); target.tap()
+        // The ambition advances to flour; the wheat target is stored by the real engine.
+        XCTAssertTrue(app.staticTexts["Set a stock target for flour"].waitForExistence(timeout: 5))
+        let automation = XCTAttachment(screenshot: app.screenshot()); automation.name = "Automation inside the workshop"; automation.lifetime = .keepAlways; add(automation)
+    }
+
+    func testCircuitAndFerryPreviewsKeepTheChosenBoat() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        let fixture = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        app.buttons["Town"].tap(); app.buttons["Fleet"].tap(); app.buttons["boat-selector-1"].tap()
+        let type = app.segmentedControls["mission-type"]
+        for _ in 0..<8 { if type.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
+        type.buttons["Circuit"].tap()
+        let circuit = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Berth 2: quarry 1"))
+        XCTAssertEqual(circuit.count, 1); XCTAssertTrue(circuit.firstMatch.isEnabled)
+        type.buttons["Ferry"].tap()
+        let ferry = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Berth 2: Pietra Cove passenger service"))
+        XCTAssertEqual(ferry.count, 1); XCTAssertTrue(ferry.firstMatch.isEnabled)
+        XCTAssertFalse(app.staticTexts["voyage-status"].exists, "Changing mission type must never launch a voyage")
     }
 
 }

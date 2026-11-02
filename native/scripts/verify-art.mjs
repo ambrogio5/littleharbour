@@ -39,3 +39,10 @@ for(const name of living.textures){
  if(crypto.createHash('sha256').update(png).digest('hex')!==living.outputHashes[name])throw Error('Living artwork changed: '+name);
 }
 console.log('Verified 8 living-harbour textures and their generated sources.');
+
+const landscape=JSON.parse(fs.readFileSync(new URL('landscape-manifest.json',base),'utf8'));
+for(const[file,hash]of Object.entries(landscape.hashes))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Landscape source changed: '+file);
+const surround=fs.readFileSync(new URL('terrain-surround.png',base));
+if(surround.readUInt32BE(16)!==landscape.width||surround.readUInt32BE(20)!==landscape.height)throw Error('Landscape geometry changed');
+if(crypto.createHash('sha256').update(surround).digest('hex')!==landscape.outputHashes['terrain-surround'])throw Error('Landscape texture changed');
+console.log('Verified extended Mediterranean terrain and both outpainting sources.');

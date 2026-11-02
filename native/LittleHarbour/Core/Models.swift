@@ -74,6 +74,8 @@ struct TownEvent: Decodable {
     let options: [Option]
 }
 struct Boat: Decodable {
+    struct RepeatRoute: Decodable { let route: String; let tier: Int }
+    let `repeat`: RepeatRoute?
     struct Trip: Decodable { let left, duration: Double; let route: String; let ferry: Bool? }
     let type: String
     let upgrade: String?
@@ -81,7 +83,19 @@ struct Boat: Decodable {
     let trip: Trip?
     var artwork: String { "vessel-" + type + (upgrade != nil || sails == true ? "-upgraded" : "") }
 }
+struct WorkshopState: Decodable { let target, stock, incoming: Int; let item, status: String }
+struct TownDirection: Decodable, Identifiable {
+    let id, title, goal, body, category: String
+    let progress, total: Int
+    let choices: [String]
+    let unlocked: Bool
+    let siteID: String?
+}
 struct HarbourSnapshot: Decodable {
+    let workshops: [String: WorkshopState]
+    let directions: [TownDirection]
+    let townFocus: String?
+    let berthCount: Int
     let coins, speed, deliveries: Int
     let seconds: Double
     let stock: [String: Int]
@@ -176,8 +190,9 @@ struct MapViewport: Codable, Equatable {
     var isValid: Bool {
         let knownRegion = region.map { ["all", "inland", "neighbourhood", "market", "coast", "harbour"].contains($0) } ?? true
         let withinBounds = version == 1 ? (0...1800).contains(x) && (0...2700).contains(y)
-            : (-300...2100).contains(x) && (-350...3050).contains(y)
-        return [1, 2].contains(version) && x.isFinite && y.isFinite && scale.isFinite
+            : version == 2 ? (-300...2100).contains(x) && (-350...3050).contains(y)
+            : (-2450...3550).contains(x) && (-650...3350).contains(y)
+        return [1, 2, 3].contains(version) && x.isFinite && y.isFinite && scale.isFinite
             && withinBounds && (0.65...64).contains(scale)
             && knownRegion
     }
@@ -216,4 +231,9 @@ struct TownResident {
         if snapshot.entities.contains(where: { $0.kind == "home" && $0.stage != "unbuilt" && $0.stage != "building" }) { routes.append(.init(id: "neighbour", artwork: "person-farmer", start: CGPoint(x: 430, y: 1170), end: CGPoint(x: 450, y: 1510), duration: 29, offset: 0.3)) }
         return routes
     }
+}
+
+extension HarbourAction {
+    var boatSlot: Int? { invocation?.1.first as? Int }
+    func matches(_ function: String, boat: Int) -> Bool { invocation?.0 == function && boatSlot == boat }
 }

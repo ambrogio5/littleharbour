@@ -40,22 +40,22 @@ struct HarbourView: View {
     private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
     var body: some View {
         GeometryReader { geometry in
-            let wide = geometry.size.width >= 760
+            let wide = geometry.size.width >= 700 && geometry.size.height >= 300
             VStack(spacing: 0) {
-                header
+                if wide { landscapeHeader } else { header }
                 HStack(spacing: 0) {
                     VStack(spacing: 0) {
                         // Keep native control hit regions outside the UIKit/SpriteKit surface.
                         // A separate toolbar avoids ambiguous accessibility hit regions on older iOS.
-                        cameraControls(wide: wide).padding(.horizontal, 12).padding(.vertical, 8).background(harbourPaper)
+                        if !wide { cameraControls(wide: false).padding(.horizontal, 8).padding(.vertical, 3).background(harbourPaper) }
                         ZStack(alignment: .bottomLeading) {
                             HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
-                            objective(wide: wide, compact: geometry.size.height < 450).padding(12)
+                            if !wide || !store.guidanceFocus { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
                         }.clipped()
                     }
-                    if wide { InspectorView().frame(width: min(400, geometry.size.width * 0.40)).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
+                    if wide { InspectorView().environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
                 }
-                dock(wide: wide)
+                dock(wide: wide).environment(\.densePanels, wide)
             }
             .background(harbourPaper)
             .onAppear { hasSideInspector = wide; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
@@ -104,12 +104,23 @@ struct HarbourView: View {
             if value != .active { scene.persistViewport() }
             store.lifecycle(value == .active)
         }
+        .onChange(of: store.selectedSite) { _, id in
+            if store.directionFocus != nil, let entity = store.snapshot?.entities.first(where: { $0.id == id }) { scene.focusSite(entity) }
+        }
         .onReceive(timer) { _ in store.pulse() }
         .safeAreaInset(edge: .bottom) {
             if !hasSideInspector && !showInspector && !showSettings { FeedbackBanner() }
         }
     }
 
+    private var landscapeHeader: some View {
+        HStack(spacing: 8) {
+            Text(store.snapshot?.style.identity ?? "Little Harbour").font(.system(.headline, design: .serif)).lineLimit(1).minimumScaleFactor(0.8)
+            cameraControls(wide: true)
+            HStack(spacing: 3) { ResourceIcon(item: "coins", size: 22); Text("\(store.snapshot?.coins ?? 0)").font(.subheadline.bold()).monospacedDigit() }
+            Button { showSettings = true } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
+        }.padding(.horizontal, 10).foregroundStyle(harbourInk).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
     private var inspectorNavigation: some View {
         HStack(spacing: 8) {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
@@ -161,7 +172,7 @@ struct HarbourView: View {
                     Button {
                         store.followGuidance(); if !wide { showInspector = true }
                     } label: {
-                        HStack { if !compact { Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 44, height: 48).accessibilityHidden(true) }; VStack(alignment: .leading, spacing: 3) { Text("NEXT STEP").font(.caption2.weight(.bold)).tracking(1); Text(store.snapshot?.guidance.title ?? objective.title).font(.system(compact ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(compact ? 1 : 2) }; Spacer(minLength: 8); Image(systemName: "arrow.right").font(.subheadline) }.frame(minHeight: 44).multilineTextAlignment(.leading)
+                        HStack { if !compact { Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 44, height: 48).accessibilityHidden(true) }; VStack(alignment: .leading, spacing: 3) { if !compact { Text("NEXT STEP").font(.caption2.weight(.bold)).tracking(1) }; Text(store.snapshot?.guidance.title ?? objective.title).font(.system(compact ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(compact ? 1 : 2) }; Spacer(minLength: 8); Image(systemName: "arrow.right").font(.subheadline) }.frame(minHeight: 44).multilineTextAlignment(.leading)
                     }.accessibilityIdentifier("objective")
                     if !compact {
                         Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { expandedObjective.toggle() } } label: {
@@ -172,24 +183,29 @@ struct HarbourView: View {
                 if !compact && expandedObjective { Text("Elena · your harbour guide").font(.headline); Text(store.snapshot?.guidance.body ?? objective.description).font(.callout).fixedSize(horizontal: false, vertical: true) }
 
             }
-        }.padding(15).frame(maxWidth: 540, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
+        }.padding(compact ? 6 : 15).frame(maxWidth: 540, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
     }
     private func dock(wide: Bool) -> some View {
         HStack(spacing: 0) {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
-                Button { store.navigate(item.0); if !wide { showInspector = true } } label: { VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(store.category == item.0 ? .bold : .medium)) }.frame(maxWidth: .infinity, minHeight: 54).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 15)).padding(.horizontal, 3) }
+                Button { store.navigate(item.0); if !wide { showInspector = true } } label: { VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(store.category == item.0 ? .bold : .medium)) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54).background(store.category == item.0 ? HarbourTheme.sea.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 15)).padding(.horizontal, 3) }
                     .accessibilityIdentifier("nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
             }
-            Button { pendingCategory = nil; showTown = true } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }.accessibilityLabel("Town")
-            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: 54) }.accessibilityLabel("Simulation speed").accessibilityValue(store.snapshot?.speed == 0 ? "Paused" : store.snapshot?.speed == 3 ? "Three times normal" : "Normal")
-        }.foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, 5).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            Button { pendingCategory = nil; showTown = true } label: { VStack(spacing: 4) { Image(systemName: "square.grid.2x2"); Text("Town").font(.caption) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54).background(["Production", "Trade", "Build"].contains(store.category) ? .clear : HarbourTheme.sea.opacity(0.10), in: RoundedRectangle(cornerRadius: 15)) }.accessibilityLabel("Town")
+            Button { showSpeed = true } label: { VStack(spacing: 4) { Image(systemName: store.snapshot?.speed == 0 ? "pause.circle" : "play.circle"); Text(store.snapshot?.speed == 3 ? "3×" : store.snapshot?.speed == 0 ? "Paused" : "1×").font(.caption) }.frame(maxWidth: .infinity, minHeight: wide ? 44 : 54) }.accessibilityLabel("Simulation speed").accessibilityValue(store.snapshot?.speed == 0 ? "Paused" : store.snapshot?.speed == 3 ? "Three times normal" : "Normal")
+        }.foregroundStyle(harbourInk).padding(.horizontal, 8).padding(.vertical, wide ? 0 : 5).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private func category(for target: String?) -> String {
         ["produce":"Production", "trade":"Trade", "build":"Build", "contracts":"Contracts", "waterfront":"Waterfront", "market":"Market", "inland":"Inland", "fleet":"Fleet", "neighbourhood":"Neighbourhood", "residents":"Residents", "ferry":"Ferry"][target ?? ""] ?? "Production"
     }
 }
 
+private struct DensePanelsKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues { var densePanels: Bool { get { self[DensePanelsKey.self] } set { self[DensePanelsKey.self] = newValue } } }
+
 struct InspectorView: View {
+    @Environment(\.densePanels) private var dense
+    @State private var guideDetails = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var store: GameStore
     @State private var pendingAction: HarbourAction?
@@ -204,22 +220,22 @@ struct InspectorView: View {
     var body: some View {
         ScrollViewReader { reader in
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: dense ? 10 : 18) {
                     Color.clear.frame(height: 0).id("panel-top")
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 5) {
-                            Label("YOUR TOWN", systemImage: HarbourTheme.symbol(store.category)).font(.caption2.weight(.bold)).tracking(1.8).foregroundStyle(HarbourTheme.muted)
-                            Text(store.category).font(.system(typeSize.isAccessibilitySize ? .headline : .largeTitle, design: .serif, weight: .semibold))
+                            if !dense { Label("YOUR TOWN", systemImage: HarbourTheme.symbol(store.category)).font(.caption2.weight(.bold)).tracking(1.8).foregroundStyle(HarbourTheme.muted) }
+                            Text(store.category).font(.system(typeSize.isAccessibilitySize ? .headline : dense ? .title3 : .largeTitle, design: .serif, weight: .semibold))
                         }
                         Spacer()
                         Button { showActivityPicker = true } label: { Image(systemName: "line.3.horizontal.decrease").frame(width: 44, height: 44).background(harbourInk.opacity(0.06), in: Circle()) }.accessibilityLabel("Choose town activity")
                     }
-                    if selected == nil && !store.guidanceFocus { Text(HarbourTheme.caption(store.category)).font(.subheadline).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
-                    if let entity = selected {
+                    if !dense && selected == nil && !store.guidanceFocus { Text(HarbourTheme.caption(store.category)).font(.subheadline).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
+                    if let entity = selected, entity.kind != "boat" {
                         HStack(spacing: 8) {
-                            Image(uiImage: HarbourArtwork.image(store.snapshot?.artwork(for: entity) ?? entity.texture)).resizable().scaledToFit().frame(width: 98, height: 98).accessibilityHidden(true)
+                            Image(uiImage: HarbourArtwork.image(store.snapshot?.artwork(for: entity) ?? entity.texture)).resizable().scaledToFit().frame(width: dense ? 52 : 98, height: dense ? 52 : 98).accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(entity.displayLabel).font(.system(.title3, design: .serif, weight: .semibold))
+                                Text(entity.displayLabel).font(.system(dense ? .headline : .title3, design: .serif, weight: .semibold))
                                 Label(entity.stage == "unbuilt" ? "A place for something new" : entity.stage == "building" ? "Construction underway" : "Level \(entity.level) · \(entity.ripe == true ? "Ready to harvest" : "Established")", systemImage: entity.stage == "building" ? "hammer" : entity.stage == "unbuilt" ? "plus.circle" : "checkmark.seal").font(.caption)
                             }
                             Spacer(minLength: 0)
@@ -227,23 +243,33 @@ struct InspectorView: View {
                         }.harbourCard()
                     }
                     if let s = store.snapshot {
-                        guidanceCard(s)
+                        if store.category != "Ambitions" && (!dense || store.guidanceFocus) { guidanceCard(s) }
+                        if let direction = s.directions.first(where: { $0.id == store.directionFocus }) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(direction.title).font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
+                                Text(direction.goal).font(.headline)
+                                ProgressView(value: Double(direction.progress), total: Double(max(1, direction.total)))
+                                Text(direction.body).font(.caption)
+                                Button("All ambitions") { store.navigate("Ambitions") }.font(.caption).frame(minHeight: 44)
+                            }.padding(12).background(HarbourTheme.sea.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                        }
                         if store.category == "Journal" { journal(s) }
+                        else if store.category == "Ambitions" { DirectionsPanel() }
+                        else if ["Fleet", "Circuits", "Ferry"].contains(store.category) { FleetPanel() }
                         else {
-                            if ["Fleet", "Circuits", "Ferry"].contains(store.category) { boats(s) }
                             if (store.category == "Production" || store.category == "Queues") && (!store.guidanceFocus || s.guidance.waiting) { jobs(s) }
                             if selected == nil && !store.guidanceFocus { stock(s) }
-                            if !store.guidanceFocus { HStack {
+                            if !store.guidanceFocus && store.directionFocus == nil { HStack {
                                 Image(systemName: "magnifyingglass").foregroundStyle(HarbourTheme.muted)
                                 TextField("Find an action or resource", text: $query).focused($searchFocused).accessibilityLabel("Search actions").autocorrectionDisabled().submitLabel(.done).onSubmit { searchFocused = false }
                                 if !query.isEmpty { Button { query = ""; searchFocused = false } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 22)).frame(width: 44, height: 44) }.accessibilityLabel("Clear search") }
                             }.padding(.horizontal, 12).frame(minHeight: 46).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 13)) }
-                            let categoryActions = s.actions.filter { $0.category == store.category && (!store.guidanceFocus || s.guidance.choices.contains($0.id)) }
+                            let categoryActions = s.actions.filter { $0.category == store.category && (!store.guidanceFocus || s.guidance.choices.contains($0.id)) && (store.directionFocus == nil || (s.directions.first { $0.id == store.directionFocus }?.choices.contains($0.id) ?? false)) }
                             let relevant = categoryActions.filter { $0.belongs(to: selected) }
-                            if selected != nil && !relevant.isEmpty {
+                            if selected != nil && !relevant.isEmpty && store.directionFocus == nil {
                                 Toggle("Only this site", isOn: $siteOnly).font(.subheadline).accessibilityIdentifier("site-filter")
                             }
-                            if !store.guidanceFocus { Picker("Action availability", selection: $readyOnly) {
+                            if !store.guidanceFocus && store.directionFocus == nil { Picker("Action availability", selection: $readyOnly) {
                                 Text("All actions").tag(false)
                                 Text("Ready now").tag(true)
                             }.pickerStyle(.segmented).accessibilityIdentifier("action-filter") }
@@ -252,7 +278,7 @@ struct InspectorView: View {
                                 Text(store.guidanceFocus ? "YOUR NEXT ACTION" : readyOnly ? "READY TO GO" : "MAKE YOUR NEXT MOVE").font(.caption2.weight(.bold)).tracking(1.2)
                                 Spacer(); Text("\(actions.count)").font(.caption.monospacedDigit())
                             }.foregroundStyle(HarbourTheme.muted)
-                            LazyVStack(spacing: 12) { ForEach(actions) { action in actionCard(action) } }
+                            LazyVStack(spacing: 12) { ForEach(actions) { action in VStack(spacing: 8) { actionCard(action); if action.invocation?.0 == "start", let recipe = action.invocation?.1.first as? String { WorkshopAutomation(recipe: recipe) } } } }
                             if selected != nil || store.guidanceFocus { stock(s) }
                             if actions.isEmpty && !store.guidanceFocus {
                                 VStack(alignment: .leading, spacing: 10) {
@@ -263,7 +289,7 @@ struct InspectorView: View {
                             }
                         }
                     }
-                }.padding(20)
+                }.padding(dense ? 10 : 20)
             }.scrollDismissesKeyboard(.interactively).background(harbourPaper).foregroundStyle(harbourInk)
             .onChange(of: store.guidanceFocus) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
@@ -280,27 +306,29 @@ struct InspectorView: View {
     private func guidanceCard(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if store.guidanceFocus { HStack(alignment: .top, spacing: 12) {
-                Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 58, height: 64).accessibilityHidden(true)
+                Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: dense ? 32 : 58, height: dense ? 36 : 64).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("ELENA · YOUR HARBOUR GUIDE").font(.caption2.weight(.bold)).tracking(0.6).foregroundStyle(HarbourTheme.muted)
+                    Text(dense ? "ELENA" : "ELENA · YOUR HARBOUR GUIDE").font(.caption2.weight(.bold)).tracking(0.6).foregroundStyle(HarbourTheme.muted)
                     Text(s.guidance.title).font(.system(.headline, design: .serif)).accessibilityIdentifier("next-step-title")
                 }
             }
-                Text(s.guidance.body).font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                Text("Chapter \(s.objective.chapter) · \(s.objective.title)").font(.caption).foregroundStyle(HarbourTheme.muted)
+                Text(s.guidance.body).font(dense ? .caption : .subheadline).fixedSize(horizontal: false, vertical: true)
+                if !dense || guideDetails { Text("Chapter \(s.objective.chapter) · \(s.objective.title)").font(.caption).foregroundStyle(HarbourTheme.muted)
                 if !s.guidance.requirements.isEmpty {
                     Text("SUPPLIES FOR THE GOAL").font(.caption2.weight(.bold)).foregroundStyle(HarbourTheme.muted)
                     ForEach(s.guidance.requirements) { r in
                         HStack { ResourceIcon(item: r.item, size: 24); Text(goodsNames[r.item] ?? "Coins"); Spacer(); Text("\(r.available) / \(r.required)").monospacedDigit(); Image(systemName: r.available >= r.required ? "checkmark.circle.fill" : "circle").foregroundStyle(r.available >= r.required ? HarbourTheme.sea : HarbourTheme.muted) }.font(.caption)
                     }
                 }
+                }
+                if dense { Button(guideDetails ? "Less detail" : "Supplies & chapter details") { guideDetails.toggle() }.font(.caption).frame(minHeight: 44) }
                 if s.speed == 0 { Button("Resume town · 1×") { store.speed(1) }.buttonStyle(.borderedProminent).accessibilityIdentifier("guidance-resume") }
-                else if s.guidance.waiting { Label("Work takes game time. Your next step updates automatically.", systemImage: "clock").font(.caption).foregroundStyle(HarbourTheme.muted) }
-                Button("Browse all \(store.category.lowercased())") { store.guidanceFocus = false }.font(.caption).frame(minHeight: 44)
+                else if s.guidance.waiting && !dense { Label("Work takes game time. Your next step updates automatically.", systemImage: "clock").font(.caption).foregroundStyle(HarbourTheme.muted) }
+                HStack { Button("Browse all \(store.category.lowercased())") { store.guidanceFocus = false }; Spacer(); Button("Other goals") { store.navigate("Ambitions") }.accessibilityIdentifier("other-goals") }.font(.caption).frame(minHeight: 44)
             } else {
                 Button { store.followGuidance() } label: { HStack { Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 36, height: 40).accessibilityHidden(true); VStack(alignment: .leading) { Text("Ask Elena").font(.caption).foregroundStyle(HarbourTheme.muted); Text("Show my next step") }; Spacer(); Image(systemName: "arrow.right") }.frame(minHeight: 44) }.accessibilityIdentifier("show-next-step")
             }
-        }.padding(14).background(HarbourTheme.gold.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+        }.padding(dense ? 10 : 14).background(HarbourTheme.gold.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
     }
     private func stock(_ s: HarbourSnapshot) -> some View {
         let goods = s.stock.keys.sorted().filter { (s.stock[$0] ?? 0) > 0 }
@@ -314,7 +342,14 @@ struct InspectorView: View {
                     Text("Storehouse").font(.headline)
                     Text("\(goods.count) goods").font(.caption)
                 } else { HStack { Label("Storehouse", systemImage: "shippingbox").font(.subheadline.weight(.semibold)); Spacer(); Text("\(goods.count) goods").font(.caption) } }
-                if !allSupplies && !typeSize.isAccessibilitySize {
+                if !allSupplies && !typeSize.isAccessibilitySize && dense {
+                    HStack(spacing: 12) {
+                        ForEach(Array(goods.prefix(3)), id: \.self) { item in
+                            HStack(spacing: 4) { Text(goodsNames[item] ?? item); Text("\(s.stock[item] ?? 0)").monospacedDigit().accessibilityIdentifier("stock-count-" + item) }.font(.caption)
+                        }
+                    }
+                }
+                if !allSupplies && !typeSize.isAccessibilitySize && !dense {
                     HStack(spacing: 12) {
                         ForEach(Array(goods.prefix(3)), id: \.self) { item in
                             HStack(spacing: 6) {
@@ -345,24 +380,6 @@ struct InspectorView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack { Text(job.name).font(.subheadline.weight(.medium)); Spacer(); Text("\(Int(ceil(job.left)))s").font(.caption.monospacedDigit()) }
                     ProgressView(value: max(0, min(1, 1 - job.left / max(1, job.duration)))).tint(HarbourTheme.sea).accessibilityLabel(job.name).accessibilityValue("\(Int(ceil(job.left))) seconds remaining")
-                }
-            }
-        }
-    }
-    private func boats(_ s: HarbourSnapshot) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(s.boats.indices, id: \.self) { slot in
-                if let boat = s.boats[slot] {
-                    HStack(spacing: 12) {
-                        Image(uiImage: HarbourArtwork.image(boat.artwork)).resizable().scaledToFit().frame(width: 66, height: 66).accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Berth \(slot + 1) · \(boat.type.capitalized)").font(.headline)
-                            if let trip = boat.trip {
-                                Text("\(trip.ferry == true ? "Passengers" : "Cargo") → \(trip.route.capitalized) · \(Int(ceil(trip.left)))s remaining").font(.caption).accessibilityIdentifier("voyage-status")
-                                ProgressView(value: max(0, min(1, 1 - trip.left / trip.duration)))
-                            } else { Text("Moored · ready for provisions").font(.caption).foregroundStyle(HarbourTheme.muted) }
-                        }
-                    }.frame(maxWidth: .infinity, alignment: .leading).harbourCard()
                 }
             }
         }
@@ -554,13 +571,14 @@ private struct TownDirectoryView: View {
         NavigationStack {
             List {
                 Section("Your living town") {
+                    Button("Town ambitions") { onSelect("Ambitions") }.accessibilityIdentifier("town-ambitions")
                     Button { onSelect("Journal") } label: { activityRow("Journal", title: "Town journal") }.accessibilityLabel("Town journal")
                     rows(available(["Contracts", "Fleet", "Neighbourhood", "Ferry"]))
                 }
                 Section("The working harbour") { rows(available(["Production", "Trade", "Build"])) }
                 let growth = available(["Waterfront", "Market", "Inland", "Lighthouse", "Destinations", "Residents", "Town layout"])
                 if !growth.isEmpty { Section("Grow the town") { rows(growth) } }
-                let work = available(["Queues", "Automation", "Refits", "Reservations", "Circuits"])
+                let work = available(["Queues", "Refits", "Reservations"])
                 if !work.isEmpty { Section("Manage work") { rows(work) } }
             }.scrollContentBackground(.hidden).background(HarbourTheme.paper).tint(HarbourTheme.ink)
                 .navigationTitle("Town activities").navigationBarTitleDisplayMode(.inline)

@@ -78,13 +78,13 @@ import UIKit
         scene.focus("all"); let portraitScale = scene.cameraNode.xScale
         scene.size = CGSize(width: 1000, height: 500)
         XCTAssertGreaterThan(scene.cameraNode.xScale, portraitScale)
-        XCTAssertEqual(scene.cameraNode.position.x, 900, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.x, 550, accuracy: 0.01, "A wide whole-town view clamps to the registered surround without exposing its edge")
         XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
         XCTAssertEqual(MapViewport.decode(preferences.data(forKey: "mapViewport"))?.region, "all")
     }
     func testCameraPreferencesRejectUnknownVersionsAndUnsafeCoordinates() throws {
         for value in [
-            MapViewport(version: 3, x: 900, y: 1350, scale: 1, region: nil),
+            MapViewport(version: 4, x: 900, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: -1, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 0, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 1, region: "unknown")
@@ -106,7 +106,7 @@ import UIKit
         scene.onZoomChange = { announcedScale = $0 }
         scene.size = CGSize(width: 400, height: 700)
         XCTAssertEqual(scene.cameraNode.xScale, 2)
-        XCTAssertEqual(scene.cameraNode.position, CGPoint(x: 900, y: 1350))
+        XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
         XCTAssertEqual(announcedScale, 2)
     }
 
@@ -151,11 +151,11 @@ import UIKit
         scene.apply(try engine.snapshot(), selected: nil)
         XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2700.01, "Hillside shortcut must not expose a sea strip above the land")
         scene.zoom(100)
-        XCTAssertEqual(scene.cameraNode.xScale, 16)
-        XCTAssertEqual(scene.cameraNode.position, CGPoint(x: 900, y: 1350))
+        XCTAssertEqual(scene.cameraNode.xScale, 4000 / 700, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
         scene.zoom(0.01); scene.pan(by: CGPoint(x: 100000, y: 100000))
-        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.x, -300)
-        XCTAssertLessThanOrEqual(scene.cameraNode.position.y, 3050)
+        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.x - scene.size.width * scene.cameraNode.xScale / 2, -2450)
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 3350)
         XCTAssertEqual(try engine.save(), before)
     }
     func testPeopleFollowTownDevelopmentPauseAndReducedMotion() throws {

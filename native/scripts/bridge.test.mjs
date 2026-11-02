@@ -83,10 +83,13 @@ test('Every campaign recommendation points to current actions and remains read-o
     assert.equal(B.save(),before);assert(g.title&&g.body);assert(Array.isArray(g.requirements));
     for(const id of g.choices){const a=s.actions.find(a=>a.id===id);assert(a,id);assert.equal(a.category,g.category);}
     if(g.actionID)assert(g.choices.includes(g.actionID));
-    assert(!g.waiting||g.choices.length===0);checked++;
+    assert(!g.waiting||g.choices.length===0);
+    for(const d of s.directions){assert(Number.isInteger(d.progress)&&d.progress>=0,d.id+' progress');assert(Number.isInteger(d.total)&&d.total>0,d.id+' total');for(const id of d.choices)assert(s.actions.some(a=>a.id===id&&a.category===d.category),d.id+' action');}
+    checked++;
    }
   }
  }
+ assert.equal(snapshot().guidance.category,'Ambitions','The earned final chapter opens optional ambitions');
  console.log(`${checked} progression guidance snapshots checked across both earned campaigns.`);
 });
 
@@ -101,4 +104,23 @@ test('Queued ingredients for later goals are explained as waiting, not another u
   }
  }
  assert(found,'An earned post-opening ingredient chain should explicitly explain its pending production');
+});
+
+
+test('Ambitions use saved milestones and continue after the final passenger chapter',()=>{
+ B.load(JSON.stringify(late));const before=B.save();const s=snapshot();assert.equal(s.directions.length,3);assert.equal(B.save(),before);
+ const commission=s.actions.find(a=>a.fn==='fundCoastalProject'&&a.enabled);assert(commission);const beforeProgress=s.directions.find(d=>d.id==='coast').progress;assert(B.act(commission.id));
+ assert.equal(snapshot().directions.find(d=>d.id==='coast').progress,beforeProgress+1);const saved=B.save();B.load(saved);assert.equal(snapshot().directions.find(d=>d.id==='coast').progress,beforeProgress+1);
+ assert(snapshot().directions.every(d=>d.unlocked));
+});
+test('Inline workshop targets persist and wait while the town is paused',()=>{
+ B.load(JSON.stringify(late));B.speed(0);const id=JSON.stringify(['setTarget',['mill',12]]);assert(B.act(id));assert.equal(snapshot().workshops.mill.target,12);assert.equal(snapshot().workshops.mill.status,'Paused');
+ const saved=B.save();B.tick(60);assert.equal(B.save(),saved);B.load(saved);assert.equal(snapshot().workshops.mill.target,12);
+ assert(B.act(JSON.stringify(['setTarget',['mill',0]])));assert.equal(snapshot().workshops.mill.status,'Manual production');
+});
+test('Mission previews are read-only and launching berth two leaves berth one untouched',()=>{
+ B.load(JSON.stringify(late));B.speed(0);const before=B.save(), boat=JSON.stringify(snapshot().boats[0]);
+ const options=snapshot().actions.filter(a=>a.fn==='startVoyage'&&a.args[0]===1);assert(options.length===6);assert.equal(B.save(),before);
+ const mission=options.find(a=>a.enabled);assert(mission);assert(B.act(mission.id));assert(snapshot().boats[1].trip);assert.equal(JSON.stringify(snapshot().boats[0]),boat);
+ const launched=B.save();assert.equal(B.act(mission.id),false);assert.equal(B.save(),launched);
 });

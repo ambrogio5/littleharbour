@@ -35,18 +35,17 @@ import SwiftUI
         super.init(size: size)
         scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.08, green: 0.39, blue: 0.49, alpha: 1)
         addChild(world); addChild(cameraNode); camera = cameraNode
-        // A restrained sea-chart surround makes fitted-map margins intentional.
-        let waves = CGMutablePath()
-        for row in -12...20 {
-            for column in -14...20 {
-                let x = CGFloat(column * 260 + (row.isMultiple(of: 2) ? 0 : 130)), y = CGFloat(row * 190)
-                waves.move(to: CGPoint(x: x, y: y))
-                waves.addCurve(to: CGPoint(x: x + 66, y: y), control1: CGPoint(x: x + 22, y: y + 10), control2: CGPoint(x: x + 44, y: y - 10))
-            }
-        }
-        let seaMarks = SKShapeNode(path: waves); seaMarks.strokeColor = UIColor(white: 1, alpha: 0.085)
-        seaMarks.lineWidth = 2; seaMarks.zPosition = -10001; world.addChild(seaMarks)
+        let surround = SKSpriteNode(texture: texture("terrain-surround"), size: CGSize(width: 6000, height: 4000))
+        surround.name = "landscape-surround"; surround.anchorPoint = .zero
+        surround.position = CGPoint(x: -2450, y: -650); surround.zPosition = -10001; world.addChild(surround)
         let terrain = SKSpriteNode(texture: texture("terrain"), size: CGSize(width: 1800, height: 2700))
+        terrain.shader = SKShader(source: """
+        void main() {
+            vec2 edge = min(v_tex_coord, vec2(1.0) - v_tex_coord);
+            float blend = smoothstep(0.0, 0.055, edge.x) * smoothstep(0.0, 0.037, edge.y);
+            gl_FragColor = texture2D(u_texture, v_tex_coord) * blend;
+        }
+        """)
         terrain.anchorPoint = .zero; terrain.position = .zero; terrain.zPosition = -10000; world.addChild(terrain)
         world.addChild(ornaments)
         selectionRing.strokeColor = UIColor(red: 1, green: 0.87, blue: 0.55, alpha: 1)
@@ -60,7 +59,7 @@ import SwiftUI
     }
     func persistViewport() {
         guard initialFocus, let preferences = viewportPreferences else { return }
-        let value = MapViewport(version: 2, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
+        let value = MapViewport(version: 3, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
         if value.isValid, let data = try? JSONEncoder().encode(value), preferences.data(forKey: viewportKey) != data { preferences.set(data, forKey: viewportKey) }
     }
     // Presentation anchors align fixed coastal landmarks to the painted shore.
@@ -264,9 +263,13 @@ import SwiftUI
         clampCamera()
     }
     func clampCamera() {
-        let halfW = min(1200, size.width * cameraNode.xScale / 2), halfH = min(1700, size.height * cameraNode.yScale / 2)
-        cameraNode.position.x = max(-300 + halfW, min(2100 - halfW, cameraNode.position.x))
-        cameraNode.position.y = max(-350 + halfH, min(3050 - halfH, cameraNode.position.y))
+        guard size.width > 0, size.height > 0 else { return }
+        // Clamp the visible viewport, not only its centre, to the painted surround.
+        let maximum = min(16, 6000 / size.width, 4000 / size.height)
+        cameraNode.setScale(min(maximum, max(0.65, cameraNode.xScale)))
+        let halfW = size.width * cameraNode.xScale / 2, halfH = size.height * cameraNode.yScale / 2
+        cameraNode.position.x = max(-2450 + halfW, min(3550 - halfW, cameraNode.position.x))
+        cameraNode.position.y = max(-650 + halfH, min(3350 - halfH, cameraNode.position.y))
         updateLabels(); onZoomChange?(cameraNode.xScale)
     }
     /// Uses the visible building silhouette area, including roofs, instead of a tiny centre target.

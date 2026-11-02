@@ -12,6 +12,7 @@ const {currentObjective}=require("dist/progression.js");
 const {projectPlan,queueProject}=require("dist/project-planning.js");
 const {sampleTown}=require("dist/demo-town.js");
 const {nextStep}=require("native/guidance.js");
+const {directions}=require("native/directions.js");
 let town=E.fresh(), evolution=V.createEvolution();
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
@@ -129,7 +130,11 @@ function snapshot(){
  const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;return e;});
  for(const [id,x,y,label]of [['boatyard',1080,1390,'Boatyard'],['estate',790,790,'Vineyard & cellar']])entities.push({id,x,y,zone:id==='estate'?'inland':'market',kind:id,label,select:id,stage:town.specialists.includes(id)?(E.underConstruction(town,id)?'building':'built'):'unbuilt',level:town.specialists.includes(id)?1:0});
  const actions=registry(town),objective=currentObjective(town);
- return JSON.stringify({guidance:nextStep(town,actions,objective),coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
+ const workshops=Object.fromEntries(Object.entries(E.RECIPES).filter(([key])=>E.unlocked(town,key)).map(([key,r])=>{
+  const item=Object.keys(r.output)[0],target=town.targets[key]||0,stock=town.stock[item]||0,incoming=E.incoming(town,item);
+  return [key,{target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
+ }));
+ return JSON.stringify({directions:directions(town,actions),workshops,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance:nextStep(town,actions,objective),coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
 }
 
 Object.assign(exports,{load,save,browserSave,reset,tick,speed,act,resolve,reserve,plan,queuePlan,snapshot});
@@ -1114,6 +1119,7 @@ Object.assign(exports,{sampleTown});
 const E=require("dist/engine.js");
 const categories={produce:'Production',trade:'Trade',build:'Build',contracts:'Contracts',waterfront:'Waterfront',market:'Market',inland:'Inland',fleet:'Fleet',neighbourhood:'Neighbourhood',residents:'Residents',ferry:'Ferry'};
 function nextStep(s,actions,o){
+ if(o.complete)return {title:'Choose your next ambition',body:'Your harbour is established. Develop coastal partnerships, invest in local life or refine an automated workshop chain. Each direction uses your existing town and opens its own next steps.',category:'Ambitions',actionID:null,siteID:null,choices:[],waiting:false,requirements:[]};
  const find=(fn,test=()=>true)=>actions.filter(a=>a.fn===fn&&test(a.args));
  let targets=[],category=categories[o.target]||'Production',waiting=false,explanation=o.description;
  const pick=(fn,test)=>{targets=find(fn,test);};
@@ -1216,5 +1222,42 @@ function nextStep(s,actions,o){
 }
 
 Object.assign(exports,{nextStep});
+},
+"native/directions.js":function(exports,require){
+// Optional ambitions are projections of earned town state, never a second economy.
+const E=require("dist/engine.js");
+function directions(s,actions){
+ const ids=(fn,test=()=>true)=>actions.filter(a=>a.fn===fn&&test(a.args)).map(a=>a.id);
+ const milestone=(n,step)=>Math.floor(n/step)*step+step;
+ const result=[];
+ const add=(id,title,goal,body,progress,total,category,choices,unlocked=true,siteID=null)=>result.push({id,title,goal,body,progress,total,category,choices,unlocked,siteID});
+ const f=s.fleet, developed=f.development.quarry+f.development.island;
+ if(!E.fleetEligible(s))add('coast','Coastal partnerships','Reach the working coast','Complete the first inland shipment with Elena. Then develop two settlements, unlock better voyage rewards and earn rotating commissions.',0,6,'Fleet',[],false);
+ else if(!f.boats[0])add('coast','Coastal partnerships','Choose your first boat','A cutter is quicker; a coaster carries larger cargoes and rewards. Choose a role before committing your materials.',0,6,'Fleet',ids('buyBoat',a=>a[0]===0));
+ else if(developed<6){
+  const route=['quarry','island'].find(r=>f.development[r]<3), stage=E.COASTAL_PROJECTS[route][f.development[route]];
+  const visits=f.visits[route]<stage.visits;
+  add('coast','Coastal partnerships',visits?'Build trust at '+E.FLEET_ROUTES[route].name:stage.name,visits?`Complete ${stage.visits} visits to unlock the next settlement project. Repeat sailings can keep a boat working while you manage the town.`:'Invest in this settlement to improve coastal trade. Six projects across both destinations lead to rotating workshop commissions.',developed,6,visits?'Fleet':'Destinations',visits?ids('startVoyage',a=>a[1]===route&&a[2]===1):ids('fundCoastalProject',a=>a[0]===route));
+ }else{
+  const n=f.commissions.quarry+f.commissions.island;
+  add('coast','Coastal partnerships','Complete '+milestone(n,5)+' coastal commissions','The masons and chandlery rotate their requests. Alternate destinations to fit your stocks; each fulfilled commission pays its original reward.',n,milestone(n,5),'Destinations',ids('completeCommission'));
+ }
+ if(!E.neighbourhoodReady(s)){
+  const market=s.market.access&&!s.market.left;
+  add('community','Local prosperity',market?'Supply the market':'Make room for local life',market?'Market shops recover demand over time. Keep their supply chains balanced while Elena opens the neighbourhood.':'Open the market and neighbourhood through the main chapters. Homes, local orders and civic projects form a different way to grow.',Object.values(s.market.businesses).reduce((n,b)=>n+b.deliveries,0),milestone(Object.values(s.market.businesses).reduce((n,b)=>n+b.deliveries,0),10),'Market',ids('dispatchMarket'),market);
+ }else if(!E.residentsComplete(s))add('community','Local prosperity','Build a residents’ project','Choose the public garden for capacity or the commercial square for local earnings. Your first delivery commits the choice; three deliveries finish the project.',s.residents.delivered,3,'Residents',ids(s.residents.proposal?'deliverResidentsSupplies':'chooseResidentsProposal'));
+ else{
+  const n=s.neighbourhood.orders;
+  add('community','Local prosperity','Fulfil '+milestone(n,5)+' neighbourhood orders','Furniture, cloth and local goods support rotating orders. Furnished homes expand queues; the Local life town direction increases these earnings.',n,milestone(n,5),'Neighbourhood',ids('completeNeighbourhoodOrder'));
+ }
+ const chain=['field','mill','bakery'], active=chain.filter(k=>(s.targets[k]||0)>0);
+ if(!s.pier)add('industry','A town that keeps working','Open the quay','The quay unlocks automatic stock targets. Then connect wheat, flour and bread into a self-supplying chain.',0,3,'Production',[],false);
+ else if(active.length<3){const key=chain.find(k=>!active.includes(k));add('industry','A town that keeps working','Set a stock target for '+({field:'wheat',mill:'flour',bakery:'bread'}[key]),'Set a stock target beside this workshop. Automation pays normal ingredient costs and waits for stock or queue space; it does not create free goods.',active.length,3,'Production',ids('start',a=>a[0]===key),true,key);}
+ else if(Object.keys(s.refits).length<3)add('industry','A town that keeps working','Refit three workshops','Choose faster batches or longer queues for each workshop. Match capacity to your trade and local orders; changing a setup has its real stated cost.',Object.keys(s.refits).length,3,'Refits',ids('installRefit'));
+ else add('industry','A town that keeps working','Reach '+milestone(s.deliveries,25)+' harbour deliveries','Keep the automated chain supplied, choose a cargo route and ship when ready. Trade and builder town directions offer different coin/material returns.',s.deliveries,milestone(s.deliveries,25),'Trade',ids('dispatch'));
+ return result;
+}
+
+Object.assign(exports,{directions});
 },
 };const cache={};function require(id){if(cache[id])return cache[id];const e={};cache[id]=e;factories[id](e,require);return e;}globalThis.Harbour=require("native/bridge.js");})();

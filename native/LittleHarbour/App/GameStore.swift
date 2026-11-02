@@ -10,6 +10,8 @@ import Combine
     @Published var category = "Production"
     @Published var selectedSite: String?
     @Published var guidanceFocus = false
+    @Published var selectedBerth = 0
+    @Published var directionFocus: String?
     @Published private(set) var lastPerformedActionID: String?
     private var lastActionAt = -Double.infinity
     private let actionClock: () -> Double
@@ -44,6 +46,7 @@ import Combine
     func refresh() throws {
         snapshot = try engine?.snapshot()
         if guidanceFocus, let next = snapshot?.guidance { category = next.category }
+        if let direction = snapshot?.directions.first(where: { $0.id == directionFocus }) { category = direction.category; selectedSite = direction.siteID }
     }
     func pulse() {
         if lastPerformedActionID != nil && actionClock() - lastActionAt >= 0.65 { lastPerformedActionID = nil }
@@ -122,7 +125,11 @@ import Combine
         else { throw HarbourError.message("No town is available to export.") }
         try data.write(to: url, options: .atomic); return url
     }
-    func navigate(_ category: String) { guidanceFocus = false; selectedSite = nil; self.category = category }
-    func followGuidance() { guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
-    func select(_ entity: WorldEntity) { guidanceFocus = false; selectedSite = entity.id; category = entity.category }
+    func followDirection(_ direction: TownDirection) {
+        navigate(direction.category); directionFocus = direction.id
+        if let site = direction.siteID { selectedSite = site }
+    }
+    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; self.category = category }
+    func followGuidance() { directionFocus = nil; guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
+    func select(_ entity: WorldEntity) { directionFocus = nil; if entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)) { selectedBerth = slot }; guidanceFocus = false; selectedSite = entity.id; category = entity.category }
 }
