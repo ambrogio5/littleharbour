@@ -273,9 +273,12 @@ import XCTest
         for _ in 0..<8 { if type.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         type.buttons["Circuit"].tap()
         let circuit = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Berth 2: quarry 1"))
+        for _ in 0..<8 { if circuit.firstMatch.exists && circuit.firstMatch.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertEqual(circuit.count, 1); XCTAssertTrue(circuit.firstMatch.isEnabled)
+        for _ in 0..<8 { if type.isHittable { break }; app.scrollViews.firstMatch.swipeDown() }
         type.buttons["Ferry"].tap()
         let ferry = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Berth 2: Pietra Cove passenger service"))
+        for _ in 0..<8 { if ferry.firstMatch.exists && ferry.firstMatch.isHittable { break }; app.scrollViews.firstMatch.swipeUp() }
         XCTAssertEqual(ferry.count, 1); XCTAssertTrue(ferry.firstMatch.isEnabled)
         XCTAssertFalse(app.staticTexts["voyage-status"].exists, "Changing mission type must never launch a voyage")
     }
