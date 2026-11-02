@@ -17,7 +17,7 @@ struct WorkshopAutomation: View {
                             let target = action.invocation?.1.last as? Int ?? 0
                             Button(target == 0 ? "Off" : "Keep \(target)") { store.perform(action) }
                                 .font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 44)
-                                .background(workshop.target == target ? HarbourTheme.sea.opacity(0.18) : .white.opacity(0.8), in: RoundedRectangle(cornerRadius: 10))
+                                .background(workshop.target == target ? HarbourTheme.sea.opacity(0.18) : HarbourTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 10))
                                 .disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil || workshop.target == target)
                                 .accessibilityAddTraits(workshop.target == target ? .isSelected : [])
                                 .accessibilityIdentifier("automation-\(recipe)-\(target)")
@@ -43,10 +43,10 @@ private struct ManagementAction: View {
             if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted) }
             Button { if action.destructive { confirm = true } else { store.perform(action) } } label: {
                 Text(action.enabled ? action.verb : "Not ready yet").font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
-            }.buttonStyle(.borderedProminent).tint(HarbourTheme.sea).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+            }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
                 .accessibilityLabel(action.title).accessibilityIdentifier("action-" + action.id)
             if action.goal != nil { Button("Plan supplies") { plan = true }.font(.caption).frame(minHeight: 44) }
-        }.padding(12).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 14))
+        }.padding(12).background(HarbourTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
             .confirmationDialog("Review this change", isPresented: $confirm, titleVisibility: .visible) {
                 Button(action.title, role: .destructive) { store.perform(action) }
                 Button("Cancel", role: .cancel) {}
@@ -69,7 +69,7 @@ struct DirectionsPanel: View {
                     Text("\(direction.progress) / \(direction.total)").font(.caption.monospacedDigit())
                     Text(direction.body).font(.caption).fixedSize(horizontal: false, vertical: true)
                     Button(direction.unlocked ? "Work on this" : "Follow Elena to unlock") { store.followDirection(direction) }
-                        .buttonStyle(.borderedProminent).tint(HarbourTheme.sea).foregroundStyle(.white).disabled(!direction.unlocked).frame(minHeight: 44)
+                        .buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!direction.unlocked).frame(minHeight: 44)
                         .accessibilityIdentifier("direction-" + direction.id)
                 }.harbourCard()
             }
@@ -112,7 +112,7 @@ struct FleetPanel: View {
                                 Text("Berth \(berth + 1)").font(.caption.bold())
                                 Text(boat.map { $0.trip == nil ? $0.type.capitalized : "At sea" } ?? (berth < s.berthCount ? "Add a boat" : "Locked")).font(.caption2)
                             }.frame(maxWidth: .infinity).padding(8)
-                                .background(slot == berth ? HarbourTheme.sea.opacity(0.14) : .white.opacity(0.8), in: RoundedRectangle(cornerRadius: 14))
+                                .background(slot == berth ? HarbourTheme.sea.opacity(0.14) : HarbourTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 14))
                                 .overlay { RoundedRectangle(cornerRadius: 14).stroke(slot == berth ? HarbourTheme.sea : .clear, lineWidth: 2) }
                                 .contentShape(Rectangle())
                         }.buttonStyle(.plain).accessibilityIdentifier("boat-selector-\(berth)").accessibilityAddTraits(slot == berth ? .isSelected : [])

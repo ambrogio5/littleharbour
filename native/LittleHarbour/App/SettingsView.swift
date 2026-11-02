@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(HarbourAppearance.preferenceKey) private var appearance = HarbourAppearance.system.rawValue
     @AppStorage("mapLabels") private var mapLabels = true
     @AppStorage("hapticFeedback") private var hapticFeedback = true
     @State private var showImporter = false
@@ -14,6 +15,13 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Appearance") {
+                    Picker("Colour scheme", selection: $appearance) {
+                        ForEach(HarbourAppearance.allCases, id: \.rawValue) { option in Text(option.title).tag(option.rawValue) }
+                    }.pickerStyle(.segmented).accessibilityIdentifier("appearance-picker")
+                    Text("System follows your device. Dark uses softer map lighting and darker panels.").font(.footnote)
+                    Text("\(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "Little Harbour") · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("installed-build")
+                }
                 Section("Your town") {
                     Text(store.protectedSave ? "Save protected · play paused" : "Saved on this device")
                     if let date = store.lastSaved { Text("Last saved \(date.formatted(date: .omitted, time: .shortened))").font(.caption) }

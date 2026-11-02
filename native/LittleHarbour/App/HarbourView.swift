@@ -21,6 +21,7 @@ private let harbourPaper = HarbourTheme.paper
 
 struct HarbourView: View {
     @EnvironmentObject private var store: GameStore
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var phase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -51,6 +52,7 @@ struct HarbourView: View {
                         if !wide { cameraControls(wide: false).padding(.horizontal, 8).padding(.vertical, 3).background(harbourPaper) }
                         ZStack(alignment: .bottomLeading) {
                             HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
+                                .overlay { if colorScheme == .dark { Color(red: 0.02, green: 0.08, blue: 0.14).opacity(0.22).allowsHitTesting(false).accessibilityHidden(true) } }
                             if !wide || !store.guidanceFocus { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
                         }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -161,7 +163,7 @@ struct HarbourView: View {
             if store.protectedSave {
                 Text("Your saved town is protected").font(.headline)
                 Text("Open Settings to export the original, restore a backup, or import a compatible save. Play is paused.").font(.callout)
-                Button("Open save recovery") { showSettings = true }.buttonStyle(.borderedProminent)
+                Button("Open save recovery") { showSettings = true }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white)
             } else if let objective = store.snapshot?.objective {
                 if !compact {
                     HStack {
@@ -280,7 +282,7 @@ struct InspectorView: View {
                                 Image(systemName: "magnifyingglass").foregroundStyle(HarbourTheme.muted)
                                 TextField("Find an action or resource", text: $query).focused($searchFocused).accessibilityLabel("Search actions").autocorrectionDisabled().submitLabel(.done).onSubmit { searchFocused = false }
                                 if !query.isEmpty { Button { query = ""; searchFocused = false } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 22)).frame(width: 44, height: 44) }.accessibilityLabel("Clear search") }
-                            }.padding(.horizontal, 12).frame(minHeight: 46).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 13)) }
+                            }.padding(.horizontal, 12).frame(minHeight: 46).background(HarbourTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 13)) }
                             let categoryActions = s.actions.filter { $0.category == store.category && (!store.guidanceFocus || s.guidance.choices.contains($0.id)) && (store.directionFocus == nil || (s.directions.first { $0.id == store.directionFocus }?.choices.contains($0.id) ?? false)) }
                             let relevant = categoryActions.filter { $0.belongs(to: selected) }
                             if selected != nil && !relevant.isEmpty && store.directionFocus == nil {
@@ -339,7 +341,7 @@ struct InspectorView: View {
                 }
                 }
                 if dense { Button(guideDetails ? "Less detail" : "Supplies & chapter details") { guideDetails.toggle() }.font(.caption).frame(minHeight: 44) }
-                if s.speed == 0 { Button("Resume town · 1×") { store.speed(1) }.buttonStyle(.borderedProminent).accessibilityIdentifier("guidance-resume") }
+                if s.speed == 0 { Button("Resume town · 1×") { store.speed(1) }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("guidance-resume") }
                 else if s.guidance.waiting && !dense { Label("Work takes game time. Your next step updates automatically.", systemImage: "clock").font(.caption).foregroundStyle(HarbourTheme.muted) }
                 HStack { Button("Browse all \(store.category.lowercased())") { store.guidanceFocus = false }; Spacer(); Button("Other goals") { store.navigate("Ambitions") }.accessibilityIdentifier("other-goals") }.font(.caption).frame(minHeight: 44)
             } else {
@@ -388,7 +390,7 @@ struct InspectorView: View {
             ResourceIcon(item: item, size: 40)
             Text("\(count)").font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit().accessibilityIdentifier("stock-count-" + item)
             Text(goodsNames[item] ?? item).font(.caption)
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(9).background(.white.opacity(0.75), in: RoundedRectangle(cornerRadius: 10))
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(9).background(HarbourTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 10))
     }
     private func jobs(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -417,7 +419,7 @@ struct InspectorView: View {
                     Spacer()
                     Image(systemName: action.enabled ? "arrow.right" : "lock").font(.system(size: 18, weight: .semibold))
                 }.font(.subheadline.weight(.semibold)).padding(.horizontal, 13).frame(minHeight: 46)
-                    .background(action.enabled ? HarbourTheme.sea : harbourInk.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .background(action.enabled ? HarbourTheme.action : harbourInk.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
                     .foregroundStyle(action.enabled ? .white : HarbourTheme.muted)
             }.buttonStyle(.plain).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
                 .accessibilityLabel(action.title).accessibilityHint(action.enabled ? action.detail : action.reason)
@@ -485,7 +487,7 @@ struct ProjectView: View {
                             }
                         }
                         ForEach(Array(plan.blockers.enumerated()), id: \.offset) { _, b in Label(b.message, systemImage: "info.circle").font(.subheadline).foregroundStyle(HarbourTheme.muted) }
-                        Button { store.queuePlan(goal) } label: { Label("Queue available production", systemImage: "play.fill").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.borderedProminent).disabled(store.protectedSave || !plan.recipes.contains { $0.queueable > 0 })
+                        Button { store.queuePlan(goal) } label: { Label("Queue available production", systemImage: "play.fill").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(store.protectedSave || !plan.recipes.contains { $0.queueable > 0 })
                         Button { store.reserve(goal) } label: { Label("Reserve available supplies", systemImage: "archivebox").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered).disabled(store.protectedSave)
                         Text("Reservations keep these supplies aside for this project. Finish the ingredients before starting later steps. Time pauses when you leave the app.").font(.footnote).foregroundStyle(HarbourTheme.muted)
                     }.padding(20)
@@ -505,7 +507,7 @@ struct FeedbackBanner: View {
                 Text(message).font(.callout)
                 Spacer(minLength: 4)
                 Button { store.message = nil } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 22)).frame(width: 44, height: 44) }.accessibilityLabel("Dismiss message")
-            }.padding(12).foregroundStyle(.white).background(harbourInk).accessibilityElement(children: .contain)
+            }.padding(12).foregroundStyle(.white).background(HarbourTheme.action).accessibilityElement(children: .contain)
         }
     }
 }

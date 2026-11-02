@@ -1,6 +1,8 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (8)**.
+Candidate: **1.0.0 (9)**.
+
+Build 9 adds persistent System/Light/Dark appearance, adaptive panels and gently dimmed world artwork, plus a prominent installed-build label in Settings.
 
 Build 8 removes idle feedback spacing, anchors the map between framed top/bottom bars and uses single-row landscape navigation.
 

@@ -1,8 +1,32 @@
 import XCTest
 import UIKit
+import SwiftUI
 @testable import LittleHarbour
 
 @MainActor final class PresentationTests: XCTestCase {
+    func testAppearancePaletteKeepsTextReadableInBothModes() {
+        func luminance(_ color: Color, _ style: UIUserInterfaceStyle) -> Double {
+            let resolved = UIColor(color).resolvedColor(with: UITraitCollection(userInterfaceStyle: style))
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            resolved.getRed(&r, green: &g, blue: &b, alpha: &a)
+            func linear(_ value: CGFloat) -> Double { let v = Double(value); return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+            return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+        }
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            for background in [HarbourTheme.paper, HarbourTheme.surface] {
+                for foreground in [HarbourTheme.ink, HarbourTheme.muted, HarbourTheme.sea] {
+                    let a = luminance(foreground, style), b = luminance(background, style)
+                    XCTAssertGreaterThanOrEqual((max(a, b) + 0.05) / (min(a, b) + 0.05), 4.5)
+                }
+            }
+            let fill = luminance(HarbourTheme.action, style)
+            XCTAssertGreaterThanOrEqual(1.05 / (fill + 0.05), 4.5)
+        }
+        XCTAssertLessThan(luminance(HarbourTheme.paper, .dark), luminance(HarbourTheme.paper, .light))
+        XCTAssertNil(HarbourAppearance.system.colorScheme)
+        XCTAssertEqual(HarbourAppearance.dark.colorScheme, .dark)
+        XCTAssertEqual(HarbourAppearance.light.colorScheme, .light)
+    }
     func testSiteSelectionRoutesToUsefulWorkAndMatchesRecipeArguments() throws {
         let engine = try EngineRuntime()
         let url = Bundle(for: Self.self).url(forResource: "late-town", withExtension: "json")!

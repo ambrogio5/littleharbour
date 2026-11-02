@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 8) contains the landscape, fleet and open-play improvements, with corrected top/bottom framing. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 9) contains the landscape, fleet and open-play improvements, with corrected top/bottom framing and System/Light/Dark appearance. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 
@@ -37,6 +37,10 @@ Drag the map; pinch or use +/− to zoom. The map remembers your view between se
 Elena’s Next step card opens a focused view of the next real action, relevant choices or work in progress. Guidance follows the current town and existing queues; it never spends automatically. The full activity list remains available. Paused guidance offers a Resume button.
 
 Production, Trade and Build stay on the bottom bar and are also available inside the iPhone activity sheet. Town opens the journal, contracts, fleet, neighbourhood and ferry directly. Grow the town groups waterfront, market, inland, lighthouse, destinations, residents and layout; Manage work groups queues, refits and reservations. Automation targets (Off, Keep 6, Keep 12, Keep 24) sit beside each production recipe. Keep 24 increases the stock buffer, not the workshop’s queue capacity. Fleet starts with a boat selector, then a mission type, destination and cargo size; only the reviewed mission is displayed. Repeat routes and upgrades belong to the selected boat. The active destination is highlighted. Activities show compact expandable inventory, progress, search, and All actions / Ready now filters. Selecting a production site scopes its recipes; clear the site or switch off Only this site to browse the full category. Unavailable actions explain their requirements. Successful actions give brief visual feedback and optional haptics. A short shared cooldown prevents a repeated tap from queuing twice or activating a newly revealed next action beneath the same finger. Town ambitions exposes three optional directions: coastal development and commissions, civic projects and local orders, or automation and workshop refits. Each tracks saved milestones and links to its next action; later milestones repeat using the existing orders. Finishing the main chapters opens this board. These are goals over the existing economy, not additional currencies or a sixth story chapter. The chapter objective follows the existing progression engine. All costs, queues, rewards and unlocks use the original economy.
+
+Settings → Appearance offers System, Light and Dark. The preference stays on this device across launches and does not alter your town. Dark mode uses a high-contrast panel palette and gently dims the painted world; it does not add a simulated day/night cycle. The installed version is shown near the top of Settings to distinguish QA updates.
+
+The [next gameplay proposal](docs/GAMEPLAY-NEXT-STEPS.md) prioritises a harbour festival after the ferry, then coastal restoration and fleet projects. These are planned additions, not content shipped in build 9.
 
 ## Save transfer and recovery
 

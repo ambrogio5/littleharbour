@@ -1,6 +1,23 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testDarkAppearancePersistsAndCanReturnToSystem() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20))
+        app.buttons["Settings and saves"].tap()
+        let picker = app.segmentedControls["appearance-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5)); picker.buttons["Dark"].tap()
+        XCTAssertTrue(picker.buttons["Dark"].isSelected)
+        let settings = XCTAttachment(screenshot: app.screenshot()); settings.name = "Dark settings and version"; settings.lifetime = .keepAlways; add(settings)
+        app.buttons["Done"].tap()
+        let map = XCTAttachment(screenshot: app.screenshot()); map.name = "Dark harbour map"; map.lifetime = .keepAlways; add(map)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20)); app.buttons["Settings and saves"].tap()
+        XCTAssertTrue(picker.buttons["Dark"].waitForExistence(timeout: 5)); XCTAssertTrue(picker.buttons["Dark"].isSelected)
+        picker.buttons["Light"].tap(); XCTAssertTrue(picker.buttons["Light"].isSelected)
+        picker.buttons["System"].tap(); XCTAssertTrue(picker.buttons["System"].isSelected)
+        app.buttons["Done"].tap()
+    }
     func testOpeningProductionNavigationAndSettings() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20))
@@ -159,7 +176,16 @@ import XCTest
         app.alerts.buttons["Replace with backup"].tap()
         XCTAssertTrue(app.staticTexts["Town ready. Your previous save is kept in Recovery backups."].waitForExistence(timeout: 5))
         let restore = app.buttons["Review restore"].firstMatch
-        for _ in 0..<6 { if restore.exists && restore.isHittable { break }; app.swipeUp() }
+        let list = app.collectionViews.firstMatch
+        for _ in 0..<14 {
+            if restore.exists && restore.isHittable { break }
+            // Settings is a centred sheet on iPad. Scroll its list in short steps,
+            // rather than swiping the whole screen past the recovery section.
+            let upward = !restore.exists || restore.frame.maxY > app.navigationBars.firstMatch.frame.maxY
+            let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: upward ? 0.70 : 0.30))
+            let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: upward ? 0.40 : 0.60))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
         XCTAssertTrue(restore.isHittable)
         let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "Save recovery and dated backups"; screenshot.lifetime = .keepAlways; add(screenshot)
     }
