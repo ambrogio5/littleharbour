@@ -444,7 +444,7 @@ struct InspectorView: View {
     private func journal(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Memories of \(s.story.townName)").font(.system(.title2, design: .serif))
-            Text("Milestones come from your saved town. Earlier completion dates and past town-direction switches were not recorded; saved decisions below retain their season.").font(.caption).foregroundStyle(HarbourTheme.muted)
+            Text("Our milestones and choices. Some memories are undated; seasonal decisions are gathered below.").font(.caption).foregroundStyle(HarbourTheme.muted)
             if s.story.memories.isEmpty { Text("Our story starts with this harvest. Completed chapters will appear here.").font(.subheadline) }
             ForEach(s.story.memories) { memory in MemoryCard(memory: memory) }
             if s.festival.stage == 4 { Button("Visit the festival") { store.navigate("Festival") }.frame(minHeight: 44) }
