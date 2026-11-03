@@ -109,9 +109,20 @@ import XCTest
         if bar.exists, bar.frame.maxY > top, bar.frame.maxY < scroll.midY { top = bar.frame.maxY }
         let nextStep = app.buttons["toolbar-next-step"]
         if nextStep.exists { top = max(top, nextStep.frame.maxY + 2) }
-        for identifier in ["inspector-nav-Production", "Dismiss message"] {
-            let inset = app.buttons[identifier]
-            if inset.exists, inset.frame.minY > top { bottom = min(bottom, inset.frame.minY - 8) }
+        // Read transient overlays from one immutable hierarchy. The toast can expire
+        // between a live `exists` and `frame` lookup, which makes XCTest fail even
+        // though the app correctly removed it. Keep its occlusion while present.
+        if let snapshot = try? app.snapshot() {
+            func insetFrames(_ node: XCUIElementSnapshot) -> [CGRect] {
+                let matches = node.elementType == .button &&
+                    (node.identifier == "inspector-nav-Production" || node.label == "Dismiss message")
+                return (matches ? [node.frame] : []) + node.children.flatMap(insetFrames)
+            }
+            for frame in insetFrames(snapshot) where frame.minY > top {
+                bottom = min(bottom, frame.minY - 8)
+            }
+        } else {
+            XCTFail("Could not inspect the visible overlay bounds")
         }
         return (top + 4, bottom)
     }
