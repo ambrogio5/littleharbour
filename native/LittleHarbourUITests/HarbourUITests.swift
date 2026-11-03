@@ -12,7 +12,15 @@ import XCTest
         let profile = app.segmentedControls["refit-profile"]
         XCTAssertTrue(profile.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(profile, in: app)); XCTAssertTrue(profile.buttons["Yield"].exists)
-        profile.buttons["Original"].tap()
+        let original = profile.buttons["Original"]
+        XCTAssertTrue(reveal(original, in: app)); XCTAssertTrue(original.isEnabled)
+        // The iOS 18 failure capture still had Speed selected after tap(). Use
+        // the visible child segment's centre and assert selection before scrolling.
+        let beforeSelection = XCTAttachment(string: profile.debugDescription)
+        beforeSelection.name = "Workshop profile before selection"; beforeSelection.lifetime = .keepAlways; add(beforeSelection)
+        original.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let originalSelected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: original)
+        XCTAssertEqual(XCTWaiter.wait(for: [originalSelected], timeout: 5), .completed)
         let restore = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Restore original setup")).firstMatch
         XCTAssertTrue(reveal(restore, in: app)); XCTAssertTrue(restore.isEnabled)
         let refitShot = XCTAttachment(screenshot: app.screenshot()); refitShot.name = "Advanced refit choices"; refitShot.lifetime = .keepAlways; add(refitShot)
