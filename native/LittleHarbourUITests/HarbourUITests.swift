@@ -86,6 +86,10 @@ import XCTest
         let open = app.buttons["action-[\"festivalCelebrate\",[\"food\"]]"]
         XCTAssertTrue(reveal(open, in: app), "The opening action must not sit beneath the Production/Trade/Build inset")
         XCTAssertTrue(open.isEnabled); open.tap()
+        XCTAssertTrue(app.buttons["celebration-continue"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["celebration-title"].label, "The first harbour festival")
+        let celebration = XCTAttachment(screenshot: app.screenshot()); celebration.name = "Elena celebrates the festival"; celebration.lifetime = .keepAlways; add(celebration)
+        app.buttons["celebration-continue"].tap()
         XCTAssertTrue(app.staticTexts["festival-orders"].waitForExistence(timeout: 5), "Opening the festival must unlock the request board")
         XCTAssertEqual(app.staticTexts["festival-progress"].label, "4 of 4 stages complete")
         let requests = XCTAttachment(screenshot: app.screenshot()); requests.name = "Unlocked festival requests"; requests.lifetime = .keepAlways; add(requests)

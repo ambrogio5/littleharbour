@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 10) adds the post-ferry Harbour Festival, with food/craft choices, passenger goals, permanent courtyard decorations and repeatable local requests. It retains the landscape framing and System/Light/Dark appearance. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 11) adds Elena’s story voice, named coastal/local partners, journal memories and dismissible chapter celebrations to the post-ferry Harbour Festival. It retains the landscape framing and System/Light/Dark appearance. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 
@@ -31,6 +31,8 @@ xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
 `LittleHarbourTests` runs the actual JavaScriptCore engine and native filesystem recovery tests. `LittleHarbourUITests` exercises native navigation, harvests, save/relaunch, map gestures, site selection and landscape layout. UI tests use a separate disposable application-support namespace, never the player's town. Tests that request `--ui-testing` reset their own in-memory town; persistence tests use `--persistence-testing` and explicitly reset only that namespace.
 
 ## Playing
+
+The town is consistently named Porto Lume, and the native destination is Olive Island. Elena speaks alongside the next practical action. Completed chapters have a dismissible celebration and remain in Town → Town journal. Memories are derived from the save: retained evolution decisions show their saved season; chapter completions and the current residents/town-direction choices are marked undated where no timestamp exists. Importing or reopening an established town does not replay old celebrations. See [story voice and evidence limits](docs/STORY-VOICE.md).
 
 Drag the map; pinch or use +/− to zoom. The map remembers your view between sessions. Manual pan/zoom survives rotation; a chosen district or Whole town refits to the new window size. Whole town fits the town in one tap. Painted hills, olive groves and open sea extend beyond its original frame; camera limits keep the visible view within the new scenery. This expands the view, not the economic/buildable land. Existing camera preferences migrate separately from town saves. Explore jumps between districts. Sites opens a searchable directory with each building’s artwork and construction state, including access with VoiceOver. Building labels can be hidden in Explore or Settings. Tap a building to open its current activity. On iPhone, activities open in a sheet; wider windows show an inspector beside the map. The threshold uses available window width, supporting iPad multitasking.
 

@@ -12,6 +12,8 @@ import Combine
     @Published var guidanceFocus = false
     @Published var selectedBerth = 0
     @Published var directionFocus: String?
+    @Published private(set) var chapterCelebration: StoryMemory?
+    private var knownChapters: Set<String>?
     @Published private(set) var lastPerformedActionID: String?
     private var lastActionAt = -Double.infinity
     private let actionClock: () -> Double
@@ -45,9 +47,15 @@ import Combine
     }
     func refresh() throws {
         snapshot = try engine?.snapshot()
+        let completed = snapshot?.story.memories.filter { $0.chapter != nil } ?? []
+        if let knownChapters, let newest = completed.first(where: { !knownChapters.contains($0.id) }) {
+            chapterCelebration = newest
+        }
+        knownChapters = (knownChapters ?? []).union(completed.map(\.id))
         if guidanceFocus, let next = snapshot?.guidance { category = next.category }
         if let direction = snapshot?.directions.first(where: { $0.id == directionFocus }) { category = direction.category; selectedSite = direction.siteID }
     }
+    func dismissCelebration() { chapterCelebration = nil }
     func pulse() {
         if lastPerformedActionID != nil && actionClock() - lastActionAt >= 0.65 { lastPerformedActionID = nil }
         let now = ProcessInfo.processInfo.systemUptime, dt = min(0.5, max(0, now - lastTick)); lastTick = now
@@ -112,6 +120,7 @@ import Combine
         guard let data = pendingImport, let engine else { return }
         do {
             try saves.replace(data); try engine.load(data); protectedSave = false; cancelImport(); selectedSite = nil; guidanceFocus = false; directionFocus = nil; category = "Production"
+            knownChapters = nil; chapterCelebration = nil
             try refresh(); lastSaved = Date(); message = "Town ready. Your previous save is kept in Recovery backups."
         } catch { freeze(error) }
     }
