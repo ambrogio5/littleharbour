@@ -1,6 +1,6 @@
 # Free App Store release preparation
 
-Version **1.0.0 (build 10)** is a reviewable free-release candidate, with persistent appearance, revised landscape framing and the post-ferry [Harbour Festival](HARBOUR-FESTIVAL.md). Both original campaigns and both festival branches replay with earned resources. QA installation and informal device play do not establish full physical acceptance, human pacing or App Store readiness. No App Store upload or submission has occurred.
+Version **1.0.0 (build 14)** is a QA candidate with the approved [long-play economy and investments](LONG-PLAY-ECONOMY.md), reduced bottom spacing, persistent appearance, revised landscape framing, the post-ferry [Harbour Festival](HARBOUR-FESTIVAL.md), and [native story voice and memories](STORY-VOICE.md). Both original campaigns and both festival branches replay with earned resources. QA installation and informal device play do not establish full physical acceptance, human pacing or App Store readiness. No App Store upload or submission has occurred.
 
 ## Before distribution
 
@@ -23,3 +23,5 @@ Version **1.0.0 (build 10)** is a reviewable free-release candidate, with persis
 The UI exposes the existing game's systems, including advanced actions, through native activity panels. It does not reproduce every browser presentation convenience: persistent pinned goals, three browser target-preset slots, and a named town editor remain absent. Native plain-browser import starts new evolution history because browser evolution lives under a separate storage key. Map position, zoom and the chosen district are remembered locally on the device; they do not travel inside economy exports. There is no automatic synchronization between browser and native saves.
 
 The candidate is English-only and silent. It includes production smoke and boat wakes, ambient painted townspeople and Elena as a guide. People are cosmetic, not independently simulated workers. There is no animated mill wheel or authored music. Human campaign pacing and physical-device performance remain unverified. Existing browser play remains on main until the user separately chooses to merge; no deployment changes or automatic merge are part of this work.
+
+Build 14 changes the shared town schema to 14. The older deployed browser cannot import it; updated browser sources are tested but are not deployed. Settings exposes the compatibility boundary and conditional older-browser export. Human before/after pacing was deferred by the owner; this candidate is not yet accepted for release.

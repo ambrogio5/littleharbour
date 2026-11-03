@@ -8,25 +8,26 @@ import {sampleTown} from '../dist/demo-town.js';
 import {nextStep} from './guidance.js';
 import {directions} from './directions.js';
 import * as F from './festival.js';
+import * as S from './story.js';
 let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival();
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
 const effects={dispatch:'ship-cargo',dispatchContract:'ship-cargo',dispatchMarket:'ship-cargo',upgrade:'expand-quay',fundFerryStage:'expand-quay',buildNeighbourhood:'fund-festival',deliverResidentsSupplies:'fund-festival',openNeighbourhood:'fund-festival',fundWaterfront:'repair-waterfront',supplyWaterfront:'repair-waterfront',upgradeWorkshops:'train-artisans',invest:'train-artisans',buildMarketBusiness:'train-artisans',buildKiln:'train-artisans',buildTerrace:'restore-grove',inlandAccess:'restore-grove'};
 function mutate(s,fn,args){
  // Native's larger target still uses the original unlock checks and automation worker.
- // The canonical town remains loadable by the deployed browser (maximum target 12).
+ // Browser exports retain a maximum target of 12; new investments require schema 14.
  if(fn==='setTarget'&&args[1]===24){if(!E.setTarget(s,args[0],12))return false;s.log[0]=E.RECIPES[args[0]].name+' · maintain 24 in stock';return true;}
  if(fn==='queueProject')return queueProject(s,...args).queued>0;if(fn==='speed'){if(![0,1,3].includes(args[0]))return false;s.speed=args[0];return true;}return E[fn](s,...args);}
 function registry(s,f=festival){
  const out=[];
  function add(category,title,fn,args=[],cost=null,reason='',goal=null,destructive=false){
   let enabled=false;try{const copy=clone(s),before=JSON.stringify(copy);enabled=!!mutate(copy,fn,args)&&JSON.stringify(copy)!==before;}catch{}
-  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
+  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,partner:S.partner(fn,args),detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
  }
  add('Production','Harvest & replant','harvestReplant',[],null,'Wait for the wheat to ripen.');
  for(const [key,r]of Object.entries(E.RECIPES))if(E.unlocked(s,key)){
   add('Production',r.name,'start',[key],r.cost,`Needs ingredients and a free ${r.station} queue slot. A ripe crop must be harvested.`,null);
-  out[out.length-1].detail=`${E.recipeDuration(s,key)}s · makes ${costText(r.output)}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
+  out[out.length-1].detail=`${E.recipeDuration(s,key)}s · makes ${costText(E.recipeOutput(s,key))}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
   if(s.pier)for(const n of [0,6,12,24])add('Automation',`${r.name} · ${n?'maintain '+n:'stop target'}`,'setTarget',[key,n]);
  }
  s.jobs.forEach((j,i)=>{if(E.canCancel(s,i)){add('Queues','Cancel '+E.RECIPES[j.key].name,'cancel',[i],null,'Only waiting batches can be cancelled.');add('Queues','Make next: '+E.RECIPES[j.key].name,'prioritize',[i]);}});
@@ -42,6 +43,11 @@ function registry(s,f=festival){
   const path=E.PATHS[s.specialisation];if(path&&!s.specialists.includes(path.station))add('Build','Build '+path.building,'invest',[],path.cost,'Complete the required livelihood and collect building supplies.');
   for(const [id,p]of Object.entries(E.TOWN_FOCUSES))add('Build',p.name+' · '+p.benefit,'setTownFocus',[id],s.townFocus?{coins:100}:null,E.townFocusBlocker(s,id),null,!!s.townFocus);
   for(const [station,r]of Object.entries(E.REFITS))if(station!=='fishing'||s.businesses.includes(station))for(const mode of ['speed','queue'])add('Refits',r.name+' · '+r[mode].name,'installRefit',[station,mode],r[mode].cost,E.refitBlocker(s,station,mode),null,!!s.refits[station]);
+  if(s.fleet.lighthouse.stage===3)for(const [station,name]of Object.entries(E.ADVANCED_STATIONS))if(Object.entries(E.RECIPES).some(([key,r])=>r.station===station&&E.unlocked(s,key)))for(const tier of [2,3])for(const mode of ['speed','yield','original']){
+   const p=E.advancedRefitPlan(s,station,tier,mode);if(mode==='original'&&s.advancedRefits[station]?.tier!==tier)continue;if((s.advancedRefits[station]?.tier||2)>tier)continue;
+   add('Refits',name+' · '+(mode==='original'?'Restore original setup':'Tier '+tier+' · '+(mode==='speed'?'faster batches':'more output')),'installAdvancedRefit',[station,tier,mode,p.epoch],p.cost,E.advancedRefitBlocker(s,station,tier,mode),p.goal,!!s.advancedRefits[station]);
+   const preview=clone(s);preview.advancedRefits[station]={tier,mode,epoch:p.epoch};out[out.length-1].detail=(costText(p.cost)||'No charge')+'\n'+Object.entries(E.RECIPES).filter(([key,r])=>r.station===station&&E.unlocked(s,key)).map(([key,r])=>r.name+': '+E.recipeDuration(preview,key)+'s, next batch '+costText(E.recipeOutput(preview,key))).join('; ');
+  }
   if(!s.charter)add('Contracts','Establish harbour charter','establishCharter',[],E.CHARTER_COST,'Complete two different contracts.');
  }
  if(s.contract){const c=E.CONTRACTS[s.contract.id];add('Contracts',`Deliver ${c.name} · ${s.contract.shipped+1}/${c.shipments}`,'dispatchContract',[],c.cost,'Prepare the contracted cargo.','contract:'+s.contract.id);add('Contracts','Release current contract','abandonContract',[],null,'',null,true);}
@@ -52,8 +58,9 @@ function registry(s,f=festival){
  }
  if(!s.market.access)add('Market','Open market quarter','marketAccess',[],E.MARKET_ACCESS_COST,E.marketAccessBlocker(s));
  else for(const [id,b]of Object.entries(E.MARKET_BUSINESSES)){
-  if(!s.market.businesses[id])add('Market','Build '+b.name,'buildMarketBusiness',[id,b.plot],b.cost,E.marketBlocker(s,id,b.plot));
-  else{const o=E.marketOrder(s,id);add('Market','Supply '+b.name,'dispatchMarket',[id],o?.cost,'Wait for construction, demand and supplies.','market:'+id);add('Market',`${s.market.businesses[id].auto?'Stop':'Enable'} automatic supply · ${b.name}`,'setMarketAuto',[id,!s.market.businesses[id].auto]);}
+  if(b.plot===2&&s.market.plots[2]&&s.market.plots[2]!==id)add('Market','Switch to '+b.name,'switchMarketBusiness',[id,s.market.plots[2],s.marketRevision],E.MARKET_SWITCH_COST,E.switchMarketBlocker(s,id,s.market.plots[2]),null,true);
+  else if(!s.market.businesses[id])add('Market','Build '+b.name,'buildMarketBusiness',[id,b.plot],b.cost,E.marketBlocker(s,id,b.plot));
+  else{const o=E.marketOrder(s,id);add('Market','Supply '+b.name+(o?' · receive '+costText({...o.reward,...(o.coins?{coins:o.coins}:{})}):''),'dispatchMarket',[id],o?.cost,'Wait for construction, demand and supplies.','market:'+id);add('Market',`${s.market.businesses[id].auto?'Stop':'Enable'} automatic supply · ${b.name}`,'setMarketAuto',[id,!s.market.businesses[id].auto]);}
  }
  if(!s.inland.access)add('Inland','Open inland terraces','inlandAccess',[],E.INLAND_ACCESS_COST,E.inlandAccessBlocker(s));
  else{
@@ -61,7 +68,8 @@ function registry(s,f=festival){
   if(!s.inland.kiln)add('Inland','Build kiln & preserving room','buildKiln',[],E.KILN_COST,E.kilnBlocker(s));
   if(!s.inland.courtyard)add('Inland','Tile market courtyard','buildCourtyard',[],E.COURTYARD_COST,E.courtyardBlocker(s));
  }
- for(let slot=0;slot<2;slot++){
+ if(!s.fleet.thirdBerth)add('Fleet','Open the third working berth','buildThirdBerth',[],E.THIRD_BERTH_COST,E.thirdBerthBlocker(s),'thirdberth');
+ for(let slot=0;slot<3;slot++){
   const b=s.fleet.boats[slot];
   if(!b){for(const[id,d]of Object.entries(E.FLEET_BOATS))add('Fleet',`Buy ${d.name} · berth ${slot+1}`,'buyBoat',[slot,id],d.cost,E.boatBlocker(s,slot,id));continue;}
   if(b.trip)add('Fleet',`Recall berth ${slot+1} · refund cargo`,'cancelVoyage',[slot],null,'',null,true);
@@ -127,6 +135,7 @@ export function save(){
  return JSON.stringify({nativeVersion:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((extended||festival.stage>0)?{stockTargets}:{}),...(festival.stage>0?{festival}:{} )});
 }
 export function browserSave(){return JSON.stringify(town);}
+export function legacyBrowserSave(){return E.legacyBrowserSave(town);}
 export function reset(sample=false){town=sample?sampleTown():E.fresh();evolution=V.createEvolution();stockTargets={};festival=F.freshFestival();return true;}
 export function tick(dt){
  // Apply native caps only during the synchronous engine step. Production costs,
@@ -155,11 +164,12 @@ export function act(id){
 }
 export function resolve(option){evolution=V.resolveEvent(evolution,option);return true;}
 export function reserve(goal){const next=clone(town);if(!E.reserveFor(next,goal))return false;town=E.parseSave(JSON.stringify(next));return true;}
-export function plan(goal){return JSON.stringify(projectPlan(town,goal));}
+export function plan(goal){return JSON.stringify(S.presentation(projectPlan(town,goal)));}
 export function queuePlan(goal){const next=clone(town),result=queueProject(next,goal);town=E.parseSave(JSON.stringify(next));return result.queued;}
 export function snapshot(){
- const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;return e;});
+ const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;const rank=town.advancedRefits[e.select||e.kind]?.tier;if(rank&&e.stage==='built')e.level=rank;return e;});
  for(const [id,x,y,label]of [['boatyard',1080,1390,'Boatyard'],['estate',790,790,'Vineyard & cellar']])entities.push({id,x,y,zone:id==='estate'?'inland':'market',kind:id,label,select:id,stage:town.specialists.includes(id)?(E.underConstruction(town,id)?'building':'built'):'unbuilt',level:town.specialists.includes(id)?1:0});
+ for(const e of entities){const rank=e.id==='kiln'?Math.max(town.advancedRefits.kiln?.tier||0,town.advancedRefits.preserving?.tier||0):town.advancedRefits[e.select||e.kind]?.tier;if(rank&&e.stage==='built')e.level=rank;}
  const actions=registry(town),baseObjective=currentObjective(town),festivalView=F.festivalView(town,festival);
  if(festivalView.unlocked){const court=entities.find(e=>e.id==='courtyard');court.tab='festival';court.label='Festival courtyard';}
  const objective=festivalView.unlocked?{...baseObjective,chapter:6,chapterName:'Harbour festival',title:festivalView.title,description:festivalView.body,target:'festival',complete:festival.stage===4}:baseObjective;
@@ -175,7 +185,7 @@ export function snapshot(){
  }else guidance=nextStep(town,actions,objective);
  const workshops=Object.fromEntries(Object.entries(E.RECIPES).filter(([key])=>E.unlocked(town,key)).map(([key,r])=>{
   const item=Object.keys(r.output)[0],target=stockTargets[key]||town.targets[key]||0,stock=town.stock[item]||0,incoming=E.incoming(town,item);
-  return [key,{target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
+  return [key,{station:r.station,target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
  }));
- return JSON.stringify({festival:festivalView,directions:directions(town,actions),workshops,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
+ return JSON.stringify(S.presentation({story:S.story(town,evolution,festival,objective,guidance),festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats}));
 }

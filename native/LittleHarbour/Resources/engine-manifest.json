@@ -1,13 +1,14 @@
 {
-  "native/bridge.js": "75414bd44685619983123afc2af8bccb32e4076b30be25054f53377e247cd481",
-  "dist/engine.js": "55f6f2b9df7fa4850a4702835417b2aedb375dad91c0a1cf9cc8c655cba588e5",
-  "dist/catalog.js": "f2cdddac328dfea75a618bb74f6563b333429817a49b123895ea51ee7fef3c2e",
+  "native/bridge.js": "7f2e5474b0f1084bf0f606455e4d4975d0cde9385cfa223bb30add9df74bfbb9",
+  "dist/engine.js": "aa69fb1a711f5feb22986d1e51cb9ad504d35b7c4e2fbcd794967162c9180414",
+  "dist/catalog.js": "e7350888b916b4590815c84894a4a77904588fc6c95ece6cd5aeefe66d8558c6",
   "dist/lab/evolution.js": "cb63acae292cc50791cc3838949894538314288a56d7c85492852007fd13e118",
-  "dist/world-model.js": "85cffd46eb74b35112b62aa02aa9842c9bc4a8d6f00e35f9b3877f80ca3663e8",
-  "dist/progression.js": "27880ddd7d7531f6f2edc91773d87af020e02f10e22acef2c6a01e68953480be",
-  "dist/project-planning.js": "f145809a0844cfb151cd5b4fb48c267a65671613449fd911459510aee50e4d0f",
-  "dist/demo-town.js": "1a8e2253b862e9108d026fcd6c1f17fa0b380a8fc4a73afb74aa618543c6b4dd",
+  "dist/world-model.js": "0448193134717bb23e147dfc835ea19de1659db46533e3905e9d1885b5e0be8f",
+  "dist/progression.js": "6e81dfe54cb1dda4dc681c50f1e157802b0e52d319324d5ba5d20216418fc510",
+  "dist/project-planning.js": "6c7358a30363a894db2ea3d330a75a4069edffba441c065206e8b4c61fe27ff4",
+  "dist/demo-town.js": "d18169260d5ae2f89b8c71338f70662d9a396fa4e4dd7a641dfb491a8642e4fa",
   "native/guidance.js": "9509f8ba04ad1dcc41676d51835f02b65ce44ef8e97aeff91526a21044056c27",
-  "native/directions.js": "1e96fb2032cc1cde13dba2b576f5d7282a25901d817e74461c4295d88a8389e0",
-  "native/festival.js": "1c08a14a815ac66e5e831e168b2926821e7144fc6f0657b83e14fd2cbef69d8b"
+  "native/directions.js": "2324d0a7dfa1898aa32ce12a3c8b1deac1d8f7d9e0628082d47f68853bb5729a",
+  "native/festival.js": "1c08a14a815ac66e5e831e168b2926821e7144fc6f0657b83e14fd2cbef69d8b",
+  "native/story.js": "cd333b282a573af573cd387ad0bfe21947bdf52618c8fb290375cf9fd35d9bf1"
 }

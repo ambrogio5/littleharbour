@@ -7,7 +7,7 @@ test('Cala Verde earns more coins per cargo unit; Porto Santo earns more materia
  assert(c.coins/cargo(c)>p.coins/cargo(p));assert(p.wood/cargo(p)>c.wood/cargo(c));assert(p.stone/cargo(p)>c.stone/cargo(c));
 });
 test('Focus gives material differences in delivery returns without changing required supplies',()=>{
- const s=sampleTown(),base=order(s);s.townFocus='trade';assert(order(s).coins>=base.coins*1.34);assert.deepEqual(order(s).cost,base.cost);
+ const s=sampleTown(),base=order(s);s.townFocus='trade';assert.equal(order(s).coins,Math.round(base.coins/1.2*1.5));assert.deepEqual(order(s).cost,base.cost);
  s.townFocus='builders';assert(order(s).wood>=base.wood*1.49);assert(order(s).stone>=base.stone*1.49);
  const local=marketOrder(s,'fishmonger');s.townFocus='community';assert(marketOrder(s,'fishmonger').coins>=local.coins*1.49);
 });

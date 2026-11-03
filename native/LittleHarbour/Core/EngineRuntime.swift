@@ -30,8 +30,8 @@ enum HarbourError: LocalizedError {
         guard data.count <= 150_000, let text = String(data: data, encoding: .utf8) else { throw HarbourError.message("Choose a Little Harbour save under 150 KB in UTF-8 format.") }
         try call("load", [text])
     }
-    func save(browser: Bool = false) throws -> Data {
-        guard let text = try call(browser ? "browserSave" : "save").toString(), let data = text.data(using: .utf8) else { throw HarbourError.message("The town could not be encoded.") }
+    func save(browser: Bool = false, legacy: Bool = false) throws -> Data {
+        guard let text = try call(legacy ? "legacyBrowserSave" : browser ? "browserSave" : "save").toString(), let data = text.data(using: .utf8) else { throw HarbourError.message("The town could not be encoded.") }
         return data
     }
     func snapshot() throws -> HarbourSnapshot { try decode("snapshot", as: HarbourSnapshot.self) }

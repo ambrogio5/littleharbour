@@ -94,6 +94,18 @@ import SwiftUI
             let artwork = boat.map { !reduceMotion && $0.trip != nil ? $0.sailingArtwork : $0.artwork } ?? e.texture
             node.size = CGSize(width: boat?.type == "cutter" ? 270 : 320, height: boat?.type == "cutter" ? 270 : 320)
             if node.userData?["texture"] as? String != artwork { node.texture = texture(artwork); node.userData = ["texture": artwork] }
+            // A consistent soft ground contact; purely cosmetic, static under Reduce Motion.
+            if e.kind != "boat" && node.childNode(withName: "ground-contact") == nil {
+                let shadow = SKNode(); shadow.name = "ground-contact"; shadow.zPosition = -1
+                for radius in stride(from: 3, through: 0, by: -1) {
+                    let ellipse = SKShapeNode(ellipseOf: CGSize(width: 150 + radius * 18, height: 30 + radius * 7))
+                    ellipse.fillColor = UIColor(red: 0.18, green: 0.19, blue: 0.12, alpha: 0.045)
+                    ellipse.strokeColor = .clear; ellipse.position = CGPoint(x: 12, y: -86)
+                    shadow.addChild(ellipse)
+                }
+                node.addChild(shadow)
+            }
+            node.childNode(withName: "ground-contact")?.isHidden = e.stage == "unbuilt"
             node.position = mapPosition(e); node.zPosition = 2700 - mapPosition(e).y
             node.alpha = e.stage == "unbuilt" ? 0.74 : 1
             labels[e.id]?.text = e.displayLabel

@@ -1,7 +1,7 @@
-import {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start} from './engine.js?v=0.20.1';
+import {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start,incoming,recipeOutput,recipeBatches} from './engine.js?v=0.21.0';
 
 const itemName=item=>item==='coins'?'Coins':ITEMS[item]||item;
-const queuedStock=s=>s.jobs.reduce((pool,j)=>{for(const [item,n]of Object.entries(RECIPES[j.key].output))pool[item]=(pool[item]||0)+n;return pool;},{});
+const queuedStock=s=>Object.fromEntries(Object.keys(s.stock).map(item=>[item,incoming(s,item)]));
 
 // Planning never changes town state. Allocate all final requirements before any
 // upstream input so, for example, cloth promised to a home cannot also feed sails.
@@ -27,12 +27,13 @@ function analyseProject(s,goal){
   const [key,r]=choices.find(([,r])=>Object.entries(r.cost).every(([k,n])=>(pool[k]||0)>=n))||choices[0];
   if(path.includes(item)){blockers.push({item,kind:'cycle',missing:amount,message:`Resolve the production dependency for ${itemName(item).toLowerCase()}.`});return;}
   if(key==='field'&&s.ripe){blockers.push({item,kind:'harvest',missing:amount,message:'Harvest the ripe wheat field first.'});return;}
-  const batches=Math.ceil(amount/r.output[item]);
+  const planned=recipeIndex.get(key)?.batches||0,batches=recipeBatches(s,key,item,amount,planned),previous=recipeOutput(s,key,planned),output=recipeOutput(s,key,planned+batches);
+  for(const k of Object.keys(output))output[k]-=previous[k];
   for(const [input,n]of Object.entries(r.cost))need(input,n*batches,[...path,item]);
-  for(const [output,n]of Object.entries(r.output))pool[output]=(pool[output]||0)+n*batches;
+  for(const [itemOut,n]of Object.entries(output))pool[itemOut]=(pool[itemOut]||0)+n;
   pool[item]-=amount;
   if(recipeIndex.has(key))recipeIndex.get(key).batches+=batches;
-  else {const entry={key,station:r.station,batches,output:{...r.output},seconds:0,queueable:0};recipeIndex.set(key,entry);recipes.push(entry);}
+  else {const entry={key,station:r.station,batches,output:recipeOutput(s,key),seconds:0,queueable:0};recipeIndex.set(key,entry);recipes.push(entry);}
  }
  // Root stock was already allocated above. Do not allocate it a second time.
  for(const [item,n]of rootMissing)need(item,n);

@@ -6,7 +6,8 @@ export const COAST_RESTORED_IMAGE='assets/coast-restored.png';
 export const COAST_HOME={id:'home',name:'Porto Lume',x:88,y:78};
 export const COAST_BERTHS=[
  {id:0,name:'North berth',x:73,y:73,native:{x:1121,y:748},pier:{x:1185,y:711},angle:-78},
- {id:1,name:'South berth',x:71,y:84,native:{x:1091,y:860},pier:{x:1170,y:820},angle:-78}
+ {id:1,name:'South berth',x:71,y:84,native:{x:1091,y:860},pier:{x:1170,y:820},angle:-78},
+ {id:2,name:'Outer berth',x:66,y:91,native:{x:1014,y:932},pier:{x:1100,y:900},angle:-78}
 ];
 export const COAST_DESTINATIONS={
  quarry:{id:'quarry',name:'Quarry village',x:21,y:17,landing:{x:516,y:259},pin:{x:24,y:23}},
@@ -29,8 +30,8 @@ export const COAST_ROUTES={
  island:[[990,790],[850,777],[720,745],[584,690]]
 };
 export const COAST_BERTH_ROUTES={
- quarry:[[[1121,748],[1030,722],...COAST_ROUTES.quarry],[[1091,860],[1000,832],[935,758],...COAST_ROUTES.quarry]],
- island:[[[1121,748],[1030,755],...COAST_ROUTES.island],[[1091,860],[1000,832],...COAST_ROUTES.island]]
+ quarry:[[[1121,748],[1030,722],...COAST_ROUTES.quarry],[[1091,860],[1000,832],[935,758],...COAST_ROUTES.quarry],[[1014,932],[950,860],[935,758],...COAST_ROUTES.quarry]],
+ island:[[[1121,748],[1030,755],...COAST_ROUTES.island],[[1091,860],[1000,832],...COAST_ROUTES.island],[[1014,932],[950,860],...COAST_ROUTES.island]]
 };
 // Photographic upgrades are revealed only inside each completed project footprint.
 export const COAST_PROJECT_CLIPS={

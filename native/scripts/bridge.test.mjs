@@ -6,11 +6,64 @@ import * as B from '../bridge.js';
 import * as E from '../../dist/engine.js';
 import {sampleTown} from '../../dist/demo-town.js';
 import {worldEntities} from '../../dist/world-model.js';
-const late=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/late-town.json',import.meta.url),'utf8'));
+const late=E.parseSave(fs.readFileSync(new URL('../LittleHarbourTests/late-town.json',import.meta.url),'utf8'));
 const preQuay=E.fresh();Object.assign(preQuay,{deliveries:2,coins:1000,expansion:'fishing',businesses:['fishing']});
-const fixtures=[E.fresh(),preQuay,sampleTown(),late];
+const investments=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/long-play-ready.json',import.meta.url),'utf8'));
+const fixtures=[E.fresh(),preQuay,sampleTown(),late,investments.town].map(s=>E.parseSave(JSON.stringify(s)));
 const snapshot=()=>JSON.parse(B.snapshot());
 const nativeTown=()=>JSON.parse(B.browserSave());
+test('Native investment transactions, previews and legacy-export protection match the shared engine',()=>{
+ const expected=E.parseSave(JSON.stringify(late));expected.coins=100000;for(const k of Object.keys(expected.stock))expected.stock[k]=1000;expected.fleet.visits={quarry:10,island:10};
+ for(const route of ['quarry','island'])for(let stage=0;stage<3;stage++)assert(E.fundCoastalProject(expected,route,stage));
+ assert(E.buildCourtyard(expected));E.tick(expected,30);B.load(JSON.stringify(expected));
+ for(const station of Object.keys(E.ADVANCED_STATIONS))for(const [tier,mode]of [[2,'speed'],[2,'yield'],[2,'original'],[3,'speed'],[3,'yield']]){
+  const epoch=expected.advancedRefits[station]?.epoch||0,id=JSON.stringify(['installAdvancedRefit',[station,tier,mode,epoch]]);
+  const before=B.save(),offer=snapshot().actions.find(a=>a.id===id);assert(offer?.enabled,id);assert.equal(B.save(),before);
+  assert(E.installAdvancedRefit(expected,station,tier,mode,epoch));assert(B.act(id));assert.deepEqual(nativeTown(),expected);
+  const paid=B.save();assert(!B.act(id));assert.equal(B.save(),paid);B.load(paid);assert.equal(B.save(),paid);
+ }
+ assert(!snapshot().legacyBrowserAvailable);assert.throws(()=>B.legacyBrowserSave(),/new investments/);
+ for(const [fn,args]of [['buildMarketBusiness',['exchange',2]],['buildThirdBerth',[]],['buyBoat',[2,'cutter']]]){
+  assert(E[fn](expected,...args));assert(B.act(JSON.stringify([fn,args])));assert.deepEqual(nativeTown(),expected);
+ }
+ E.tick(expected,8);B.tick(8);assert.deepEqual(nativeTown(),expected);
+ for(const type of ['provisioner','exchange']){
+  const old=expected.market.plots[2],epoch=expected.marketRevision,id=JSON.stringify(['switchMarketBusiness',[type,old,epoch]]);
+  assert(E.switchMarketBusiness(expected,type,old,epoch));assert(B.act(id));assert.deepEqual(nativeTown(),expected);assert(!B.act(id));
+ }
+ assert(snapshot().entities.some(e=>e.id==='boat2'));assert(snapshot().entities.some(e=>e.id==='thirdberth'));
+ const native=B.save();B.load(B.browserSave());assert.deepEqual(nativeTown(),expected);B.load(native);assert.equal(B.save(),native);
+});
+test('Story projections keep saves unchanged, use one island name and retain only evidenced memories',()=>{
+ for(const town of fixtures){
+  B.load(JSON.stringify(town));const before=B.save(),first=snapshot();
+  assert.equal(snapshot().story.townName,'Porto Lume');assert(first.story.voice.length>20);
+  assert.equal(JSON.stringify(first).includes('Isola dei Pescatori'),false);
+  assert.deepEqual(snapshot(),first);assert.equal(B.save(),before);
+  B.load(before);assert.deepEqual(snapshot().story,first.story);
+ }
+ B.reset();assert.equal(snapshot().story.memories.length,0);
+ const opening=fs.readFileSync(new URL('../LittleHarbourTests/festival-opening.json',import.meta.url),'utf8');B.load(opening);
+ assert.deepEqual(snapshot().story.memories.filter(m=>m.chapter).map(m=>m.chapter),[5,4,3,2,1]);
+ const saved=B.save();snapshot();assert.equal(B.save(),saved);
+ assert(B.act('["festivalCelebrate",["food"]]'));const opened=B.save(),story=snapshot().story;
+ assert.equal(story.memories[0].chapter,6);assert.match(story.memories[0].body,/food fair/);
+ assert(story.memories.every(m=>m.dateLabel.includes('not recorded')));
+ const history=JSON.parse(opened).evolution.history;
+ assert.deepEqual(story.decisions.map(m=>m.dateLabel),history.map(h=>'Season '+h.season).reverse());
+ B.load(opened);assert.deepEqual(snapshot().story,story);assert.equal(B.save(),opened);
+});
+test('Named partners decorate native actions without changing invocation identities or canonical text',()=>{
+ B.load(JSON.stringify(late));const before=B.save(),actions=snapshot().actions;
+ const quarry=actions.find(a=>['fundCoastalProject','completeCommission'].includes(a.fn)&&a.args[0]==='quarry');
+ assert(quarry?.partner.startsWith('Matteo'));
+ for(const [fn,name]of [['dispatchMarket','Sofia'],['chooseResidentsProposal','Nico']]){
+  const action=actions.find(a=>a.fn===fn);assert(action?.partner.startsWith(name));
+  assert.equal(action.id,JSON.stringify([action.fn,action.args]));
+ }
+ assert(actions.some(a=>a.partner?.startsWith('Lucia')));
+ assert.equal(B.save(),before);
+});
 test('Every exposed enabled economic action equals the original engine transaction',()=>{
  const context=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../LittleHarbour/Resources/engine-bundle.js',import.meta.url),'utf8'),context);
  const generated=context.Harbour;let count=0;
@@ -30,8 +83,8 @@ test('Illegal and stale construction actions cannot charge twice or produce evol
  const id=JSON.stringify(['build',['olive']]);assert(B.act(id));const paid=B.save();assert.equal(B.act(id),false);assert.equal(B.save(),paid);
  assert.equal(snapshot().entities.find(x=>x.id==='olive').stage,'building');B.tick(8);assert.equal(snapshot().entities.find(x=>x.id==='olive').stage,'built');
 });
-test('Known browser schemas 1 through 13 migrate through authoritative parser',()=>{
- for(let version=1;version<=13;version++){const s=E.fresh();s.version=version;B.load(JSON.stringify(s));assert.equal(nativeTown().version,13);assert.equal(nativeTown().coins,80);}
+test('Known browser schemas 1 through 14 migrate through authoritative parser',()=>{
+ for(let version=1;version<=14;version++){const s=E.fresh();s.version=version;if(version<14)s.fleet.boats=s.fleet.boats.slice(0,2);B.load(JSON.stringify(s));assert.equal(nativeTown().version,14);assert.equal(nativeTown().coins,80);}
 });
 test('All supported native and browser imports roundtrip without losing paid work',()=>{
  for(const fixture of [E.fresh(),sampleTown(),late]){
@@ -113,6 +166,21 @@ test('Ambitions use saved milestones and continue after the final passenger chap
  const commission=s.actions.find(a=>a.fn==='fundCoastalProject'&&a.enabled);assert(commission);const beforeProgress=s.directions.find(d=>d.id==='coast').progress;assert(B.act(commission.id));
  assert.equal(snapshot().directions.find(d=>d.id==='coast').progress,beforeProgress+1);const saved=B.save();B.load(saved);assert.equal(snapshot().directions.find(d=>d.id==='coast').progress,beforeProgress+1);
  assert(snapshot().directions.every(d=>d.unlocked));
+});
+test('Late ambitions point to the new investments without paying or changing the town',()=>{
+ const town=E.parseSave(JSON.stringify(investments.town));
+ town.fleet.thirdBerth=false;town.fleet.boats[2]=null;town.market.plots[2]=null;
+ delete town.market.businesses.provisioner;delete town.market.businesses.exchange;
+ town.advancedRefits={};town.yieldCredits={};town.targets={field:12,mill:12,bakery:12};
+ B.load(JSON.stringify(town));const before=B.save(),s=snapshot();
+ assert.equal(B.save(),before);
+ for(const [direction,fn]of [['coast','buildThirdBerth'],['community','buildMarketBusiness'],['industry','installAdvancedRefit']]){
+  const d=s.directions.find(d=>d.id===direction);assert(d.choices.length,direction);
+  for(const id of d.choices){const a=s.actions.find(a=>a.id===id);assert.equal(a.fn,fn);assert.equal(a.category,d.category);}
+  if(d.siteID)assert(s.entities.some(e=>e.id===d.siteID));
+ }
+ town.fleet.thirdBerth=true;B.load(JSON.stringify(town));
+ assert(snapshot().directions.find(d=>d.id==='coast').choices.every(id=>JSON.parse(id)[0]==='buyBoat'));
 });
 test('Inline workshop targets persist and wait while the town is paused',()=>{
  B.load(JSON.stringify(late));B.speed(0);const id=JSON.stringify(['setTarget',['mill',12]]);assert(B.act(id));assert.equal(snapshot().workshops.mill.target,12);assert.equal(snapshot().workshops.mill.status,'Paused');
