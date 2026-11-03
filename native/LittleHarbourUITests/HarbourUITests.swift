@@ -22,8 +22,10 @@ import XCTest
         let businesses = app.buttons["market-business"]
         XCTAssertTrue(businesses.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(businesses, in: app)); businesses.tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Craft exchange")).firstMatch.tap()
+        let exchangeOption = app.buttons["Plot 3 · Craft exchange"]
+        XCTAssertTrue(exchangeOption.waitForExistence(timeout: 5)); exchangeOption.tap()
         XCTAssertTrue(reveal(app.buttons["market-automation"], in: app))
+        XCTAssertTrue(app.buttons["market-automation"].label.contains("Craft exchange"))
         let marketShot = XCTAttachment(screenshot: app.screenshot()); marketShot.name = "Individual market business"; marketShot.lifetime = .keepAlways; add(marketShot)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap()
         XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
