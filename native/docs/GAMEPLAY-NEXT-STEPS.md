@@ -1,5 +1,7 @@
 # Longer play after the ferry — roadmap
 
+The [November 3 long-play programme](LONG-PLAY-PROGRAMME.md) supersedes the ordering and future save design below. In particular, increment 1 proposes shared town schema 14, and increments 2–5 use one native envelope-4 `chronicle` object, not a separate `restoration` envelope. The festival evidence remains valid; future projects below remain historical proposals, not implemented features.
+
 Build 10 implements the first increment, Harbour Festival: two supply themes, real passenger returns, a permanent courtyard reward, a journal memory and two rotating request choices. See [implementation and evidence](HARBOUR-FESTIVAL.md). The remaining projects below are proposals, not playable content. The original design target of two or three 15–20-minute sessions has not been validated by human playtests.
 
 ## What runs out now

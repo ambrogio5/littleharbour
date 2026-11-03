@@ -1,5 +1,7 @@
 # Whole-game review — build 10, November 2026
 
+Historical review: the owner's November 3 long-play prompt changes the delivery order. See the [current programme/status ledger](LONG-PLAY-PROGRAMME.md) and [increment 1 numeric proposal](LONG-PLAY-ECONOMY.md). Story and bottom-space fixes have since shipped in QA; the ledger distinguishes those from unfinished proposals. The current catalog has 24 recipes; the 26-recipe count below was an error.
+
 A critique of Little Harbour as it plays today, with improvement proposals for gameplay, story, interface and graphics. It was written from the source, the design documents, the earned campaign traces and simulator screenshots of the native client on iPhone 16 Pro, iPhone 17 Pro Max and iPad Pro. It is not a human playtest: no session lengths, enjoyment or device comfort were measured, and nothing here claims they were. Numbers come from `dist/catalog.js`, `dist/engine.js` and `native/bridge.js`.
 
 ## What the game is now
