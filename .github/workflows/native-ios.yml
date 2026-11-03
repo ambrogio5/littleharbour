@@ -1,10 +1,10 @@
 name: Native iOS
 on:
   pull_request:
-    paths: ['native/**', 'dist/**', '.github/workflows/native-ios.yml']
+    paths: ['native/**', 'dist/**', 'test/**', 'scripts/**', 'package.json', '.github/workflows/native-ios.yml']
   push:
     branches: [main]
-    paths: ['native/**', 'dist/**', '.github/workflows/native-ios.yml']
+    paths: ['native/**', 'dist/**', 'test/**', 'scripts/**', 'package.json', '.github/workflows/native-ios.yml']
   workflow_dispatch:
 concurrency:
   group: native-ios-${{ github.event.pull_request.number || github.ref }}
@@ -20,10 +20,14 @@ jobs:
         with:
           node-version: '22'
       - run: node native/scripts/bundle-engine.mjs --check
+      - run: npm test
       - run: node --test native/scripts/bridge.test.mjs
       - run: node native/scripts/verify-art.mjs
       - run: node native/scripts/campaign.mjs --check
       - run: node native/scripts/festival-campaign.mjs --check
+      - run: node native/scripts/long-play-campaign.mjs --check
+      - run: node native/scripts/long-play-baseline.mjs --check
+      - run: node native/scripts/long-play-baseline.mjs --after --check
   simulator:
     runs-on: macos-15
     timeout-minutes: 40
@@ -35,11 +39,14 @@ jobs:
           python3 - <<'PY' >> "$GITHUB_ENV"
           import json
           devices = json.load(open('/tmp/simulators.json'))['devices']
-          phone = next(d for group in devices.values() for d in group if d['name'].startswith('iPhone'))
+          phones = [(runtime, d) for runtime, group in devices.items() for d in group if d['name'].startswith('iPhone')]
+          runtime, phone = next(((r, d) for r, d in phones if d['name'] == 'iPhone 16 Pro'), phones[0])
           print('SIMULATOR_ID=' + phone['udid'])
+          print('SIMULATOR_DESCRIPTION=' + phone['name'] + ' / ' + runtime)
           PY
       - name: Boot simulator before testing
         run: |
+          echo "$SIMULATOR_DESCRIPTION"
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
       - name: Build and run native engine, recovery and UI tests
         run: xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath NativeTests.xcresult CODE_SIGNING_ALLOWED=NO test

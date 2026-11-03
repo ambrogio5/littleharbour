@@ -1,6 +1,45 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testAdvancedWorkshopsMarketAndThirdBoatRemainReachable() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Town"].tap()
+        let refits = app.buttons["Refits"]
+        for _ in 0..<8 where !refits.isHittable { app.swipeUp() }
+        XCTAssertTrue(refits.isHittable); refits.tap()
+        let profile = app.segmentedControls["refit-profile"]
+        XCTAssertTrue(reveal(profile, in: app)); XCTAssertTrue(profile.buttons["Yield"].exists)
+        profile.buttons["Original"].tap()
+        let restore = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Restore original setup")).firstMatch
+        XCTAssertTrue(reveal(restore, in: app)); XCTAssertTrue(restore.isEnabled)
+        let refitShot = XCTAttachment(screenshot: app.screenshot()); refitShot.name = "Advanced refit choices"; refitShot.lifetime = .keepAlways; add(refitShot)
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap()
+        let market = app.buttons["Market"]
+        for _ in 0..<8 where !market.isHittable { app.swipeUp() }
+        XCTAssertTrue(market.isHittable); market.tap()
+        let businesses = app.buttons["market-business"]
+        XCTAssertTrue(reveal(businesses, in: app)); businesses.tap()
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Craft exchange")).firstMatch.tap()
+        XCTAssertTrue(reveal(app.buttons["market-automation"], in: app))
+        let marketShot = XCTAttachment(screenshot: app.screenshot()); marketShot.name = "Individual market business"; marketShot.lifetime = .keepAlways; add(marketShot)
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        let third = app.buttons["boat-selector-2"]
+        XCTAssertTrue(reveal(third, in: app)); third.tap()
+        XCTAssertTrue(reveal(app.segmentedControls["mission-type"], in: app))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let landscape = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            let frame = app.windows.firstMatch.frame
+            return frame.width > frame.height && third.isHittable && app.segmentedControls["mission-type"].exists
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [landscape], timeout: 10), .completed)
+        XCTAssertTrue(reveal(third, in: app))
+        let boatShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); boatShot.name = "Three boats in landscape"; boatShot.lifetime = .keepAlways; add(boatShot)
+    }
+
     private func siteSearch(in app: XCUIApplication) -> XCUIElement {
         let search = app.searchFields.firstMatch
         // Newer compact system sheets collapse searchable into a Search button.

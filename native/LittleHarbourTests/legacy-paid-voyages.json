@@ -1,0 +1,879 @@
+[
+  {
+    "kind": "cargo",
+    "sourceCommit": "f75df1323b1c739acb6c3e1fcf77b05a884ae2b5",
+    "town": {
+      "version": 13,
+      "townFocus": null,
+      "residents": {
+        "proposal": null,
+        "delivered": 0
+      },
+      "ferry": {
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "runs": 0
+      },
+      "neighbourhood": {
+        "access": true,
+        "plots": [
+          {
+            "type": "home",
+            "level": 1
+          },
+          {
+            "type": "carpenter",
+            "level": 0
+          },
+          {
+            "type": "weaver",
+            "level": 0
+          },
+          {
+            "type": "flaxgarden",
+            "level": 0
+          },
+          {
+            "type": "sailmaker",
+            "level": 0
+          },
+          {
+            "type": "square",
+            "level": 0
+          }
+        ],
+        "orders": 0
+      },
+      "fleet": {
+        "development": {
+          "quarry": 3,
+          "island": 3
+        },
+        "commissions": {
+          "quarry": 0,
+          "island": 0
+        },
+        "boats": [
+          {
+            "type": "cutter",
+            "upgrade": null,
+            "sails": false,
+            "trip": null,
+            "repeat": null
+          },
+          {
+            "type": "coaster",
+            "upgrade": "cargo",
+            "sails": true,
+            "trip": {
+              "route": "island",
+              "tier": 3,
+              "cargo": {
+                "preserves": 24,
+                "bread": 12,
+                "tiles": 12
+              },
+              "reward": {
+                "coins": 3519,
+                "wood": 36,
+                "stone": 36
+              },
+              "duration": 81,
+              "left": 74
+            },
+            "repeat": null
+          }
+        ],
+        "visits": {
+          "quarry": 10,
+          "island": 10
+        },
+        "lighthouse": {
+          "stage": 3,
+          "left": 0
+        }
+      },
+      "inland": {
+        "access": true,
+        "left": 0,
+        "terraces": [
+          {
+            "type": "orchard",
+            "left": 0
+          },
+          {
+            "type": "garden",
+            "left": 0
+          }
+        ],
+        "kiln": {
+          "left": 0
+        },
+        "courtyard": false,
+        "courtyardLeft": 0,
+        "shipments": 1
+      },
+      "reservations": {},
+      "market": {
+        "access": true,
+        "left": 0,
+        "plots": [
+          "fishmonger",
+          "kitchen",
+          null
+        ],
+        "businesses": {
+          "fishmonger": {
+            "plot": 0,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          },
+          "kitchen": {
+            "plot": 1,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          }
+        }
+      },
+      "waterfront": {
+        "path": "maritime",
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "left": 0
+      },
+      "refits": {},
+      "specialisation": "maritime",
+      "specialists": [
+        "boatyard",
+        "estate"
+      ],
+      "contract": null,
+      "contractsDone": [
+        "fleet",
+        "refit"
+      ],
+      "contractDeliveries": 6,
+      "charter": true,
+      "construction": [],
+      "coins": 10000,
+      "stock": {
+        "wheat": 1000,
+        "flour": 1000,
+        "bread": 988,
+        "olives": 1000,
+        "oil": 1000,
+        "fish": 1000,
+        "wood": 1000,
+        "stone": 1000,
+        "planks": 1000,
+        "boatparts": 1000,
+        "grapes": 1000,
+        "wine": 1000,
+        "provisions": 1000,
+        "clay": 1000,
+        "fruit": 1000,
+        "vegetables": 1000,
+        "jars": 1000,
+        "tiles": 988,
+        "preserves": 976,
+        "flax": 1000,
+        "cloth": 1000,
+        "furniture": 1000,
+        "sails": 1000
+      },
+      "jobs": [],
+      "ripe": true,
+      "speed": 1,
+      "seconds": 421,
+      "deliveries": 25,
+      "expansion": "fishing",
+      "businesses": [
+        "fishing",
+        "olive"
+      ],
+      "pier": true,
+      "workshopUpgrade": true,
+      "targets": {},
+      "selectedOrder": "inland",
+      "onboarded": true,
+      "harvests": 20,
+      "milled": 30,
+      "baked": 30,
+      "log": [
+        "Trading coaster departed for Isola dei Pescatori",
+        "Town house furnished · another neighbourhood queue slot",
+        "Public square opened",
+        "Neighbourhood plot 6 purchased",
+        "Sail loft opened"
+      ]
+    }
+  },
+  {
+    "kind": "cargo",
+    "sourceCommit": "f75df1323b1c739acb6c3e1fcf77b05a884ae2b5",
+    "town": {
+      "version": 13,
+      "townFocus": null,
+      "residents": {
+        "proposal": null,
+        "delivered": 0
+      },
+      "ferry": {
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "runs": 0
+      },
+      "neighbourhood": {
+        "access": true,
+        "plots": [
+          {
+            "type": "home",
+            "level": 1
+          },
+          {
+            "type": "carpenter",
+            "level": 0
+          },
+          {
+            "type": "weaver",
+            "level": 0
+          },
+          {
+            "type": "flaxgarden",
+            "level": 0
+          },
+          {
+            "type": "sailmaker",
+            "level": 0
+          },
+          {
+            "type": "square",
+            "level": 0
+          }
+        ],
+        "orders": 0
+      },
+      "fleet": {
+        "development": {
+          "quarry": 3,
+          "island": 3
+        },
+        "commissions": {
+          "quarry": 0,
+          "island": 0
+        },
+        "boats": [
+          {
+            "type": "cutter",
+            "upgrade": null,
+            "sails": false,
+            "trip": null,
+            "repeat": null
+          },
+          {
+            "type": "coaster",
+            "upgrade": "cargo",
+            "sails": true,
+            "trip": {
+              "route": "quarry",
+              "tier": 3,
+              "cargo": {
+                "preserves": 24,
+                "bread": 24,
+                "jars": 12
+              },
+              "reward": {
+                "coins": 720,
+                "wood": 152,
+                "stone": 195
+              },
+              "duration": 67,
+              "left": 60
+            },
+            "repeat": null
+          }
+        ],
+        "visits": {
+          "quarry": 10,
+          "island": 10
+        },
+        "lighthouse": {
+          "stage": 3,
+          "left": 0
+        }
+      },
+      "inland": {
+        "access": true,
+        "left": 0,
+        "terraces": [
+          {
+            "type": "orchard",
+            "left": 0
+          },
+          {
+            "type": "garden",
+            "left": 0
+          }
+        ],
+        "kiln": {
+          "left": 0
+        },
+        "courtyard": false,
+        "courtyardLeft": 0,
+        "shipments": 1
+      },
+      "reservations": {},
+      "market": {
+        "access": true,
+        "left": 0,
+        "plots": [
+          "fishmonger",
+          "kitchen",
+          null
+        ],
+        "businesses": {
+          "fishmonger": {
+            "plot": 0,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          },
+          "kitchen": {
+            "plot": 1,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          }
+        }
+      },
+      "waterfront": {
+        "path": "maritime",
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "left": 0
+      },
+      "refits": {},
+      "specialisation": "maritime",
+      "specialists": [
+        "boatyard",
+        "estate"
+      ],
+      "contract": null,
+      "contractsDone": [
+        "fleet",
+        "refit"
+      ],
+      "contractDeliveries": 6,
+      "charter": true,
+      "construction": [],
+      "coins": 10000,
+      "stock": {
+        "wheat": 1000,
+        "flour": 1000,
+        "bread": 976,
+        "olives": 1000,
+        "oil": 1000,
+        "fish": 1000,
+        "wood": 1000,
+        "stone": 1000,
+        "planks": 1000,
+        "boatparts": 1000,
+        "grapes": 1000,
+        "wine": 1000,
+        "provisions": 1000,
+        "clay": 1000,
+        "fruit": 1000,
+        "vegetables": 1000,
+        "jars": 988,
+        "tiles": 1000,
+        "preserves": 976,
+        "flax": 1000,
+        "cloth": 1000,
+        "furniture": 1000,
+        "sails": 1000
+      },
+      "jobs": [],
+      "ripe": true,
+      "speed": 1,
+      "seconds": 421,
+      "deliveries": 25,
+      "expansion": "fishing",
+      "businesses": [
+        "fishing",
+        "olive"
+      ],
+      "pier": true,
+      "workshopUpgrade": true,
+      "targets": {},
+      "selectedOrder": "inland",
+      "onboarded": true,
+      "harvests": 20,
+      "milled": 30,
+      "baked": 30,
+      "log": [
+        "Trading coaster departed for Pietra Cove",
+        "Town house furnished · another neighbourhood queue slot",
+        "Public square opened",
+        "Neighbourhood plot 6 purchased",
+        "Sail loft opened"
+      ]
+    }
+  },
+  {
+    "kind": "circuit",
+    "sourceCommit": "f75df1323b1c739acb6c3e1fcf77b05a884ae2b5",
+    "town": {
+      "version": 13,
+      "townFocus": null,
+      "residents": {
+        "proposal": null,
+        "delivered": 0
+      },
+      "ferry": {
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "runs": 0
+      },
+      "neighbourhood": {
+        "access": true,
+        "plots": [
+          {
+            "type": "home",
+            "level": 1
+          },
+          {
+            "type": "carpenter",
+            "level": 0
+          },
+          {
+            "type": "weaver",
+            "level": 0
+          },
+          {
+            "type": "flaxgarden",
+            "level": 0
+          },
+          {
+            "type": "sailmaker",
+            "level": 0
+          },
+          {
+            "type": "square",
+            "level": 0
+          }
+        ],
+        "orders": 0
+      },
+      "fleet": {
+        "development": {
+          "quarry": 3,
+          "island": 3
+        },
+        "commissions": {
+          "quarry": 0,
+          "island": 0
+        },
+        "boats": [
+          {
+            "type": "cutter",
+            "upgrade": null,
+            "sails": false,
+            "trip": null,
+            "repeat": null
+          },
+          {
+            "type": "coaster",
+            "upgrade": "cargo",
+            "sails": true,
+            "trip": {
+              "route": "quarry",
+              "tier": 1,
+              "cargo": {
+                "preserves": 16,
+                "bread": 12,
+                "jars": 4,
+                "tiles": 4
+              },
+              "reward": {
+                "coins": 1138,
+                "wood": 44,
+                "stone": 54
+              },
+              "duration": 68,
+              "left": 61,
+              "stops": [
+                {
+                  "route": "quarry",
+                  "tier": 1
+                },
+                {
+                  "route": "island",
+                  "tier": 2
+                }
+              ]
+            },
+            "repeat": null
+          }
+        ],
+        "visits": {
+          "quarry": 10,
+          "island": 10
+        },
+        "lighthouse": {
+          "stage": 3,
+          "left": 0
+        }
+      },
+      "inland": {
+        "access": true,
+        "left": 0,
+        "terraces": [
+          {
+            "type": "orchard",
+            "left": 0
+          },
+          {
+            "type": "garden",
+            "left": 0
+          }
+        ],
+        "kiln": {
+          "left": 0
+        },
+        "courtyard": false,
+        "courtyardLeft": 0,
+        "shipments": 1
+      },
+      "reservations": {},
+      "market": {
+        "access": true,
+        "left": 0,
+        "plots": [
+          "fishmonger",
+          "kitchen",
+          null
+        ],
+        "businesses": {
+          "fishmonger": {
+            "plot": 0,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          },
+          "kitchen": {
+            "plot": 1,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          }
+        }
+      },
+      "waterfront": {
+        "path": "maritime",
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "left": 0
+      },
+      "refits": {},
+      "specialisation": "maritime",
+      "specialists": [
+        "boatyard",
+        "estate"
+      ],
+      "contract": null,
+      "contractsDone": [
+        "fleet",
+        "refit"
+      ],
+      "contractDeliveries": 6,
+      "charter": true,
+      "construction": [],
+      "coins": 10000,
+      "stock": {
+        "wheat": 1000,
+        "flour": 1000,
+        "bread": 988,
+        "olives": 1000,
+        "oil": 1000,
+        "fish": 1000,
+        "wood": 1000,
+        "stone": 1000,
+        "planks": 1000,
+        "boatparts": 1000,
+        "grapes": 1000,
+        "wine": 1000,
+        "provisions": 1000,
+        "clay": 1000,
+        "fruit": 1000,
+        "vegetables": 1000,
+        "jars": 996,
+        "tiles": 996,
+        "preserves": 984,
+        "flax": 1000,
+        "cloth": 1000,
+        "furniture": 1000,
+        "sails": 1000
+      },
+      "jobs": [],
+      "ripe": true,
+      "speed": 1,
+      "seconds": 421,
+      "deliveries": 25,
+      "expansion": "fishing",
+      "businesses": [
+        "fishing",
+        "olive"
+      ],
+      "pier": true,
+      "workshopUpgrade": true,
+      "targets": {},
+      "selectedOrder": "inland",
+      "onboarded": true,
+      "harvests": 20,
+      "milled": 30,
+      "baked": 30,
+      "log": [
+        "Coastal circuit departed · both contracts loaded; single-route repeats stopped",
+        "Town house furnished · another neighbourhood queue slot",
+        "Public square opened",
+        "Neighbourhood plot 6 purchased",
+        "Sail loft opened"
+      ]
+    }
+  },
+  {
+    "kind": "ferry",
+    "sourceCommit": "f75df1323b1c739acb6c3e1fcf77b05a884ae2b5",
+    "town": {
+      "version": 13,
+      "townFocus": null,
+      "residents": {
+        "proposal": null,
+        "delivered": 0
+      },
+      "ferry": {
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "runs": 0
+      },
+      "neighbourhood": {
+        "access": true,
+        "plots": [
+          {
+            "type": "home",
+            "level": 1
+          },
+          {
+            "type": "carpenter",
+            "level": 0
+          },
+          {
+            "type": "weaver",
+            "level": 0
+          },
+          {
+            "type": "flaxgarden",
+            "level": 0
+          },
+          {
+            "type": "sailmaker",
+            "level": 0
+          },
+          {
+            "type": "square",
+            "level": 0
+          }
+        ],
+        "orders": 0
+      },
+      "fleet": {
+        "development": {
+          "quarry": 3,
+          "island": 3
+        },
+        "commissions": {
+          "quarry": 0,
+          "island": 0
+        },
+        "boats": [
+          {
+            "type": "cutter",
+            "upgrade": null,
+            "sails": false,
+            "trip": null,
+            "repeat": null
+          },
+          {
+            "type": "coaster",
+            "upgrade": "cargo",
+            "sails": true,
+            "trip": {
+              "route": "island",
+              "tier": 1,
+              "cargo": {
+                "bread": 18,
+                "preserves": 6
+              },
+              "reward": {
+                "coins": 660
+              },
+              "duration": 46,
+              "left": 39,
+              "ferry": true
+            },
+            "repeat": null
+          }
+        ],
+        "visits": {
+          "quarry": 10,
+          "island": 10
+        },
+        "lighthouse": {
+          "stage": 3,
+          "left": 0
+        }
+      },
+      "inland": {
+        "access": true,
+        "left": 0,
+        "terraces": [
+          {
+            "type": "orchard",
+            "left": 0
+          },
+          {
+            "type": "garden",
+            "left": 0
+          }
+        ],
+        "kiln": {
+          "left": 0
+        },
+        "courtyard": false,
+        "courtyardLeft": 0,
+        "shipments": 1
+      },
+      "reservations": {},
+      "market": {
+        "access": true,
+        "left": 0,
+        "plots": [
+          "fishmonger",
+          "kitchen",
+          null
+        ],
+        "businesses": {
+          "fishmonger": {
+            "plot": 0,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          },
+          "kitchen": {
+            "plot": 1,
+            "left": 0,
+            "demand": 3,
+            "replenish": 0,
+            "auto": false,
+            "deliveries": 3
+          }
+        }
+      },
+      "waterfront": {
+        "path": "maritime",
+        "stage": 3,
+        "funded": false,
+        "delivered": 0,
+        "left": 0
+      },
+      "refits": {},
+      "specialisation": "maritime",
+      "specialists": [
+        "boatyard",
+        "estate"
+      ],
+      "contract": null,
+      "contractsDone": [
+        "fleet",
+        "refit"
+      ],
+      "contractDeliveries": 6,
+      "charter": true,
+      "construction": [],
+      "coins": 10000,
+      "stock": {
+        "wheat": 1000,
+        "flour": 1000,
+        "bread": 982,
+        "olives": 1000,
+        "oil": 1000,
+        "fish": 1000,
+        "wood": 1000,
+        "stone": 1000,
+        "planks": 1000,
+        "boatparts": 1000,
+        "grapes": 1000,
+        "wine": 1000,
+        "provisions": 1000,
+        "clay": 1000,
+        "fruit": 1000,
+        "vegetables": 1000,
+        "jars": 1000,
+        "tiles": 1000,
+        "preserves": 994,
+        "flax": 1000,
+        "cloth": 1000,
+        "furniture": 1000,
+        "sails": 1000
+      },
+      "jobs": [],
+      "ripe": true,
+      "speed": 1,
+      "seconds": 421,
+      "deliveries": 25,
+      "expansion": "fishing",
+      "businesses": [
+        "fishing",
+        "olive"
+      ],
+      "pier": true,
+      "workshopUpgrade": true,
+      "targets": {},
+      "selectedOrder": "inland",
+      "onboarded": true,
+      "harvests": 20,
+      "milled": 30,
+      "baked": 30,
+      "log": [
+        "Island passenger service departed · cargo repeat trips stopped",
+        "Town house furnished · another neighbourhood queue slot",
+        "Public square opened",
+        "Neighbourhood plot 6 purchased",
+        "Sail loft opened"
+      ]
+    }
+  }
+]

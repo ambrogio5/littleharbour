@@ -1,6 +1,6 @@
 # Increment 1 — economy and meaningful investments
 
-**Proposal awaiting owner agreement; no economy changes implemented.** Prepared against build 13, `8ddeaed`, 3 November 2026. The supplied long-play prompt explicitly asks for proposed numbers and agreement before changing the catalog. This note is that review gate. [Programme and remaining proposals](LONG-PLAY-PROGRAMME.md).
+**Approved by the owner, including the compatibility boundary; implemented in QA build 14; human pacing deferred.** Prepared against build 13, `8ddeaed`, 3 November 2026. The supplied long-play prompt explicitly asks for proposed numbers and agreement before changing the catalog. This note is that review gate. [Programme and remaining proposals](LONG-PLAY-PROGRAMME.md).
 
 ## Checkout and evidence
 
@@ -29,11 +29,11 @@ The first probe attempt failed to earn the second boat from a zero-timber start;
 
 Verification for this proposal: **207/207 browser tests, 22/22 adapter tests**, bundle freshness, all art/source checks, both earned campaign paths and both festival continuations passed. The baseline is reproducible with `node native/scripts/long-play-baseline.mjs --check`. No new Xcode build or physical install is needed for this documentation/probe-only change; build 13's existing passing CI is reported separately from the new PR's checks.
 
-## Proposed numeric changes
+## Approved and implemented numeric changes
 
 Amounts below are base values before cargo scaling and existing eligible bonuses. All existing recipe costs, production times, route cargo costs and route times stay unchanged.
 
-| Existing payout | Now | Proposed |
+| Existing payout | Before | Build 14 |
 | --- | ---: | ---: |
 | Olive Island tier 1 coins | 340 | 240 |
 | Olive Island tier 2 coins | 425 | 300 |
@@ -91,7 +91,7 @@ This requires extending the engine's two-slot validators, fleet ticking, route/r
 
 Across all 12 stations, both advanced ranks cost 24,000 coins; with the new market and berth, the finite investment total is **29,000 coins**, excluding hulls/retunes. This is a set of choices, not proof of lasting gameplay. Wealthy towns may afford it immediately; recurring seasonal decisions in later increments must carry the long game.
 
-## Save and browser boundary requiring agreement
+## Approved save and browser boundary
 
 Schema 13 strictly rejects a third boat, occupied third market plot and new refit data. Propose **shared town schema 14** for increment 1, with tested migrations from 1–13. This is distinct from **native envelope 4**, reserved for one `chronicle` object in increments 2–5. Keep native envelope 1–3 support; do not invent one new envelope per feature.
 
@@ -109,4 +109,25 @@ An old deployed schema-13 browser **cannot read a schema-14 export**. Updated br
 4. Compare modest and wealthy earned towns at 1×/3×. Record coin/material deltas, blocked chains, boat choices, scripted interventions and idle time separately. Seasons/project-stage measurements begin only when those systems exist. No timer increases to meet a session target.
 5. Install a new numbered QA build in place when authorized; report installation and launch separately from playtesting. Request a matching owner after-playtest. Tune based on actual decisions; do not begin increment 2 until this increment's checks and human pacing review are complete.
 
-**Decision requested:** agree or revise the numbers above and the schema-14/export boundary. No catalog, engine or owner-save changes occur while that decision is pending.
+**Owner decision:** approved the full proposal and compatibility boundary, then directed “go ahead ill test later.” Before-change human testing is deferred; automated implementation and verification may proceed. Human pacing is still unverified.
+
+## Build 14 implementation and evidence — 3 November 2026
+
+All approved values above are implemented in the shared catalog/engine and both native/browser controls. No recipe/route base timer was increased. New boats retain per-boat missions; workshop and market automation stay inline. The selected action comes before its longer explanation. The map objective collapses to a pill, and buildings receive static contact shadows. New sites reuse the current painted sprite families; unique final tier-3/berth art and the terrain repaint are not claimed complete.
+
+The same frozen, earned schema-13 starts are compared under both engines, avoiding a changed starting inventory. Four 1,200-simulated-second unattended windows yield:
+
+| Policy at 1× and 3× | Before | After | Interpretation |
+| --- | --- | --- | --- |
+| Modest: coins; timber/stone change; quarry/island returns | 1,560→1,560; −100/0; 0/0 | Identical | All-target policy stalls; not proof of a balanced human session. |
+| Wealthy: coins; timber/stone change; quarry/island returns | 15,764→19,844; +647/+918; 17/0 | 15,764→19,844; +885/+1,224; 17/0 | Quarry goods increase as approved; competing supply targets starve the island boat. |
+
+Zero interventions occur inside these windows. They are not human decision counts. Both use the same 38-action, 4,026-simulated-second wealthy preparation with 16 materials orders. Route/commission reductions and eligible bonus caps are verified separately in unit tests. [Before](long-play-baseline.json) and [after](long-play-after.json) include source hashes and every stock delta.
+
+Earned continuations from both regenerated festival branches buy all 12 tier-2/tier-3 profiles, change/restore profiles, choose/switch the third stall, open/buy the third berth and sail cargo plus passengers on separate boats. Maritime/food: **743 actions, 8,926 simulated seconds, 37 reloads**. Estate/craft: **729 actions, 10,501 simulated seconds, 37 reloads**. These are scripted reachability traces for the whole optional investment set, not measured 15–20-minute human sessions. No trace injects goods or coins.
+
+Fixture provenance: `legacy-engine-v13.js` and `legacy-festival-campaigns-v13.json` are frozen from commit `f75df1323b1c739acb6c3e1fcf77b05a884ae2b5`. `legacy-paid-voyages.json` contains four deliberately funded **unit-test** fixtures generated with that old engine (cargo on both routes, a circuit and ferry), distinct from earned pacing traces. `long-play-campaigns.json` and `long-play-ready.json` are regenerated through real actions by `long-play-campaign.mjs`; UI tests load these only into isolated test storage.
+
+Verification: 216 browser tests and 24 adapter tests pass, including native/shared transaction equivalence, all 12 stations, old paid voyages, fractional output/cancellation/planning, reservations, stale/double submissions, third-boat modes and actual old-reader rejection. The first full iPhone 16 Pro/iOS 26.5 run passed 45 core tests and 21 of 22 UI tests; the new UI test initially used the wrong dismissal identifier and passed after correction. iPad bottom spacing, appearance and large-text tests passed; the investment test needed its dismissal path adapted to the regular-width inspector. The corrected focused investment test also passed on iPad 13-inch M5/iOS 26.5. Both browser entry points passed real profile restore, inline market automation, third-boat selection and reload checks; the general browser smoke passed at small-phone, phone, tablet and desktop sizes. Final full-run and CI conclusions are recorded in PR #18.
+
+The unsigned Release and development-signed QA builds compile. Physical play, full accessibility, interruptions, sustained performance, battery/thermals and final store materials remain outstanding. The owner deferred human testing: no claim of longer enjoyable sessions, all seven increments complete, or App Store readiness. Increment 2 still needs its own agreed costs/design and the pacing review specified above.

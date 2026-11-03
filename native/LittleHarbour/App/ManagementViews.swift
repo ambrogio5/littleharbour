@@ -1,5 +1,91 @@
 import SwiftUI
 
+struct WorkshopRefitPanel: View {
+    @EnvironmentObject private var store: GameStore
+    var fixedStation: String? = nil
+    @State private var chosenStation = "mill"
+    @State private var tier = 2
+    @State private var mode = "speed"
+    private var station: String { fixedStation ?? chosenStation }
+    private var refits: [HarbourAction] { store.snapshot?.actions.filter { $0.category == "Refits" } ?? [] }
+    private var stations: [String] { Array(Set(refits.compactMap { $0.invocation?.1.first as? String })).sorted() }
+    private func name(_ key: String) -> String { refits.first { $0.invocation?.1.first as? String == key }?.title.components(separatedBy: " · ").first ?? key.capitalized }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if fixedStation == nil {
+                Picker("Workshop", selection: $chosenStation) { ForEach(stations, id: \.self) { Text(name($0)).tag($0) } }
+                    .accessibilityIdentifier("refit-workshop")
+            }
+            if refits.contains(where: { $0.invocation?.0 == "installAdvancedRefit" && $0.invocation?.1.first as? String == station }) {
+                Text("\(name(station)) · advanced profiles").font(.headline)
+                Picker("Refit tier", selection: $tier) {
+                    if (store.snapshot?.advancedRefits[station]?.tier ?? 2) <= 2 { Text("Tier 2").tag(2) }
+                    Text("Tier 3").tag(3)
+                }.pickerStyle(.segmented).accessibilityIdentifier("refit-tier")
+                Picker("Workshop profile", selection: $mode) {
+                    Text("Speed").tag("speed"); Text("Yield").tag("yield")
+                    if store.snapshot?.advancedRefits[station]?.tier == tier { Text("Original").tag("original") }
+                }.pickerStyle(.segmented).accessibilityIdentifier("refit-profile")
+                if let action = refits.first(where: { action in
+                    guard let (fn, args) = action.invocation, fn == "installAdvancedRefit", args.count == 4 else { return false }
+                    return args[0] as? String == station && args[1] as? Int == tier && args[2] as? String == mode
+                }) { ManagementAction(action: action) }
+                Text("Choose faster batches or more output. Existing improvements remain. Yield fractions carry forward; changing profiles requires an idle workshop.")
+                    .font(.caption).foregroundStyle(HarbourTheme.muted)
+            } else {
+                Text("Complete the lighthouse to unlock advanced speed and yield profiles.").font(.caption)
+            }
+            let legacy = refits.filter { $0.invocation?.0 == "installRefit" && $0.invocation?.1.first as? String == station }
+            if !legacy.isEmpty { DisclosureGroup("Original workshop improvements") { ForEach(legacy) { ManagementAction(action: $0) } } }
+        }.onAppear {
+            if fixedStation == nil, let direction = store.snapshot?.directions.first(where: { $0.id == store.directionFocus }),
+               let action = refits.first(where: { direction.choices.contains($0.id) }), let key = action.invocation?.1.first as? String { chosenStation = key }
+            syncTier()
+        }.onChange(of: chosenStation) { _, _ in tier = store.snapshot?.advancedRefits[station]?.tier ?? 2; syncTier() }
+            .onChange(of: store.snapshot?.advancedRefits[station]?.tier) { _, _ in syncTier() }
+    }
+    private func syncTier() { tier = max(tier, store.snapshot?.advancedRefits[station]?.tier ?? 2); if mode == "original", store.snapshot?.advancedRefits[station]?.tier != tier { mode = "speed" } }
+}
+
+struct MarketPanel: View {
+    @EnvironmentObject private var store: GameStore
+    @State private var selected = "fishmonger"
+    var body: some View {
+        if let s = store.snapshot {
+            if let access = s.actions.first(where: { $0.invocation?.0 == "marketAccess" }) { ManagementAction(action: access) }
+            else {
+                Picker("Market business", selection: $selected) {
+                    ForEach(s.markets) { Text("Plot \($0.plot + 1) · \($0.name)").tag($0.id) }
+                }.accessibilityIdentifier("market-business")
+                    .onAppear {
+                        let choices = store.guidanceFocus ? s.guidance.choices : s.directions.first(where: { $0.id == store.directionFocus })?.choices ?? []
+                        if let action = s.actions.first(where: { choices.contains($0.id) }), let key = action.invocation?.1.first as? String, s.markets.contains(where: { $0.id == key }) { selected = key }
+                        else if let site = store.selectedSite, s.markets.contains(where: { $0.id == site }) { selected = site }
+                        else if store.selectedSite == "market3" { selected = "provisioner" }
+                    }
+                if let business = s.markets.first(where: { $0.id == selected }) {
+                    HStack {
+                        Image(uiImage: HarbourArtwork.image("market-built")).resizable().scaledToFit().frame(width: 64, height: 64).accessibilityHidden(true)
+                        VStack(alignment: .leading) {
+                            Text(business.name).font(.headline)
+                            if let demand = business.demand { Text("\(demand) of 3 orders available").font(.caption) }
+                            else { Text("Choose the role for this plot").font(.caption) }
+                        }
+                    }
+                }
+                ForEach(s.actions.filter { $0.category == "Market" && $0.invocation?.1.first as? String == selected && $0.invocation?.0 != "setMarketAuto" }) { ManagementAction(action: $0) }
+                if let automatic = s.actions.first(where: { $0.invocation?.0 == "setMarketAuto" && $0.invocation?.1.first as? String == selected }) {
+                    Button { store.perform(automatic) } label: { Label(automatic.title, systemImage: "arrow.triangle.2.circlepath").frame(minHeight: 44) }
+                        .disabled(!automatic.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+                        .accessibilityIdentifier("market-automation")
+                }
+                ForEach(s.actions.filter { $0.invocation?.0 == "releaseReservation" && ($0.invocation?.1.first as? String)?.hasPrefix("market:") == true }) { ManagementAction(action: $0) }
+                Text("Automatic supply uses this stall’s available orders and unreserved goods. Switching the third plot keeps its demand and recovery clock.").font(.caption).foregroundStyle(HarbourTheme.muted)
+            }
+        }
+    }
+}
+
 /// Inline controls use the same validated engine commands as manual production.
 struct WorkshopAutomation: View {
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -40,12 +126,13 @@ struct ManagementAction: View {
         VStack(alignment: .leading, spacing: 8) {
             if let partner = action.partner { Text(partner).font(.caption).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
             Text(action.title).font(.subheadline.bold()).fixedSize(horizontal: false, vertical: true)
-            if !action.detail.isEmpty { Text(action.detail).font(.caption).foregroundStyle(HarbourTheme.muted) }
-            if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted) }
+            if let cost = action.detail.components(separatedBy: "\n").first, !cost.isEmpty { Text(cost).font(.caption).foregroundStyle(HarbourTheme.muted) }
             Button { if action.destructive { confirm = true } else { store.perform(action) } } label: {
                 Text(action.enabled ? action.verb : "Not ready yet").font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
             }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
                 .accessibilityLabel(action.title).accessibilityIdentifier("action-" + action.id)
+            if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted) }
+            if action.detail.contains("\n") { DisclosureGroup("Batch preview") { Text(action.detail.components(separatedBy: "\n").dropFirst().joined(separator: "\n")).font(.caption) } }
             if action.goal != nil { Button("Plan supplies") { plan = true }.font(.caption).frame(minHeight: 44) }
         }.padding(12).background(HarbourTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
             .confirmationDialog("Review this change", isPresented: $confirm, titleVisibility: .visible) {
@@ -112,7 +199,7 @@ struct FleetPanel: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("CHOOSE YOUR BOAT").font(.caption2.bold()).foregroundStyle(HarbourTheme.muted)
                 HStack(spacing: 8) {
-                    ForEach(0..<2, id: \.self) { berth in
+                    ForEach(0..<s.boats.count, id: \.self) { berth in
                         let boat = s.boats.indices.contains(berth) ? s.boats[berth] : nil
                         Button { store.selectedBerth = berth } label: {
                             VStack(spacing: 4) {
@@ -153,6 +240,7 @@ struct FleetPanel: View {
                         ForEach(actions.filter { $0.boatSlot == slot && ["installBoatUpgrade", "refitBoatSails", "cancelVoyage"].contains($0.invocation?.0 ?? "") }) { ManagementAction(action: $0) }
                     }.font(.subheadline).padding(.vertical, 8)
                 } else {
+                    if slot == 2, let unlock = actions.first(where: { $0.invocation?.0 == "buildThirdBerth" }) { ManagementAction(action: unlock) }
                     Text("Choose a boat for this berth. Each boat has its own cargo, voyage and repeat route.").font(.caption)
                     ForEach(matching("buyBoat")) { ManagementAction(action: $0) }
                 }
@@ -196,6 +284,7 @@ struct FleetPanel: View {
     private func configureSelection() {
         mode = store.category == "Ferry" ? "Passengers" : store.category == "Circuits" ? "Circuit" : "Cargo"
         let ids = store.guidanceFocus ? store.snapshot?.guidance.choices : store.snapshot?.directions.first { $0.id == store.directionFocus }?.choices
+        if actions.contains(where: { (ids ?? []).contains($0.id) && $0.invocation?.0 == "buildThirdBerth" }) { store.selectedBerth = 2; return }
         if let action = actions.first(where: { (ids ?? []).contains($0.id) && ["startVoyage", "startFerryService", "buyBoat"].contains($0.invocation?.0 ?? "") }), let args = action.invocation?.1 {
             store.selectedBerth = action.boatSlot ?? 0
             if args.count > 1, let destination = args[1] as? String, ["quarry", "island"].contains(destination) { route = destination }

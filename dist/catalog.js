@@ -81,12 +81,12 @@ export const FLEET_ROUTES={
  quarry:{name:'Pietra Cove',description:'Preserves, bread and empty jars supply the quarry crews. Return with building materials.',tiers:[
   {name:'Quarry supply run',cost:{preserves:4,bread:4,jars:2},reward:{coins:80,wood:14,stone:18},duration:40,visits:0,lighthouse:false},
   {name:'Quarry partnership',cost:{preserves:4,bread:4,jars:2},reward:{coins:100,wood:18,stone:23},duration:40,visits:3,lighthouse:false},
-  {name:'Outer quarry expedition',cost:{preserves:8,bread:8,jars:4},reward:{coins:240,wood:42,stone:54},duration:70,visits:3,lighthouse:true}
+  {name:'Outer quarry expedition',cost:{preserves:8,bread:8,jars:4},reward:{coins:240,wood:56,stone:72},duration:70,visits:3,lighthouse:true}
  ]},
  island:{name:'Isola dei Pescatori',description:'Preserves, bread and roof tiles support the island fishing community. Return with stronger coin earnings.',tiers:[
-  {name:'Island supply run',cost:{preserves:4,bread:2,tiles:2},reward:{coins:340,wood:4,stone:4},duration:48,visits:0,lighthouse:false},
-  {name:'Island partnership',cost:{preserves:4,bread:2,tiles:2},reward:{coins:425,wood:5,stone:5},duration:48,visits:3,lighthouse:false},
-  {name:'Outer island expedition',cost:{preserves:8,bread:4,tiles:4},reward:{coins:1020,wood:12,stone:12},duration:84,visits:3,lighthouse:true}
+  {name:'Island supply run',cost:{preserves:4,bread:2,tiles:2},reward:{coins:240,wood:4,stone:4},duration:48,visits:0,lighthouse:false},
+  {name:'Island partnership',cost:{preserves:4,bread:2,tiles:2},reward:{coins:300,wood:5,stone:5},duration:48,visits:3,lighthouse:false},
+  {name:'Outer island expedition',cost:{preserves:8,bread:4,tiles:4},reward:{coins:600,wood:12,stone:12},duration:84,visits:3,lighthouse:true}
  ]}
 };
 export const LIGHTHOUSE_SECONDS=18;
@@ -115,9 +115,9 @@ export const COASTAL_COMMISSIONS={
   {name:'Crew pantry restock',cost:{jars:8,preserves:8,oil:4},reward:{coins:180,wood:36,stone:36}}
  ],
  island:[
-  {name:'Harbour feast',cost:{bread:10,fish:8,preserves:6},reward:{coins:720}},
-  {name:'Roofing the waterfront',cost:{tiles:12,wood:10},reward:{coins:620}},
-  {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:820}}
+  {name:'Harbour feast',cost:{bread:10,fish:8,preserves:6},reward:{coins:480}},
+  {name:'Roofing the waterfront',cost:{tiles:12,wood:10},reward:{coins:420}},
+  {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:540}}
  ]
 };
 
@@ -161,4 +161,18 @@ export const RESIDENT_PROPOSALS=Object.freeze({
   {name:'Build covered stalls',cost:{furniture:4,cloth:6,stone:6}},
   {name:'Open for trade',cost:{tiles:10,preserves:8,furniture:4}}
  ]}
+});
+
+// Long-play investments share the canonical economy and save format.
+export const ADVANCED_STATIONS={mill:'Stone mill',bakery:'Bakery',fishing:'Fishing jetty',olive:'Olive workshop',boatyard:'Boatyard',estate:'Vineyard & cellar',kitchen:'Harbour kitchen',kiln:'Kiln',preserving:'Preserving room',weaver:'Weaving studio',carpenter:'Carpenter',sailmaker:'Sail loft'};
+export const ADVANCED_REFITS={
+ 2:{cost:{coins:600,planks:12,boatparts:4,tiles:8},speed:.85,yieldQuarters:5,retune:150},
+ 3:{cost:{coins:1400,planks:20,boatparts:8,tiles:16},speed:.70,yieldQuarters:6,retune:350}
+};
+export const THIRD_MARKET_COST={coins:1000,planks:24,tiles:16,furniture:8};
+export const MARKET_SWITCH_COST={coins:250,planks:6};
+export const THIRD_BERTH_COST={coins:4000,planks:60,boatparts:20,stone:80,tiles:24,sails:8};
+Object.assign(MARKET_BUSINESSES,{
+ provisioner:{name:'Provisioners’ stall',plot:2,cost:THIRD_MARKET_COST,order:{bread:6,preserves:4,oil:2},coins:210,description:'Turn mixed provisions into local income.'},
+ exchange:{name:'Craft exchange',plot:2,cost:THIRD_MARKET_COST,order:{cloth:4,furniture:2},coins:0,reward:{sails:1,boatparts:2},description:'Exchange local crafts for sails and fittings.'}
 });

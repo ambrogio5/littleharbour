@@ -124,13 +124,13 @@ import Combine
             try refresh(); lastSaved = Date(); message = "Town ready. Your previous save is kept in Recovery backups."
         } catch { freeze(error) }
     }
-    func export(original: Bool = false, browser: Bool = false) throws -> URL {
+    func export(original: Bool = false, browser: Bool = false, legacy: Bool = false) throws -> URL {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appendingPathComponent(original || protectedSave ? "Little-Harbour-original.json" : browser ? "Little-Harbour-browser.json" : "Little-Harbour-native.json")
+        let url = folder.appendingPathComponent(original || protectedSave ? "Little-Harbour-original.json" : legacy ? "Little-Harbour-browser-legacy.json" : browser ? "Little-Harbour-browser.json" : "Little-Harbour-native.json")
         if original || protectedSave { try saves.exportOriginal(to: url); return url }
         let data: Data
-        if let engine { data = try engine.save(browser: browser) }
+        if let engine { data = try engine.save(browser: browser, legacy: legacy) }
         else { throw HarbourError.message("No town is available to export.") }
         try data.write(to: url, options: .atomic); return url
     }

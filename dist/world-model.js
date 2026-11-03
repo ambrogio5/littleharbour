@@ -1,4 +1,4 @@
-import {underConstruction,neighbourhoodReady,residentsComplete} from './engine.js?v=0.20.1';
+import {underConstruction,neighbourhoodReady,residentsComplete,MARKET_BUSINESSES} from './engine.js?v=0.21.0';
 
 export const WORLD_LAYOUT={
  size:{w:1800,h:2700},
@@ -35,17 +35,19 @@ export function worldEntities(s){
   if(id==='ferry'){level=s.ferry.stage;stage=s.ferry.funded?'building':level?'built':'unbuilt';}
   return {id,...site,stage,level,ripe:id==='field'&&s.ripe};
  });
+ if(!s.market.plots[2])entities.push({id:'market3',x:1230,y:1530,zone:'market',kind:'market',label:'Third market plot',tab:'market',stage:'unbuilt',level:0});
  const region=WORLD_LAYOUT.regions.neighbourhood;
  for(let i=0;i<6;i++){
   const p=s.neighbourhood.plots[i];
   entities.push({id:'plot'+i,x:region.x+170+i%2*350,y:region.y+160+Math.floor(i/2)*200,zone:'neighbourhood',kind:p?.type||'home',label:p?.type||'Town plot',plot:i,stage:p?.type?'built':'unbuilt',level:p?.type==='home'?1+p.level:p?.type?1:0});
  }
- for(const [type,b]of Object.entries(s.market.businesses))entities.push({id:type,x:type==='kitchen'?1450:1150,y:1150,zone:'market',kind:'market',label:type==='kitchen'?'Harbour kitchen':'Fishmonger',tab:'market',stage:b.left?'building':'built',level:1});
+ for(const [type,b]of Object.entries(s.market.businesses))entities.push({id:type,x:b.plot===2?1230:type==='kitchen'?1450:1150,y:b.plot===2?1530:1150,zone:'market',kind:'market',label:MARKET_BUSINESSES[type].name,tab:'market',stage:b.left?'building':'built',level:1});
  for(let i=0;i<2;i++){const t=s.inland.terraces[i];entities.push({id:'terrace'+i,x:550+i*380,y:200,zone:'inland',kind:t?.type||'field',label:t?.type==='garden'?'Kitchen garden':'Fruit terrace',tab:'inland',stage:t?(t.left?'building':'built'):'unbuilt',level:t?1:0});}
  entities.push({id:'kiln',x:1350,y:360,zone:'inland',kind:'workshop',label:'Kiln & preserving room',tab:'inland',stage:s.inland.kiln?(s.inland.kiln.left?'building':'built'):'unbuilt',level:s.inland.kiln?1:0});
  entities.push({id:'claypit',x:280,y:170,zone:'inland',kind:'clay',label:'Clay bank',tab:'inland',stage:s.inland.access&&!s.inland.left?'built':'unbuilt',level:s.inland.access?1:0});
  entities.push({id:'courtyard',x:1500,y:1450,zone:'market',kind:'square',label:'Market courtyard',tab:'inland',stage:s.inland.courtyard?(s.inland.courtyardLeft?'building':'built'):'unbuilt',level:s.inland.courtyard?1:0});
- for(let slot=0;slot<2;slot++){const b=s.fleet.boats[slot];if(b)entities.push({id:'boat'+slot,x:1630,y:2100+slot*240,zone:'coast',kind:'boat',label:b.trip?'Boat at sea':'Berth '+(slot+1),tab:'fleet',stage:'built',level:b.upgrade?2:1});}
+ for(let slot=0;slot<3;slot++){const b=s.fleet.boats[slot];if(b)entities.push({id:'boat'+slot,x:1630,y:2100+slot*240,zone:'coast',kind:'boat',label:b.trip?'Boat at sea':'Berth '+(slot+1),tab:'fleet',stage:'built',level:b.upgrade?2:1});}
  entities.push({id:'civic',x:690,y:1510,zone:'neighbourhood',kind:s.residents.proposal||'garden',label:'Residents’ plot',tab:'residents',stage:residentsComplete(s)?'built':s.residents.delivered?'building':'unbuilt',level:s.residents.delivered});
+ if(s.fleet.thirdBerth)entities.push({id:'thirdberth',x:1450,y:2560,zone:'coast',kind:'pier',label:'Third working berth',tab:'fleet',stage:'built',level:2});
  return entities;
 }

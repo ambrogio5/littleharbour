@@ -22,6 +22,36 @@ const base='http://127.0.0.1:'+server.address().port;
 let browser;
 try{
  browser=await chromium.launch({channel:'chrome',headless:true,args:['--disable-dev-shm-usage','--no-sandbox']});
+ // Exercise the new controls against an earned town in isolated browser storage.
+ for(const entry of ['/', '/preview-map.html']){
+  const seed=JSON.parse(fs.readFileSync(new URL('../native/LittleHarbourTests/long-play-ready.json',import.meta.url),'utf8')).town;
+  seed.speed=0;const key=entry==='/'?'little-harbour-v1':'little-harbour-visual-preview-v1';
+  const context=await browser.newContext({viewport:{width:1440,height:1000}});
+  await context.addInitScript(({key,raw})=>{if(!localStorage.getItem('seeded')){localStorage.setItem(key,raw);localStorage.setItem('seeded','yes');}},{key,raw:JSON.stringify(seed)});
+  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+entry);await page.waitForSelector('#panel');
+  if(await page.locator('#dialog').evaluate(el=>el.open))await page.locator('#closeDialog').click();
+  const saved=()=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+  await page.locator('.v2-topnav [data-tab="produce"]').click();
+  await page.locator('#panel [data-station="mill"]').first().click();
+  await page.locator('#panel .refit-card summary').click();
+  await page.locator('#panel [data-action="advanced-refit"][data-mode="original"]').click();
+  assert.equal((await saved()).advancedRefits.mill.mode,'original');
+  assert.equal((await saved()).coins,seed.coins);
+  await page.locator('.v2-topnav [data-tab="build"]').click();
+  await page.locator('#panel [data-action="go-market"]').click();
+  await page.locator('#panel [data-action="market-select"][data-key="exchange"]').click();
+  await page.locator('#panel [data-action="market-auto"]').click();
+  assert.equal((await saved()).market.businesses.exchange.auto,!seed.market.businesses.exchange.auto);
+  await page.locator('.v2-topnav [data-tab="fleet"]').click();
+  await page.locator('#panel [data-action="fleet-boat"][data-slot="2"]').click();
+  assert.equal(await page.locator('#panel [data-action="fleet-boat"][data-slot="2"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#panel [data-action="fleet-depart"][data-slot="2"]').count(),1);
+  assert.deepEqual((await saved()).fleet.boats,seed.fleet.boats,'Choosing a boat must not dispatch it');
+  await page.reload();await page.waitForSelector('#panel');
+  assert.equal((await saved()).advancedRefits.mill.mode,'original');assert.deepEqual(errors,[]);
+  await context.close();console.log('PASS investments '+entry+': restore profile, inline market automation, third-boat selection and reload.');
+ }
  // Run recovery against the real application, including close, reload and lifecycle saves.
  for(const raw of ['', '{broken', JSON.stringify({version:999,payload:'future town'})]){
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -39,7 +69,7 @@ try{
   await page.locator('[data-action="confirm-reset"]').click();await page.locator('[data-action="reset"]').click();
   const stored=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));
   assert(Object.entries(stored).some(([k,v])=>k.startsWith('little-harbour-v1-backup-')&&v===raw),'Reset archives original bytes');
-  assert.equal(JSON.parse(stored['little-harbour-v1']).version,13);assert.deepEqual(errors,[]);
+  assert.equal(JSON.parse(stored['little-harbour-v1']).version,14);assert.deepEqual(errors,[]);
   await context.close();
  }
  console.log('PASS save recovery: malformed, empty and future saves survive export, clicks, lifecycle and reload; explicit reset keeps exact backups.');

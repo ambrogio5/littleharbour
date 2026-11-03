@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-const bundle=fs.readFileSync(new URL('../LittleHarbour/Resources/engine-bundle.js',import.meta.url),'utf8');
-const traces=fs.readFileSync(new URL('../LittleHarbourTests/festival-campaigns.json',import.meta.url),'utf8');
+const after=process.argv.includes('--after');
+const bundle=fs.readFileSync(new URL(after?'../LittleHarbour/Resources/engine-bundle.js':'../LittleHarbourTests/legacy-engine-v13.js',import.meta.url),'utf8');
+const traces=fs.readFileSync(new URL('../LittleHarbourTests/legacy-festival-campaigns-v13.json',import.meta.url),'utf8');
 const campaigns=JSON.parse(traces);
 const open=save=>{const context=vm.createContext({});vm.runInContext(bundle,context);context.Harbour.load(save);return context.Harbour;};
 const town=B=>JSON.parse(B.browserSave());
@@ -59,7 +60,7 @@ for(const [name,source,setupActions]of [['modest',modest,modestSetup],['wealthy'
  }
 }
 const result={
- description:'Current economy only; scripted unattended windows, not human decisions, seasons or enjoyment. No proposed balance changes applied.',
+ description:after?'Approved increment-1 economy applied to the same frozen earned starting towns; scripted unattended windows, not human decisions, seasons or enjoyment.':'Current economy only; scripted unattended windows, not human decisions, seasons or enjoyment. No proposed balance changes applied.',
  bundleSHA256:createHash('sha256').update(bundle).digest('hex'),
  tracesSHA256:createHash('sha256').update(traces).digest('hex'),
  preparation:{modest:'Earned maritime/food festival end; Keep 24 on enabled recipes, one cutter repeating island tier 3.',
@@ -67,6 +68,6 @@ const result={
   wealthyPreparationSeconds:preparationSeconds,wealthySetupActions:wealthySetup,materialsOrders},windows};
 const output=JSON.stringify(result,null,2)+'\n';
 if(process.argv.includes('--check')){
- assert.equal(fs.readFileSync(new URL('../docs/long-play-baseline.json',import.meta.url),'utf8'),output);
+ assert.equal(fs.readFileSync(new URL(after?'../docs/long-play-after.json':'../docs/long-play-baseline.json',import.meta.url),'utf8'),output);
  console.log('Long-play baseline matches: four earned, unattended windows with reload checkpoints.');
 }else process.stdout.write(output);

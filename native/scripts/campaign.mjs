@@ -66,7 +66,7 @@ for (const path of ['maritime', 'estate']) {
   run(12);
  }
  fund(E.MARKET_ACCESS_COST); act('marketAccess'); run(12);
- for(const [type, definition] of Object.entries(E.MARKET_BUSINESSES)) {
+ for(const [type, definition] of Object.entries(E.MARKET_BUSINESSES).filter(([,d])=>d.plot<2)) {
   if(!E.has(town,definition.requires)) build(definition.requires);
   fund(definition.cost); act('buildMarketBusiness',type,definition.plot); run(8);
   for(let i=0;i<3;i++) { fund(definition.order); act('dispatchMarket',type); run(24); }
