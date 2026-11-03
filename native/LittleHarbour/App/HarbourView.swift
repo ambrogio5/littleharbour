@@ -37,11 +37,15 @@ struct HarbourView: View {
     @State private var pendingSite: WorldEntity?
     @State private var hasSideInspector = false
     @State private var expandedObjective = false
+    @State private var keyboardShown = false
     @AppStorage("mapLabels") private var mapLabels = true
     private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
     var body: some View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 700 && geometry.size.height >= 300
+            // The dock already contains full-height touch targets. Use the lower
+            // safe-area strip for layout, retaining clearance for the home gesture.
+            let reclaimedBottom = keyboardShown ? 0 : max(0, geometry.safeAreaInsets.bottom - 12)
             VStack(spacing: 0) {
                 Group { if wide { landscapeHeader } else { header } }
                     .overlay(alignment: .bottom) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
@@ -56,25 +60,34 @@ struct HarbourView: View {
                             if !wide || !store.guidanceFocus { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
                         }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                    if wide { InspectorView().environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
+                    if wide { InspectorView(showCelebrations: false).environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 if !wide && !showInspector && !showSettings { FeedbackBanner() }
                 dock(wide: wide).environment(\.densePanels, wide)
                     .overlay(alignment: .top) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
             }
-            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+            .frame(width: geometry.size.width, height: geometry.size.height + reclaimedBottom, alignment: .top)
             .background(harbourPaper)
+            .accessibilityHidden(store.chapterCelebration != nil && !showInspector)
+            .overlay { if !showInspector, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
             .onAppear { hasSideInspector = wide; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
             .onChange(of: wide) { _, value in hasSideInspector = value; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !value { showInspector = true } } }
             .sheet(isPresented: $showInspector) {
                 NavigationStack {
                     InspectorView()
-                        .safeAreaInset(edge: .bottom, spacing: 0) { inspectorNavigation }
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) { Button("Next step") { store.followGuidance() }.accessibilityIdentifier("toolbar-next-step") }
-                            ToolbarItem(placement: .confirmationAction) { Button("Map") { showInspector = false } }
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            HStack {
+                                Button("Next step") { store.followGuidance() }.frame(minHeight: 44).accessibilityIdentifier("toolbar-next-step")
+                                Spacer()
+                                Button("Map") { showInspector = false }.frame(minHeight: 44)
+                            }.font(.subheadline.weight(.semibold)).buttonStyle(.bordered)
+                                .padding(.horizontal, 12).padding(.vertical, 2).background(harbourPaper)
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         }
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            inspectorNavigation.padding(.bottom, -reclaimedBottom)
+                        }
+                        .toolbar(.hidden, for: .navigationBar)
                 }.presentationDetents([.large]).presentationCornerRadius(28).presentationDragIndicator(.visible)
             }
         }
@@ -114,12 +127,14 @@ struct HarbourView: View {
             if store.directionFocus != nil, let entity = store.snapshot?.entities.first(where: { $0.id == id }) { scene.focusSite(entity) }
         }
         .onReceive(timer) { _ in store.pulse() }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardShown = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardShown = false }
         .background(harbourPaper.ignoresSafeArea())
     }
 
     private var landscapeHeader: some View {
         HStack(spacing: 8) {
-            Text(store.snapshot?.style.identity ?? "Little Harbour").font(.system(.headline, design: .serif)).lineLimit(1).minimumScaleFactor(0.8)
+            Text(store.snapshot?.story.townName ?? "Porto Lume").font(.system(.headline, design: .serif)).lineLimit(1).minimumScaleFactor(0.8).accessibilityIdentifier("town-name")
             cameraControls(wide: true)
             HStack(spacing: 3) { ResourceIcon(item: "coins", size: 22); Text("\(store.snapshot?.coins ?? 0)").font(.subheadline.bold()).monospacedDigit() }
             Button { showSettings = true } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
@@ -130,17 +145,17 @@ struct HarbourView: View {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
                 Button { store.navigate(item.0) } label: {
                     VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(.semibold)) }
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: 50)
                         .background(store.category == item.0 ? HarbourTheme.sea.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 12))
                 }.accessibilityIdentifier("inspector-nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
             }
-        }.padding(.horizontal, 16).padding(.vertical, 8).foregroundStyle(harbourInk).background(harbourPaper)
+        }.padding(.horizontal, 16).padding(.vertical, 2).foregroundStyle(harbourInk).background(harbourPaper)
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private var header: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
-                Text("LITTLE HARBOUR").font(.system(.caption2, design: .rounded, weight: .bold)).tracking(2.4).lineLimit(1).minimumScaleFactor(0.8).foregroundStyle(HarbourTheme.muted)
+                Text(store.snapshot?.story.townName ?? "Porto Lume").font(.system(.caption2, design: .rounded, weight: .bold)).tracking(2.4).lineLimit(1).minimumScaleFactor(0.8).foregroundStyle(HarbourTheme.muted).accessibilityIdentifier("town-name")
                 Text(store.snapshot?.style.identity ?? "Your Mediterranean town").font(.system(.headline, design: .serif)).lineLimit(2)
             }
             Spacer(minLength: 0)
@@ -184,7 +199,7 @@ struct HarbourView: View {
                         }.accessibilityLabel(expandedObjective ? "Hide chapter guidance" : "Show chapter guidance").accessibilityIdentifier("objective-details")
                     }
                 }
-                if !compact && expandedObjective { Text("Elena · your harbour guide").font(.headline); Text(store.snapshot?.guidance.body ?? objective.description).font(.callout).fixedSize(horizontal: false, vertical: true) }
+                if !compact && expandedObjective { Text("Elena · your harbour guide").font(.headline); Text(store.snapshot?.story.voice ?? "").font(.callout); Text(store.snapshot?.story.opening ?? "").font(.caption).foregroundStyle(HarbourTheme.muted); Text(store.snapshot?.guidance.body ?? objective.description).font(.callout).fixedSize(horizontal: false, vertical: true) }
 
             }
         }.padding(compact ? 6 : 15).frame(maxWidth: 540, alignment: .leading).foregroundStyle(harbourInk).background(harbourPaper.opacity(0.97), in: RoundedRectangle(cornerRadius: 18))
@@ -223,6 +238,7 @@ private struct DensePanelsKey: EnvironmentKey { static let defaultValue = false 
 extension EnvironmentValues { var densePanels: Bool { get { self[DensePanelsKey.self] } set { self[DensePanelsKey.self] = newValue } } }
 
 struct InspectorView: View {
+    var showCelebrations = true
     @Environment(\.densePanels) private var dense
     @State private var guideDetails = false
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -315,6 +331,7 @@ struct InspectorView: View {
             .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
+        .accessibilityHidden(showCelebrations && store.chapterCelebration != nil)
         .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
         .confirmationDialog("Confirm this investment", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } }), titleVisibility: .visible) {
             if let action = pendingAction { Button(action.title, role: .destructive) { store.perform(action); pendingAction = nil } }
@@ -322,6 +339,7 @@ struct InspectorView: View {
         } message: { if let action = pendingAction { Text(action.detail.isEmpty ? "Completed deliveries and spent materials are not refunded. Review the stated refund before continuing." : action.detail + ". This replaces the current setup without a refund.") } }
         .sheet(isPresented: $showActivityPicker) { TownDirectoryView { category in store.navigate(category); showActivityPicker = false } }
         .sheet(item: Binding(get: { projectGoal.map(GoalSelection.init) }, set: { projectGoal = $0?.id })) { goal in ProjectView(goal: goal.id) }
+        .overlay { if showCelebrations, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
     }
     private func guidanceCard(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -332,6 +350,7 @@ struct InspectorView: View {
                     Text(s.guidance.title).font(.system(.headline, design: .serif)).accessibilityIdentifier("next-step-title")
                 }
             }
+                Text(s.story.voice).font(dense ? .caption : .subheadline).italic().fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("elena-voice")
                 Text(s.guidance.body).font(dense ? .caption : .subheadline).fixedSize(horizontal: false, vertical: true)
                 if !dense || guideDetails { Text("Chapter \(s.objective.chapter) · \(s.objective.title)").font(.caption).foregroundStyle(HarbourTheme.muted)
                 if !s.guidance.requirements.isEmpty {
@@ -406,6 +425,7 @@ struct InspectorView: View {
     }
     private func actionCard(_ action: HarbourAction) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let partner = action.partner { Text(partner).font(.caption).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: HarbourTheme.symbol(action.category)).font(.system(size: 20)).foregroundStyle(action.enabled ? HarbourTheme.sea : HarbourTheme.muted).frame(width: 34, height: 34).background(harbourInk.opacity(0.05), in: RoundedRectangle(cornerRadius: 10)).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 7) {
@@ -436,12 +456,15 @@ struct InspectorView: View {
     }
     private func journal(_ s: HarbourSnapshot) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            if s.festival.stage == 4 {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("The first harbour festival", systemImage: "party.popper").font(.headline)
-                    Text(s.festival.choice == "craft" ? "Local makers filled the courtyard with woven cloth and handmade pieces. Visitors arrived from both shores, and the exhibition became a new harbour tradition." : "Bread, preserves and stories filled the courtyard. Visitors arrived from both shores, and the food fair became a new harbour tradition.").font(.subheadline)
-                    Button("Visit the festival") { store.navigate("Festival") }.frame(minHeight: 44)
-                }.harbourCard()
+            Text("Memories of \(s.story.townName)").font(.system(.title2, design: .serif))
+            Text("Our milestones and choices. Some memories are undated; seasonal decisions are gathered below.").font(.caption).foregroundStyle(HarbourTheme.muted)
+            if s.story.memories.isEmpty { Text("Our story starts with this harvest. Completed chapters will appear here.").font(.subheadline) }
+            ForEach(s.story.memories) { memory in MemoryCard(memory: memory) }
+            if s.festival.stage == 4 { Button("Visit the festival") { store.navigate("Festival") }.frame(minHeight: 44) }
+            if !s.story.decisions.isEmpty {
+                DisclosureGroup("Saved decisions · \(s.story.decisions.count)") {
+                    ForEach(s.story.decisions) { memory in MemoryCard(memory: memory) }
+                }.font(.headline)
             }
             VStack(alignment: .leading, spacing: 14) {
                 Text("Season \(s.evolution.season) · \(s.evolution.choiceCount) decisions").font(.headline)

@@ -2,6 +2,26 @@ import XCTest
 @testable import LittleHarbour
 
 @MainActor final class GameStoreTests: XCTestCase {
+    func testChapterCelebrationNeverGatesSavingOrReplaysOnImportAndRelaunch() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            XCTAssertNil(store.chapterCelebration, "Imported history is available in the journal without replaying every chapter")
+            store.perform(try XCTUnwrap(store.snapshot?.actions.first { $0.id == "[\"festivalCelebrate\",[\"food\"]]" }))
+            XCTAssertEqual(store.chapterCelebration?.chapter, 6)
+            let paid = try repository.original()
+            let loaded = try EngineRuntime(); try loaded.load(paid)
+            XCTAssertEqual(try loaded.snapshot().festival.stage, 4, "Opening is already saved while Elena is on screen")
+            XCTAssertFalse(store.modalOpen)
+            store.lifecycle(false); XCTAssertEqual(try repository.original(), paid)
+            store.dismissCelebration(); try store.refresh()
+            XCTAssertNil(store.chapterCelebration); XCTAssertEqual(try repository.original(), paid)
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertNil(reopened.chapterCelebration)
+            XCTAssertEqual(reopened.snapshot?.story.memories.first?.chapter, 6)
+            XCTAssertEqual(try repository.original(), paid)
+        }
+    }
     private func withStore(_ body: (GameStore, SaveRepository) throws -> Void) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

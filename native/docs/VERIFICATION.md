@@ -42,6 +42,8 @@ Some intermediate iOS 26.5 multi-destination runs were interrupted after simulat
 
 Foundation PR #13's corrected head `cb29131` passed both the native foundation workflow and the existing browser workflow on GitHub. Client PR #14 has native CI for bundle/art parity and macOS-hosted simulator tests. New pushes retrigger it; **consult the current PR checks for final-head remote status**. Local passes above do not assert that a later remote run has finished. Concurrency cancels superseded native runs on the same PR.
 
+The build-10 head `cdcdb8c` failed its simulator job on GitHub (run 41483408151): one festival UI test whose primary action sat beneath the sheet's bottom bar on the runner's iPhone 16 Pro. The diagnosis, local reproduction and test-side fix are recorded in [the festival report](HARBOUR-FESTIVAL.md#github-simulator-failure-on-the-build-10-commit-and-its-fix). Because the runner's 402 × 874-point phone exposed it and local Pro Max runs did not, local phone verification now uses an iPhone 16 Pro-sized simulator as well.
+
 ## Reproduce and remaining limits
 
 Use [the native build instructions](../README.md). The committed Xcode project needs no generator or third-party runtime to open/run. Local `.xcresult` bundles contain logs and retained screenshots; selected images above are committed for reviewers on other machines.

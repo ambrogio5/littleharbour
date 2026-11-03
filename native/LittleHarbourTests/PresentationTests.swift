@@ -54,9 +54,9 @@ import SwiftUI
         for (id, recipe) in recipes {
             guard let entity = s.entities.first(where: { $0.id == id && $0.stage == "built" }) else { continue }
             XCTAssertEqual(entity.category, "Production", id)
-            let action = HarbourAction(id: "[\"start\",[\"\(recipe)\"]]", category: "Production", title: "localized title", detail: "", reason: "", enabled: true, destructive: false, goal: nil)
+            let action = HarbourAction(id: "[\"start\",[\"\(recipe)\"]]", category: "Production", title: "localized title", detail: "", reason: "", enabled: true, destructive: false, goal: nil, partner: nil)
             XCTAssertTrue(action.belongs(to: entity), id)
-            let other = HarbourAction(id: "[\"start\",[\"unrelated\"]]", category: "Production", title: "", detail: "", reason: "", enabled: false, destructive: false, goal: nil)
+            let other = HarbourAction(id: "[\"start\",[\"unrelated\"]]", category: "Production", title: "", detail: "", reason: "", enabled: false, destructive: false, goal: nil, partner: nil)
             XCTAssertFalse(other.belongs(to: entity), id)
         }
         let fresh = try EngineRuntime().snapshot()

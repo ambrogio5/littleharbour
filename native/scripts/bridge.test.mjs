@@ -11,6 +11,36 @@ const preQuay=E.fresh();Object.assign(preQuay,{deliveries:2,coins:1000,expansion
 const fixtures=[E.fresh(),preQuay,sampleTown(),late];
 const snapshot=()=>JSON.parse(B.snapshot());
 const nativeTown=()=>JSON.parse(B.browserSave());
+test('Story projections keep saves unchanged, use one island name and retain only evidenced memories',()=>{
+ for(const town of fixtures){
+  B.load(JSON.stringify(town));const before=B.save(),first=snapshot();
+  assert.equal(snapshot().story.townName,'Porto Lume');assert(first.story.voice.length>20);
+  assert.equal(JSON.stringify(first).includes('Isola dei Pescatori'),false);
+  assert.deepEqual(snapshot(),first);assert.equal(B.save(),before);
+  B.load(before);assert.deepEqual(snapshot().story,first.story);
+ }
+ B.reset();assert.equal(snapshot().story.memories.length,0);
+ const opening=fs.readFileSync(new URL('../LittleHarbourTests/festival-opening.json',import.meta.url),'utf8');B.load(opening);
+ assert.deepEqual(snapshot().story.memories.filter(m=>m.chapter).map(m=>m.chapter),[5,4,3,2,1]);
+ const saved=B.save();snapshot();assert.equal(B.save(),saved);
+ assert(B.act('["festivalCelebrate",["food"]]'));const opened=B.save(),story=snapshot().story;
+ assert.equal(story.memories[0].chapter,6);assert.match(story.memories[0].body,/food fair/);
+ assert(story.memories.every(m=>m.dateLabel.includes('not recorded')));
+ const history=JSON.parse(opened).evolution.history;
+ assert.deepEqual(story.decisions.map(m=>m.dateLabel),history.map(h=>'Season '+h.season).reverse());
+ B.load(opened);assert.deepEqual(snapshot().story,story);assert.equal(B.save(),opened);
+});
+test('Named partners decorate native actions without changing invocation identities or canonical text',()=>{
+ B.load(JSON.stringify(late));const before=B.save(),actions=snapshot().actions;
+ const quarry=actions.find(a=>['fundCoastalProject','completeCommission'].includes(a.fn)&&a.args[0]==='quarry');
+ assert(quarry?.partner.startsWith('Matteo'));
+ for(const [fn,name]of [['dispatchMarket','Sofia'],['chooseResidentsProposal','Nico']]){
+  const action=actions.find(a=>a.fn===fn);assert(action?.partner.startsWith(name));
+  assert.equal(action.id,JSON.stringify([action.fn,action.args]));
+ }
+ assert(actions.some(a=>a.partner?.startsWith('Lucia')));
+ assert.equal(B.save(),before);
+});
 test('Every exposed enabled economic action equals the original engine transaction',()=>{
  const context=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../LittleHarbour/Resources/engine-bundle.js',import.meta.url),'utf8'),context);
  const generated=context.Harbour;let count=0;

@@ -4,6 +4,7 @@ struct HarbourAction: Decodable, Identifiable {
     let id, category, title, detail, reason: String
     let enabled, destructive: Bool
     let goal: String?
+    let partner: String?
 }
 struct WorldEntity: Decodable, Identifiable {
     let id, zone, kind, label, stage: String
@@ -110,7 +111,16 @@ struct FestivalState: Decodable {
     let title, body: String
     let requirements: [Supply]
 }
+struct StoryMemory: Decodable, Identifiable {
+    let id, title, body, art, dateLabel: String
+    let chapter: Int?
+}
+struct HarbourStory: Decodable {
+    let townName, voice, opening, festivalLine: String
+    let memories, decisions: [StoryMemory]
+}
 struct HarbourSnapshot: Decodable {
+    let story: HarbourStory
     let festival: FestivalState
     let workshops: [String: WorkshopState]
     let directions: [TownDirection]

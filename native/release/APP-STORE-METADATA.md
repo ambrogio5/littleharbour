@@ -1,6 +1,10 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (10)**.
+Candidate: **1.0.0 (13)**.
+
+Build 13 reclaims unused bottom space for the map and activity pages while retaining home-gesture clearance and full-size touch targets.
+
+Build 11 adds Elena’s chapter/festival voice, four named partners, journal memories from existing milestones, consistent Porto Lume/Olive Island naming and dismissible chapter celebrations. No economy or save-format change. Historical dates absent from the save are explicitly marked unrecorded.
 
 Build 10 adds Chapter 6, Harbour Festival: choose a food fair or craft exhibition, fund its supplies, welcome passengers from both coasts and open a permanently decorated courtyard. A journal memory and repeatable festival requests continue play afterward. Native save version 3 preserves this extension; browser exports omit festival progress while retaining spent goods. Human pacing and physical acceptance remain pending.
 
