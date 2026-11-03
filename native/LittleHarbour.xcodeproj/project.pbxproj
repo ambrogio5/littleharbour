@@ -13,6 +13,7 @@
 		024A57A0576B2650276E0AA0 /* good-preserves.png in Resources */ = {isa = PBXBuildFile; fileRef = D6EA7FE650DAA4689A965034 /* good-preserves.png */; };
 		08DAB8688DEBD5AD7FD415D1 /* estate-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 0477AABDE2A88066BAA6E88F /* estate-unbuilt.png */; };
 		0B0B2AC622FE99C785CEA833 /* festival-ready.json in Resources */ = {isa = PBXBuildFile; fileRef = BAA641DF7BB6542267A5FAB1 /* festival-ready.json */; };
+		0C512D25D37D14831B66C436 /* StoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CABF9100D0455394940C04 /* StoryViews.swift */; };
 		0F4A89E8F9EA45B41DC4CCE3 /* specialist-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F3880E44FFC3F319FB0E80B /* specialist-ripe.png */; };
 		102CDC2303823BD13143415E /* vessel-coaster-homebound.png in Resources */ = {isa = PBXBuildFile; fileRef = E871D3DEBB6EF7877B42FE48 /* vessel-coaster-homebound.png */; };
 		111B9B3398D303A5BD6780AA /* boat-built.png in Resources */ = {isa = PBXBuildFile; fileRef = F5DC4283A85A6A1E1FD5EE07 /* boat-built.png */; };
@@ -330,6 +331,7 @@
 		95B0A2976189431255AF099A /* vessel-cutter.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-cutter.png"; sourceTree = "<group>"; };
 		9757A82889703FE130535BB0 /* sailmaker-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "sailmaker-building.png"; sourceTree = "<group>"; };
 		97CD3CF17FE915DE16745603 /* vessel-cutter-upgraded-homebound.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "vessel-cutter-upgraded-homebound.png"; sourceTree = "<group>"; };
+		99CABF9100D0455394940C04 /* StoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryViews.swift; sourceTree = "<group>"; };
 		9A1AD5CD8D68F9EE56A912AF /* carpenter-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "carpenter-built.png"; sourceTree = "<group>"; };
 		9A2912ACE3D3DBFEE1E3B216 /* mill-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "mill-unbuilt.png"; sourceTree = "<group>"; };
 		9AC8AF742CE6A1A8BABFEEB6 /* fishing-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-building.png"; sourceTree = "<group>"; };
@@ -684,6 +686,7 @@
 				E43F8497EE877836B89B7B84 /* LittleHarbourApp.swift */,
 				C3EC3767FC59EE472303EBD0 /* ManagementViews.swift */,
 				03D700F95B66DD1204369C3A /* SettingsView.swift */,
+				99CABF9100D0455394940C04 /* StoryViews.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -1038,6 +1041,7 @@
 				41040F2390D784950E32A47C /* Models.swift in Sources */,
 				B5A46B28252DB6A3A792169A /* SaveRepository.swift in Sources */,
 				43F75671F8C3E5E0942516C9 /* SettingsView.swift in Sources */,
+				0C512D25D37D14831B66C436 /* StoryViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1126,7 +1130,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1215,7 +1219,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;

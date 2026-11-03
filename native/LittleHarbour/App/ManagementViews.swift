@@ -38,6 +38,7 @@ struct ManagementAction: View {
     @State private var plan = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let partner = action.partner { Text(partner).font(.caption).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
             Text(action.title).font(.subheadline.bold()).fixedSize(horizontal: false, vertical: true)
             if !action.detail.isEmpty { Text(action.detail).font(.caption).foregroundStyle(HarbourTheme.muted) }
             if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted) }
@@ -211,6 +212,7 @@ struct FestivalPanel: View {
             VStack(alignment: .leading, spacing: 12) {
                 Label(f.stage == 4 ? "A CELEBRATION TO KEEP" : "CHAPTER 6 · HARBOUR FESTIVAL", systemImage: "party.popper").font(.caption.bold()).foregroundStyle(HarbourTheme.sea)
                 Text(f.title).font(.system(.title3, design: .serif, weight: .semibold)).accessibilityIdentifier("festival-title")
+                Text("Elena · “\(s.story.festivalLine)”").font(.caption).italic().fixedSize(horizontal: false, vertical: true)
                 if f.unlocked {
                     ProgressView(value: Double(f.stage), total: 4).tint(HarbourTheme.sea)
                     Text("\(f.stage) of 4 stages complete").font(.caption).accessibilityIdentifier("festival-progress")
