@@ -107,6 +107,21 @@ import XCTest
         app.buttons["Town"].tap()
         XCTAssertTrue(app.buttons["Town journal"].waitForExistence(timeout: 5)); app.buttons["Town journal"].tap()
         XCTAssertTrue(app.staticTexts["The first harbour festival"].waitForExistence(timeout: 5))
+        let journal = XCTAttachment(screenshot: app.screenshot()); journal.name = "Story journal memories"; journal.lifetime = .keepAlways; add(journal)
+    }
+    func testChapterCelebrationCanCloseAtAccessibilityTextSize() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
+        app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        let open = app.buttons["action-[\"festivalCelebrate\",[\"food\"]]"]
+        XCTAssertTrue(reveal(open, in: app)); open.tap()
+        let close = app.buttons["Dismiss chapter celebration"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5)); XCTAssertTrue(close.isHittable)
+        XCTAssertGreaterThanOrEqual(close.frame.height, 44)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Chapter celebration accessibility text"; shot.lifetime = .keepAlways; add(shot)
+        close.tap(); XCTAssertEqual(app.staticTexts["festival-progress"].label, "4 of 4 stages complete")
     }
     func testOpeningProductionNavigationAndSettings() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
