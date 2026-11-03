@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 12) reduces unused bottom space on the map and activity pages. It includes Elena’s story voice, named coastal/local partners, journal memories and dismissible chapter celebrations to the post-ferry Harbour Festival. It retains the landscape framing and System/Light/Dark appearance. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 13) reduces unused bottom space on the map and activity pages. It includes Elena’s story voice, named coastal/local partners, journal memories and dismissible chapter celebrations to the post-ferry Harbour Festival. It retains the landscape framing and System/Light/Dark appearance. It is a free-release candidate, not an App Store submission. This build still needs physical-device acceptance testing.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 

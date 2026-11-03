@@ -37,6 +37,7 @@ struct HarbourView: View {
     @State private var pendingSite: WorldEntity?
     @State private var hasSideInspector = false
     @State private var expandedObjective = false
+    @State private var keyboardShown = false
     @AppStorage("mapLabels") private var mapLabels = true
     private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
     var body: some View {
@@ -44,7 +45,7 @@ struct HarbourView: View {
             let wide = geometry.size.width >= 700 && geometry.size.height >= 300
             // The dock already contains full-height touch targets. Use the lower
             // safe-area strip for layout, retaining clearance for the home gesture.
-            let reclaimedBottom = max(0, geometry.safeAreaInsets.bottom - 12)
+            let reclaimedBottom = keyboardShown ? 0 : max(0, geometry.safeAreaInsets.bottom - 12)
             VStack(spacing: 0) {
                 Group { if wide { landscapeHeader } else { header } }
                     .overlay(alignment: .bottom) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
@@ -126,6 +127,8 @@ struct HarbourView: View {
             if store.directionFocus != nil, let entity = store.snapshot?.entities.first(where: { $0.id == id }) { scene.focusSite(entity) }
         }
         .onReceive(timer) { _ in store.pulse() }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardShown = true }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardShown = false }
         .background(harbourPaper.ignoresSafeArea())
     }
 
