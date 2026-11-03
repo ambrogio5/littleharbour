@@ -8,9 +8,9 @@ import XCTest
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Town"].tap()
         let refits = app.buttons["Refits"]
-        for _ in 0..<8 where !refits.isHittable { app.swipeUp() }
-        XCTAssertTrue(refits.isHittable); refits.tap()
+        XCTAssertTrue(revealTownActivity(refits, in: app)); refits.tap()
         let profile = app.segmentedControls["refit-profile"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(profile, in: app)); XCTAssertTrue(profile.buttons["Yield"].exists)
         profile.buttons["Original"].tap()
         let restore = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Restore original setup")).firstMatch
@@ -18,15 +18,17 @@ import XCTest
         let refitShot = XCTAttachment(screenshot: app.screenshot()); refitShot.name = "Advanced refit choices"; refitShot.lifetime = .keepAlways; add(refitShot)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap()
         let market = app.buttons["Market"]
-        for _ in 0..<8 where !market.isHittable { app.swipeUp() }
-        XCTAssertTrue(market.isHittable); market.tap()
+        XCTAssertTrue(revealTownActivity(market, in: app)); market.tap()
         let businesses = app.buttons["market-business"]
+        XCTAssertTrue(businesses.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(businesses, in: app)); businesses.tap()
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Craft exchange")).firstMatch.tap()
         XCTAssertTrue(reveal(app.buttons["market-automation"], in: app))
         let marketShot = XCTAttachment(screenshot: app.screenshot()); marketShot.name = "Individual market business"; marketShot.lifetime = .keepAlways; add(marketShot)
-        if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() }; XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 5)); app.buttons["Town"].tap()
+        XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
         let third = app.buttons["boat-selector-2"]
+        XCTAssertTrue(third.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(third, in: app)); third.tap()
         XCTAssertTrue(reveal(app.segmentedControls["mission-type"], in: app))
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -38,6 +40,26 @@ import XCTest
         XCTAssertEqual(XCTWaiter.wait(for: [landscape], timeout: 10), .completed)
         XCTAssertTrue(reveal(third, in: app))
         let boatShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); boatShot.name = "Three boats in landscape"; boatShot.lifetime = .keepAlways; add(boatShot)
+    }
+
+    /// SwiftUI List is a collection/table on older iOS. A row beyond the sheet's
+    /// visible bounds can still report hittable, so use real frames and held drags,
+    /// just as the inspector helper does for its separate ScrollView.
+    private func revealTownActivity(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
+        let bar = app.navigationBars["Town activities"]
+        guard bar.waitForExistence(timeout: 5) else { return false }
+        let list = app.collectionViews.firstMatch.exists ? app.collectionViews.firstMatch : app.tables.firstMatch.exists ? app.tables.firstMatch : app.scrollViews.firstMatch
+        guard list.waitForExistence(timeout: 5) else { return false }
+        for _ in 0..<20 {
+            let frame = list.frame, window = app.windows.firstMatch.frame
+            let top = max(frame.minY, bar.frame.maxY) + 8, bottom = min(frame.maxY, window.maxY - 34) - 8
+            if element.exists, element.isHittable, element.frame.minY >= top, element.frame.maxY <= bottom { return true }
+            let upward = !element.exists || element.frame.maxY > bottom
+            let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let step = min(300, max(100, (bottom - top) * 0.45))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: upward ? -step : step)), withVelocity: .default, thenHoldForDuration: 0.3)
+        }
+        return false
     }
 
     private func siteSearch(in app: XCUIApplication) -> XCUIElement {
