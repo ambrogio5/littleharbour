@@ -40,7 +40,7 @@ Production, Trade and Build stay on the bottom bar and are also available inside
 
 Settings → Appearance offers System, Light and Dark. The preference stays on this device across launches and does not alter your town. Dark mode uses a high-contrast panel palette and gently dims the painted world; it does not add a simulated day/night cycle. The installed version is shown near the top of Settings to distinguish QA updates.
 
-See [the festival implementation and checks](docs/HARBOUR-FESTIVAL.md). Coastal restoration and shipwright projects in the [gameplay roadmap](docs/GAMEPLAY-NEXT-STEPS.md) remain proposals. Festival pacing still needs human playtesting.
+See [the festival implementation and checks](docs/HARBOUR-FESTIVAL.md). Coastal restoration and shipwright projects in the [gameplay roadmap](docs/GAMEPLAY-NEXT-STEPS.md) remain proposals, and a [whole-game review](docs/GAME-REVIEW.md) collects gameplay, story, interface and graphics findings with a suggested order of work. Festival pacing still needs human playtesting.
 
 ## Save transfer and recovery
 
