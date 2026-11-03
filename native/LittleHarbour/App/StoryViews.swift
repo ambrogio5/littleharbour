@@ -23,27 +23,31 @@ struct ChapterMoment: View {
         GeometryReader { bounds in
             ZStack {
                 Color.black.opacity(0.3).ignoresSafeArea()
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Label("CHAPTER \(memory.chapter ?? 0) COMPLETE", systemImage: "checkmark.seal").font(.caption.bold())
-                            Spacer()
-                            Button { store.dismissCelebration() } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("Dismiss chapter celebration")
-                        }
-                        HStack(alignment: .center, spacing: 20) {
-                            Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 68, height: 96).accessibilityHidden(true)
-                            Image(uiImage: HarbourArtwork.image(memory.art)).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: bounds.size.height < 450 ? 80 : 144).accessibilityLabel("Completed " + memory.title)
-                        }
-                        Text(memory.title).font(.system(.title2, design: .serif, weight: .semibold)).accessibilityAddTraits(.isHeader).accessibilityFocused($focusTitle).accessibilityIdentifier("celebration-title")
-                        Text("Elena").font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
-                        Text(memory.body).font(.body).fixedSize(horizontal: false, vertical: true)
-                        Button("Continue our story") { store.dismissCelebration() }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).frame(minHeight: 44).accessibilityIdentifier("celebration-continue")
-                    }.padding(18)
-                }.frame(maxWidth: 520, maxHeight: max(140, bounds.size.height - 24))
+                ViewThatFits(in: .vertical) {
+                    contents(compact: bounds.size.height < 450).fixedSize(horizontal: false, vertical: true)
+                    ScrollView { contents(compact: bounds.size.height < 450) }
+                }.frame(maxWidth: 520)
                     .background(HarbourTheme.paper, in: RoundedRectangle(cornerRadius: 20))
                     .padding(12).foregroundStyle(HarbourTheme.ink)
                     .accessibilityElement(children: .contain)
             }
         }.accessibilityIdentifier("chapter-celebration").onAppear { focusTitle = true }
+    }
+    private func contents(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("CHAPTER \(memory.chapter ?? 0) COMPLETE", systemImage: "checkmark.seal").font(.caption.bold())
+                Spacer()
+                Button { store.dismissCelebration() } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("Dismiss chapter celebration")
+            }
+            HStack(alignment: .center, spacing: 20) {
+                Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 68, height: 96).accessibilityHidden(true)
+                Image(uiImage: HarbourArtwork.image(memory.art)).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: compact ? 80 : 144).accessibilityLabel("Completed " + memory.title)
+            }
+            Text(memory.title).font(.system(.title2, design: .serif, weight: .semibold)).accessibilityAddTraits(.isHeader).accessibilityFocused($focusTitle).accessibilityIdentifier("celebration-title")
+            Text("Elena").font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
+            Text(memory.body).font(.body).fixedSize(horizontal: false, vertical: true)
+            Button("Continue our story") { store.dismissCelebration() }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).frame(minHeight: 44).accessibilityIdentifier("celebration-continue")
+        }.padding(18)
     }
 }
