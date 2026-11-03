@@ -1,6 +1,6 @@
 # Free App Store release preparation
 
-Version **1.0.0 (build 10)** is a reviewable free-release candidate, with persistent appearance, revised landscape framing and the post-ferry [Harbour Festival](HARBOUR-FESTIVAL.md). Both original campaigns and both festival branches replay with earned resources. QA installation and informal device play do not establish full physical acceptance, human pacing or App Store readiness. No App Store upload or submission has occurred.
+Version **1.0.0 (build 11)** is a reviewable free-release candidate, with persistent appearance, revised landscape framing the post-ferry [Harbour Festival](HARBOUR-FESTIVAL.md), and [native story voice and memories](STORY-VOICE.md). Both original campaigns and both festival branches replay with earned resources. QA installation and informal device play do not establish full physical acceptance, human pacing or App Store readiness. No App Store upload or submission has occurred.
 
 ## Before distribution
 
