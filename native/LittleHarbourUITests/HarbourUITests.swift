@@ -174,9 +174,16 @@ import XCTest
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
         func tapAction(_ identifier: String) {
             let button = app.buttons[identifier]
+            // The previous action's four-second feedback inset changes scroll
+            // geometry when it closes. Wait for that transition before locating
+            // the next action, rather than tapping a position measured earlier.
+            let feedbackGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Dismiss message"])
+            XCTAssertEqual(XCTWaiter.wait(for: [feedbackGone], timeout: 8), .completed)
             XCTAssertTrue(reveal(button, in: app), "\(identifier) must be scrolled clear of the inspector bars before tapping")
             let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: button)
-            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed); button.tap()
+            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
+            XCTAssertTrue(isFullyRevealed(button, in: app))
+            button.tap()
         }
         tapAction("action-[\"festivalPrepare\",[]]")
         tapAction("festival-theme-craft")
