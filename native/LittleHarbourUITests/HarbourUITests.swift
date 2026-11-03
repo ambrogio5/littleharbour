@@ -1,6 +1,38 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    private func siteSearch(in app: XCUIApplication) -> XCUIElement {
+        let search = app.searchFields.firstMatch
+        // Newer compact system sheets collapse searchable into a Search button.
+        if !search.waitForExistence(timeout: 1), app.buttons["Search"].exists { app.buttons["Search"].tap() }
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        return search
+    }
+    func testBottomControlsUseAvailableHeight() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        func checkBottom(_ identifier: String, name: String) {
+            let button = app.buttons[identifier]
+            XCTAssertTrue(button.waitForExistence(timeout: 20))
+            let positioned = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                let gap = app.windows.firstMatch.frame.maxY - button.frame.maxY
+                return gap >= 10 && gap <= 16
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [positioned], timeout: 5), .completed,
+                           "Bottom controls must use the spare strip while clearing the home gesture. Window: \(app.windows.firstMatch.frame); button: \(button.frame)")
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+            XCTAssertTrue(button.isHittable)
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
+        }
+        checkBottom("nav-Production", name: "Bottom spacing map")
+        app.buttons["nav-Production"].tap()
+        if app.buttons["inspector-nav-Production"].waitForExistence(timeout: 2) {
+            checkBottom("inspector-nav-Production", name: "Bottom spacing activity")
+            app.buttons["inspector-nav-Trade"].tap()
+            XCTAssertTrue(app.buttons["inspector-nav-Trade"].isSelected)
+            app.buttons["Map"].tap()
+        }
+    }
     /// The part of the inspector's scroll view a finger can really reach: below the
     /// sheet's navigation bar and above the Production/Trade/Build inset, the feedback
     /// banner and the home area. Those bars are SwiftUI safe-area insets drawn over the
@@ -12,6 +44,8 @@ import XCTest
         var top = scroll.minY, bottom = min(scroll.maxY, window.maxY - 34)
         let bar = app.navigationBars.firstMatch
         if bar.exists, bar.frame.maxY > top, bar.frame.maxY < scroll.midY { top = bar.frame.maxY }
+        let nextStep = app.buttons["toolbar-next-step"]
+        if nextStep.exists { top = max(top, nextStep.frame.maxY + 2) }
         for identifier in ["inspector-nav-Production", "Dismiss message"] {
             let inset = app.buttons[identifier]
             if inset.exists, inset.frame.minY > top { bottom = min(bottom, inset.frame.minY - 8) }
@@ -93,8 +127,12 @@ import XCTest
         XCTAssertTrue(app.staticTexts["festival-orders"].waitForExistence(timeout: 5), "Opening the festival must unlock the request board")
         XCTAssertEqual(app.staticTexts["festival-progress"].label, "4 of 4 stages complete")
         let requests = XCTAttachment(screenshot: app.screenshot()); requests.name = "Unlocked festival requests"; requests.lifetime = .keepAlways; add(requests)
-        if app.buttons["Map"].exists { app.buttons["Map"].tap() }
-        app.buttons["Sites"].tap(); let search = app.searchFields.firstMatch; search.tap(); search.typeText("Festival")
+        if app.buttons["Map"].exists {
+            app.buttons["Map"].tap()
+            let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Map"])
+            XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        }
+        app.buttons["Sites"].tap(); let search = siteSearch(in: app); search.tap(); search.typeText("Festival")
         let courtyard = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Festival courtyard")).firstMatch
         XCTAssertTrue(courtyard.waitForExistence(timeout: 5)); courtyard.tap()
         XCTAssertTrue(app.staticTexts["Festival"].firstMatch.waitForExistence(timeout: 5))
@@ -143,7 +181,7 @@ import XCTest
         XCTAssertTrue(app.buttons["Zoom in"].waitForExistence(timeout: 20)); app.buttons["Zoom in"].tap(); app.buttons["Zoom out"].tap()
         app.buttons["Sites"].tap()
         XCTAssertTrue(app.navigationBars["Town sites"].waitForExistence(timeout: 5))
-        let search = app.searchFields.firstMatch; search.tap(); search.typeText("stone")
+        let search = siteSearch(in: app); search.tap(); search.typeText("stone")
         let directory = XCTAttachment(screenshot: app.screenshot()); directory.name = "Searchable painted site directory"; directory.lifetime = .keepAlways; add(directory)
         let site = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Stone mill")).firstMatch
         XCTAssertTrue(site.waitForExistence(timeout: 5)); site.tap()
@@ -214,6 +252,10 @@ import XCTest
         XCTAssertTrue(app.buttons["harvest"].waitForExistence(timeout: 5))
         let search = app.textFields["Search actions"]; search.tap(); search.typeText("nothing-matches")
         XCTAssertTrue(app.staticTexts["No matching actions"].waitForExistence(timeout: 5))
+        if app.buttons["inspector-nav-Production"].exists, app.keyboards.firstMatch.exists {
+            XCTAssertLessThanOrEqual(app.buttons["inspector-nav-Production"].frame.maxY, app.keyboards.firstMatch.frame.minY,
+                                     "Reclaiming the home strip must not put activity controls under the keyboard")
+        }
         app.buttons["Clear search"].tap()
         XCTAssertTrue(app.buttons["harvest"].exists)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() } else { app.buttons["nav-Production"].tap() }
@@ -237,7 +279,11 @@ import XCTest
         let feedbackGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Dismiss message"])
         XCTAssertEqual(XCTWaiter.wait(for: [feedbackGone], timeout: 8), .completed)
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); screenshot.name = "Accessibility text production"; screenshot.lifetime = .keepAlways; add(screenshot)
-        if app.buttons["Map"].exists { app.buttons["Map"].tap() }
+        if app.buttons["Map"].exists {
+            app.buttons["Map"].tap()
+            let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Map"])
+            XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 5), .completed)
+        }
         app.buttons["Settings and saves"].tap()
         XCTAssertTrue(app.navigationBars["Settings & saves"].waitForExistence(timeout: 5))
     }
@@ -363,7 +409,8 @@ import XCTest
         XCTAssertLessThanOrEqual(dockFrame.minY - mapFrame.maxY, 3)
         XCTAssertLessThanOrEqual(mapFrame.minY - settingsFrame.maxY, 5)
         XCTAssertGreaterThan(mapFrame.height, app.windows.firstMatch.frame.height * 0.65)
-        XCTAssertLessThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 40, "Only the system home area should remain below the dock")
+        XCTAssertLessThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 16, "The dock should reclaim the spare bottom strip")
+        XCTAssertGreaterThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 10, "Keep the home gesture clear")
         app.buttons["fit-town"].tap()
         app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
         let boat = app.buttons["boat-selector-1"]

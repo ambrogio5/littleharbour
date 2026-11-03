@@ -42,6 +42,9 @@ struct HarbourView: View {
     var body: some View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 700 && geometry.size.height >= 300
+            // The dock already contains full-height touch targets. Use the lower
+            // safe-area strip for layout, retaining clearance for the home gesture.
+            let reclaimedBottom = max(0, geometry.safeAreaInsets.bottom - 12)
             VStack(spacing: 0) {
                 Group { if wide { landscapeHeader } else { header } }
                     .overlay(alignment: .bottom) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
@@ -62,7 +65,7 @@ struct HarbourView: View {
                 dock(wide: wide).environment(\.densePanels, wide)
                     .overlay(alignment: .top) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
             }
-            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+            .frame(width: geometry.size.width, height: geometry.size.height + reclaimedBottom, alignment: .top)
             .background(harbourPaper)
             .accessibilityHidden(store.chapterCelebration != nil && !showInspector)
             .overlay { if !showInspector, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
@@ -71,12 +74,19 @@ struct HarbourView: View {
             .sheet(isPresented: $showInspector) {
                 NavigationStack {
                     InspectorView()
-                        .safeAreaInset(edge: .bottom, spacing: 0) { inspectorNavigation }
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) { Button("Next step") { store.followGuidance() }.accessibilityIdentifier("toolbar-next-step") }
-                            ToolbarItem(placement: .confirmationAction) { Button("Map") { showInspector = false } }
+                        .safeAreaInset(edge: .top, spacing: 0) {
+                            HStack {
+                                Button("Next step") { store.followGuidance() }.frame(minHeight: 44).accessibilityIdentifier("toolbar-next-step")
+                                Spacer()
+                                Button("Map") { showInspector = false }.frame(minHeight: 44)
+                            }.font(.subheadline.weight(.semibold)).buttonStyle(.bordered)
+                                .padding(.horizontal, 12).padding(.vertical, 2).background(harbourPaper)
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         }
+                        .safeAreaInset(edge: .bottom, spacing: 0) {
+                            inspectorNavigation.padding(.bottom, -reclaimedBottom)
+                        }
+                        .toolbar(.hidden, for: .navigationBar)
                 }.presentationDetents([.large]).presentationCornerRadius(28).presentationDragIndicator(.visible)
             }
         }
@@ -132,11 +142,11 @@ struct HarbourView: View {
             ForEach([("Production", "leaf"), ("Trade", "shippingbox"), ("Build", "hammer")], id: \.0) { item in
                 Button { store.navigate(item.0) } label: {
                     VStack(spacing: 4) { Image(systemName: item.1); Text(item.0).font(.caption.weight(.semibold)) }
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: 50)
                         .background(store.category == item.0 ? HarbourTheme.sea.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 12))
                 }.accessibilityIdentifier("inspector-nav-" + item.0).accessibilityAddTraits(store.category == item.0 ? .isSelected : [])
             }
-        }.padding(.horizontal, 16).padding(.vertical, 8).foregroundStyle(harbourInk).background(harbourPaper)
+        }.padding(.horizontal, 16).padding(.vertical, 2).foregroundStyle(harbourInk).background(harbourPaper)
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
     private var header: some View {

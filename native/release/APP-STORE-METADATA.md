@@ -1,6 +1,8 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (11)**.
+Candidate: **1.0.0 (12)**.
+
+Build 12 reclaims unused bottom space for the map and activity pages while retaining home-gesture clearance and full-size touch targets.
 
 Build 11 adds Elena’s chapter/festival voice, four named partners, journal memories from existing milestones, consistent Porto Lume/Olive Island naming and dismissible chapter celebrations. No economy or save-format change. Historical dates absent from the save are explicitly marked unrecorded.
 
