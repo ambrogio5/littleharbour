@@ -87,7 +87,7 @@ See [the landscape and open-play report](docs/LANDSCAPE-AND-OPEN-PLAY.md), [the 
 
 ## Review order
 
-[PR #13](https://github.com/ambrogio5/littleharbour/pull/13) contains the engine/art foundation. [PR #14](https://github.com/ambrogio5/littleharbour/pull/14) contains this client and is stacked on the foundation branch. Review/merge the foundation first, then retarget the client to main. Neither PR is automatically merged or deployed by this work.
+[PR #13](https://github.com/ambrogio5/littleharbour/pull/13) contains the engine/art foundation. [PR #14](https://github.com/ambrogio5/littleharbour/pull/14) contains this client and is stacked on the foundation branch. Review/merge the foundation first, then retarget the client to main. The current build-15 expansion is [PR #19](https://github.com/ambrogio5/littleharbour/pull/19), based on `codex/native-ios` and including the unmerged build-14 prerequisite from [PR #18](https://github.com/ambrogio5/littleharbour/pull/18). Its description separates those review sections. No PR is automatically merged or deployed by this work.
 
 ## Preparing a local release archive
 
@@ -112,4 +112,4 @@ Use `HARBOUR_RELEASE_KIND=store` with the production identifier for an App Store
 
 See [approved values, compatibility and verification](docs/LONG-PLAY-ECONOMY.md). After the lighthouse, open a workshop’s Advanced profiles or Town → Refits. The third market plot needs the courtyard and both original businesses; Town → Market selects one business with inline automation. The third berth needs the finished ferry, both developed destinations and two boats; choose Berth 3 in Fleet. Each boat keeps its own cargo/circuit/passenger mission. Optional ambitions point toward these investments.
 
-The seven-increment [programme ledger](docs/LONG-PLAY-PROGRAMME.md) distinguishes this implementation from future seasons, partner ladders, civic life, chronicle projects and new coasts. Their cost/design agreements and human pacing gates still apply.
+The seven-increment [programme ledger](docs/LONG-PLAY-PROGRAMME.md) records the build-14 foundation and the implemented build-15 seasons, partner ladders, civic life, chronicle projects, coast library and city partnership. The approved balance is implemented; human pacing, full physical acceptance and the documented environment/animation art remain release gates.
