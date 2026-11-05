@@ -233,12 +233,19 @@ import XCTest
         for _ in 0..<attempts {
             if isFullyRevealed(element, in: app) { return true }
             let area = usableInspectorArea(app)
-            let upward = !element.exists || element.frame.maxY > area.bottom
-            let step = min(max((area.bottom - area.top) * 0.45, 120), 300)
+            let frame = element.exists ? element.frame : nil
+            let upward = frame.map { $0.height >= area.bottom - area.top ? $0.minY > area.top : $0.maxY > area.bottom } ?? true
+            let maximumStep = min(max((area.bottom - area.top) * 0.45, 120), 300)
+            // Older iOS can place a segmented control just beyond the usable edge.
+            // A fixed 120-point minimum then overshoots it in both directions forever.
+            // Approach the measured edge in smaller steps; keep the visibility test intact.
+            let overrun = frame.map { upward ? ($0.height >= area.bottom - area.top ? $0.minY - area.top : $0.maxY - area.bottom) : area.top - $0.minY }
+            let step = overrun.map { min(maximumStep, max(24, $0 + 12)) } ?? maximumStep
             let start = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let end = start.withOffset(CGVector(dx: 0, dy: upward ? -step : step))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.3)
         }
+        let failure = XCTAttachment(screenshot: app.screenshot()); failure.name = "Unrevealed control"; failure.lifetime = .keepAlways; add(failure)
         return isFullyRevealed(element, in: app)
     }
     func testDarkAppearancePersistsAndCanReturnToSystem() throws {

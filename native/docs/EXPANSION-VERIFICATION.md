@@ -16,7 +16,7 @@ The first full phone run encountered a call indicator, black captures and a lock
 
 The initial full simulator run had one Fleet navigation failure: the test tapped an offscreen activity without scrolling. The test now scrolls to a named activity surface. A new city test found a real portrait Goals entry bug: selection changed without presenting the inspector. That entry was fixed. The city flow subsequently passed, including selected City mode and rotation. The activity grid then exposed a test query that selected the background inspector scroll view; it now identifies the activity grid explicitly rather than changing geometry assertions.
 
-The first expansion CI adapter job failed because the committed after-baseline carried the old generated-engine fingerprint. Regeneration changed only that fingerprint, not any economy measurement. Both baseline checks are now also part of the release script. The completed-town screenshot review caught a low-contrast goal button and two offshore civic landmarks; the button foreground and native presentation anchors were corrected without changing saves or economic coordinates. No final device installation or complete physical acceptance is claimed.
+The first expansion CI adapter job failed because the committed after-baseline carried the old generated-engine fingerprint. Regeneration changed only that fingerprint, not any economy measurement. Both baseline checks are now also part of the release script. The completed-town screenshot review caught a low-contrast goal button and two offshore civic landmarks; the button foreground and native presentation anchors were corrected without changing saves or economic coordinates. The older-runtime CI run also exposed fixed-distance test scrolling that oscillated past the city mission selector after rotation. The helper now approaches the measured edge with smaller drags and retains the same full-visibility assertion; unsuccessful reveals retain a screenshot. No final device installation or complete physical acceptance is claimed.
 
 ## Final evidence
 
@@ -28,6 +28,7 @@ Local environment: Xcode 27.2 (27B52), Swift 6.4.2; **iOS/iPadOS 26.5 simulator 
 | Full iPad Pro 13-inch M5, distinct project missions | 78 passed: 53 core + 25 UI | `/tmp/lh-expansion-ipad-acceptance.xcresult` |
 | iPhone final navigation/spacing/library regression | 58 passed: 53 core + 5 UI | `/tmp/lh-expansion-final-source-iphone.xcresult` |
 | Final contrast and civic placement regression | 55 passed: 53 core + 2 UI | `/tmp/lh-expansion-visual-final.xcresult` |
+| Adaptive test scrolling regression | 3 UI passed: city rotation, largest text and festival actions | `/tmp/lh-expansion-scroll-verified.xcresult` |
 
 The targeted iPhone run covers city boat selection, rotation, retained goals, bottom spacing, accessibility text and separate-coast persistence. It does not replace the two full runs. The final visual correction passed the core suite and city/goal UI flows; its screenshots were reviewed after the run. UI fixtures use test storage; none were imported into the owner’s QA town.
 
