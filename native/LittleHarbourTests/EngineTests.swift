@@ -1,8 +1,111 @@
 import XCTest
+import ImageIO
 import UIKit
+import JavaScriptCore
 @testable import LittleHarbour
 
 @MainActor final class EngineTests: XCTestCase {
+    func testEarnedChronicleAndCityContinuationsReplayThroughJavaScriptCore() throws {
+        let bundle = Bundle(for: Self.self)
+        for (source, base) in [("chronicle-campaigns", "long-play-campaigns"), ("city-campaigns", "chronicle-campaigns")] {
+            let campaigns = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: source, withExtension: "json")))) as? [[String: Any]])
+            let bases = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: base, withExtension: "json")))) as? [[String: Any]])
+            XCTAssertEqual(campaigns.count, 2)
+            for (index, campaign) in campaigns.enumerated() {
+                let runtime = try EngineRuntime()
+                try runtime.load(JSONSerialization.data(withJSONObject: XCTUnwrap(bases[index]["expected"])))
+                for step in try XCTUnwrap(campaign["steps"] as? [[String: Any]]) {
+                    if let action = step["action"] as? String { XCTAssertTrue(try runtime.call("act", [action]).toBool(), action) }
+                    else if let ticks = step["ticks"] as? Int { for _ in 0..<ticks { try runtime.call("tick", [1]) } }
+                    else { let saved = try runtime.save(); try runtime.load(saved); XCTAssertEqual(try runtime.save(), saved) }
+                }
+                XCTAssertEqual(try JSONSerialization.jsonObject(with: runtime.save()) as? NSDictionary, campaign["expected"] as? NSDictionary)
+                XCTAssertEqual(try runtime.snapshot().chronicle.projects.filter { $0.stage == 4 }.count, 8)
+                if source == "city-campaigns" { XCTAssertEqual(try runtime.snapshot().chronicle.city.chapter, 3) }
+            }
+        }
+    }
+    func testEveryChronicleBranchAndConstructionTextureIsPackaged() throws {
+        for name in ["mill", "bakery", "fishing", "olive", "boatyard", "estate", "kitchen", "kiln", "preserving", "weaver", "carpenter", "sailmaker"] {
+            let url = try XCTUnwrap(Bundle.main.url(forResource: "advanced-" + name, withExtension: "png"))
+            let source = try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL, nil))
+            let image = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+            XCTAssertEqual(image.width, 384); XCTAssertEqual(image.height, 384)
+        }
+        for name in ["restoration", "exhibition", "seawall", "belltower", "garden", "school", "regatta", "wintermarket"] {
+            for suffix in ["", "-alternate", "-construction"] {
+                let url = try XCTUnwrap(Bundle.main.url(forResource: "chronicle-" + name + suffix, withExtension: "png"))
+                let source = try XCTUnwrap(CGImageSourceCreateWithURL(url as CFURL, nil))
+                let image = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+                XCTAssertEqual(image.width, 384); XCTAssertEqual(image.height, 384)
+            }
+        }
+    }
+    func testHarbourYearJavaScriptCorePersistenceAndPaidSupplies() throws {
+        let runtime = try EngineRuntime()
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json"))
+        try runtime.load(Data(contentsOf: url))
+        XCTAssertTrue(try runtime.call("act", ["[\"chronicleBegin\",[]]"]).toBool())
+        let year = try runtime.snapshot().chronicle
+        XCTAssertTrue(year.started); XCTAssertEqual(year.offers.count, 3)
+        let request = try XCTUnwrap(year.offers.first)
+        let action = try JSONSerialization.data(withJSONObject: ["chronicleAccept", [request.id]])
+        XCTAssertTrue(try runtime.call("act", [String(decoding: action, as: UTF8.self)]).toBool())
+        XCTAssertEqual(try runtime.snapshot().chronicle.pin, request.goal)
+        let saved = try runtime.save(); try runtime.load(saved); XCTAssertEqual(try runtime.save(), saved)
+        try runtime.call("speed", [0]); let paused = try runtime.save(); try runtime.call("tick", [60]); XCTAssertEqual(try runtime.save(), paused)
+        try runtime.call("speed", [3]); for _ in 0..<400 { try runtime.call("tick", [1]) }
+        XCTAssertEqual(try runtime.snapshot().chronicle.season, "Summer")
+        XCTAssertTrue(try runtime.snapshot().chronicle.offers.contains { $0.id == request.id && $0.accepted })
+    }
+    func testEarnedLongPlayInvestmentsReplayWithReloadsInJavaScriptCore() throws {
+        let bundle = Bundle(for: Self.self)
+        func rows(_ file: String) throws -> [[String: Any]] {
+            try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: file, withExtension: "json")))) as? [[String: Any]])
+        }
+        let bases = try rows("festival-campaigns"), campaigns = try rows("long-play-campaigns")
+        XCTAssertEqual(campaigns.count, 2)
+        for campaign in campaigns {
+            let base = try XCTUnwrap(bases.first { $0["choice"] as? String == campaign["choice"] as? String })
+            let engine = try EngineRuntime(); try engine.load(JSONSerialization.data(withJSONObject: XCTUnwrap(base["expected"])))
+            var actions = 0, reloads = 0
+            for step in try XCTUnwrap(campaign["steps"] as? [[String: Any]]) {
+                if let action = step["action"] as? String { XCTAssertTrue(try engine.call("act", [action]).toBool(), action); actions += 1 }
+                if let ticks = step["ticks"] as? Int { for _ in 0..<ticks { try engine.call("tick", [1]) } }
+                if step["reload"] as? Bool == true { let bytes = try engine.save(); try engine.load(bytes); XCTAssertEqual(try engine.save(), bytes); reloads += 1 }
+            }
+            XCTAssertGreaterThan(actions, 500); XCTAssertGreaterThan(reloads, 30)
+            XCTAssertEqual(try JSONSerialization.jsonObject(with: engine.save()) as? NSDictionary, campaign["expected"] as? NSDictionary)
+            let snapshot = try engine.snapshot()
+            XCTAssertEqual(snapshot.boats.compactMap { $0 }.count, 3)
+            XCTAssertEqual(snapshot.berthCount, 3); XCTAssertFalse(snapshot.legacyBrowserAvailable)
+            XCTAssertThrowsError(try engine.save(browser: true, legacy: true))
+            let exported = try EngineRuntime(); try exported.load(engine.save(browser: true))
+            XCTAssertEqual(try exported.snapshot().boats.compactMap { $0 }.count, 3)
+            XCTAssertEqual(try exported.snapshot().festival.stage, 0)
+        }
+    }
+
+    func testFrozenOldClientRejectsNewTownAndProtectsOriginalBytes() throws {
+        let bundle = Bundle(for: Self.self), engine = try EngineRuntime()
+        let bytes = try Data(contentsOf: XCTUnwrap(bundle.url(forResource: "long-play-ready", withExtension: "json")))
+        try engine.load(bytes)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let repository = SaveRepository(directory: directory)
+        _ = try repository.read(); try repository.write(bytes)
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(try String(contentsOf: XCTUnwrap(bundle.url(forResource: "legacy-engine-v13", withExtension: "js")), encoding: .utf8))
+        XCTAssertNil(context.exception)
+        let old = try XCTUnwrap(context.objectForKeyedSubscript("Harbour"))
+        old.invokeMethod("load", withArguments: [String(decoding: try XCTUnwrap(repository.read()), as: UTF8.self)])
+        XCTAssertNotNil(context.exception, "The frozen build-13 reader must reject a schema-14 town")
+        if context.exception != nil { repository.protect() }
+        XCTAssertThrowsError(try repository.write(Data("{}".utf8)))
+        XCTAssertEqual(try Data(contentsOf: repository.primary), bytes)
+        XCTAssertEqual(try engine.snapshot().berthCount, 3)
+    }
+
     func testRealOpeningThroughConstructionAndEvolution() throws {
         let engine = try EngineRuntime()
         func action(_ fn: String, _ args: [Any] = []) throws {

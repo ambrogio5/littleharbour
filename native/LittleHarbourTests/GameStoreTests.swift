@@ -2,6 +2,64 @@ import XCTest
 @testable import LittleHarbour
 
 @MainActor final class GameStoreTests: XCTestCase {
+    func testProjectMissionSelectsUnusedBoatAndExactRouteWithoutLaunching() throws {
+        try withStore { store, _ in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "city-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            let before = try XCTUnwrap(store.snapshot)
+            let project = try XCTUnwrap(before.chronicle.projects.first { $0.id == "restoration" })
+            let mission = try XCTUnwrap(project.missions.first { $0.route == "island" })
+            XCTAssertTrue(mission.passengers)
+            store.chooseProjectBoat(project, mission: mission)
+            XCTAssertEqual(store.selectedBerth, 2)
+            XCTAssertEqual(store.category, "Ferry")
+            XCTAssertEqual(store.preferredFleetMission, "Passengers")
+            XCTAssertEqual(store.preferredFleetRoute, "island")
+            XCTAssertEqual(store.snapshot?.coins, before.coins)
+            XCTAssertEqual(store.snapshot?.stock, before.stock)
+            XCTAssertTrue(store.snapshot?.boats.allSatisfy { $0?.trip == nil } == true)
+            store.followGuidance()
+            XCTAssertNil(store.preferredFleetMission); XCTAssertNil(store.preferredFleetRoute)
+        }
+    }
+    func testChapterCelebrationNeverGatesSavingOrReplaysOnImportAndRelaunch() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            XCTAssertNil(store.chapterCelebration, "Imported history is available in the journal without replaying every chapter")
+            store.perform(try XCTUnwrap(store.snapshot?.actions.first { $0.id == "[\"festivalCelebrate\",[\"food\"]]" }))
+            XCTAssertEqual(store.chapterCelebration?.chapter, 6)
+            let paid = try repository.original()
+            let loaded = try EngineRuntime(); try loaded.load(paid)
+            XCTAssertEqual(try loaded.snapshot().festival.stage, 4, "Opening is already saved while Elena is on screen")
+            XCTAssertFalse(store.modalOpen)
+            store.lifecycle(false); XCTAssertEqual(try repository.original(), paid)
+            store.dismissCelebration(); try store.refresh()
+            XCTAssertNil(store.chapterCelebration); XCTAssertEqual(try repository.original(), paid)
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertNil(reopened.chapterCelebration)
+            XCTAssertEqual(reopened.snapshot?.story.memories.first?.chapter, 6)
+            XCTAssertEqual(try repository.original(), paid)
+        }
+    }
+    func testPinnedGoalSurvivesBrowsingRefreshAndRelaunchWithoutMovingThePanel() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            store.pin("direction:industry")
+            store.followDirection(try XCTUnwrap(store.snapshot?.directions.first { $0.id == "industry" }))
+            store.navigate("Fleet"); store.selectedBerth = 1
+            try store.refresh()
+            XCTAssertEqual(store.category, "Fleet")
+            XCTAssertEqual(store.snapshot?.chronicle.pin, "direction:industry")
+            XCTAssertNotNil(store.pinnedTitle)
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertEqual(reopened.snapshot?.chronicle.pin, "direction:industry")
+            store.nextPinnedStep(); XCTAssertEqual(store.category, "Production")
+            store.category = "Journal"; try store.refresh()
+            XCTAssertEqual(store.category, "Journal", "A status refresh cannot hijack navigation")
+        }
+    }
     private func withStore(_ body: (GameStore, SaveRepository) throws -> Void) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

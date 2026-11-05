@@ -27,7 +27,7 @@ test('Direction choice is gated, first choice free, switches paid and held coins
  const loaded=parseSave(JSON.stringify(s));assert.equal(loaded.townFocus,'builders');delete s.townFocus;assert.equal(parseSave(JSON.stringify(s)).townFocus,null);s.townFocus='invalid';assert.throws(()=>parseSave(JSON.stringify(s)));
 });
 test('Trade direction previews and pays exact bonus, builders favours material returns',()=>{
- const s=sampleTown(),base=order(s);s.townFocus='trade';const boosted=order(s);assert.equal(boosted.coins,Math.round(base.coins*1.35));for(const[k,n]of Object.entries(boosted.cost))s.stock[k]+=n;const money=s.coins;assert(dispatch(s));assert.equal(s.coins-money,boosted.coins);
+ const s=sampleTown(),base=order(s);s.townFocus='trade';const boosted=order(s);assert.equal(boosted.coins,Math.round(base.coins/1.2*1.5));for(const[k,n]of Object.entries(boosted.cost))s.stock[k]+=n;const money=s.coins;assert(dispatch(s));assert.equal(s.coins-money,boosted.coins);
  s.townFocus='builders';const material=order(s);assert.equal(material.wood,Math.round(base.wood*1.5));assert.equal(material.stone,Math.round(base.stone*1.5));assert.equal(material.coins,base.coins);
 });
 test('Local life boosts local order previews without changing trade fares or requirements',()=>{

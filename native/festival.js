@@ -24,7 +24,7 @@ export function restoreFestival(s,raw){
  return {stage,choice,baselineRuns,visits:{quarry:visits.quarry,island:visits.island},orders};
 }
 function note(s,message){s.log.unshift(message);s.log=s.log.slice(0,5);}
-export function offers(s,f){
+export function offers(s,f,tickets=null){
  if(!available(s,f))return [];
  if(f.stage===0)return [{fn:'festivalPrepare',args:[],title:'Prepare the festival courtyard',cost:PREPARATION}];
  if(f.stage===1)return [
@@ -32,11 +32,11 @@ export function offers(s,f){
   {fn:'festivalSupply',args:[f.choice],title:f.choice==='food'?'Stock the food fair':'Supply the craft exhibition',cost:SUPPLIES[f.choice]}
  ];
  if(f.stage===3)return [{fn:'festivalCelebrate',args:[f.choice],title:'Open the harbour festival',cost:FINALE[f.choice]}];
- if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
+ if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[tickets?tickets.slots[index].template:(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[tickets?tickets.slots[index].epoch:f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
  return [];
 }
-export function mutateFestival(s,f,fn,args){
- const action=offers(s,f).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
+export function mutateFestival(s,f,fn,args,tickets=null){
+ const action=offers(s,f,tickets).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
  if(!action||Object.entries(action.cost).some(([item,n])=>E.available(s,item)<n))return false;
  if(fn==='festivalChoose'&&f.choice===args[0])return false;
  if(action.reward&&s.coins+action.reward>1e9)return false;
@@ -46,7 +46,7 @@ export function mutateFestival(s,f,fn,args){
  if(fn==='festivalChoose')f.choice=args[0];
  if(fn==='festivalSupply'){f.stage=2;f.baselineRuns=s.ferry.runs;}
  if(fn==='festivalCelebrate')f.stage=4;
- if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;}
+ if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;if(tickets){const epoch=tickets.next++;tickets.slots[args[1]]={epoch,template:(epoch*2+args[1])%REQUESTS.length};}}
  note(s,fn==='festivalCelebrate'?'The harbour festival is open · courtyard decorations and festival requests unlocked':action.title+' · saved');
  return true;
 }

@@ -1,6 +1,6 @@
-import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES} from './catalog.js?v=0.20.1';
-export * from './catalog.js?v=0.20.1';
-export function fresh(){return {version:13,townFocus:null,residents:{proposal:null,delivered:0},ferry:{stage:0,funded:false,delivered:0,runs:0},neighbourhood:{access:false,plots:[null,null,null,null,null,null],orders:0},fleet:{development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0,flax:0,cloth:0,furniture:0,sails:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
+import {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES,ADVANCED_STATIONS,ADVANCED_REFITS,MARKET_SWITCH_COST,THIRD_BERTH_COST} from './catalog.js?v=0.21.0';
+export * from './catalog.js?v=0.21.0';
+export function fresh(){return {version:14,advancedRefits:{},yieldCredits:{},marketRevision:0,townFocus:null,residents:{proposal:null,delivered:0},ferry:{stage:0,funded:false,delivered:0,runs:0},neighbourhood:{access:false,plots:[null,null,null,null,null,null],orders:0},fleet:{thirdBerth:false,development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0,flax:0,cloth:0,furniture:0,sails:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
 export function has(s,type){return s.businesses.includes(type);}
 export function reserved(s,item){return Object.values(s.reservations||{}).reduce((sum,c)=>sum+(c[item]||0),0);}
 export function available(s,item,goalId=null){return (item==='coins'?s.coins:s.stock[item]||0)-reserved(s,item)+(s.reservations?.[goalId]?.[item]||0);}
@@ -13,7 +13,7 @@ export const CONSTRUCTION_SECONDS=8;
 export function underConstruction(s,type){return s.construction.find(p=>p.type===type)||null;}
 export function unlocked(s,key){if(!Object.hasOwn(RECIPES,key))return false;const station=RECIPES[key].station;if(['flaxgarden','weaver','carpenter','sailmaker'].includes(station))return neighbourhoodReady(s)&&s.neighbourhood.plots.some(p=>p?.type===station);if(['claypit','terrace0','terrace1','kiln','preserving'].includes(station)){if(!inlandReady(s))return false;if(station==='claypit')return true;if(station.startsWith('terrace')){const plot=Number(station.slice(-1)),t=s.inland.terraces[plot];return !!t&&!t.left&&key===t.type+plot;}return !!s.inland.kiln&&!s.inland.kiln.left&&(station!=='preserving'||s.inland.terraces.some(t=>t&&!t.left&&t.type===(key==='fruitPreserves'?'orchard':'garden')));}if(station==='kitchen')return marketReady(s)&&!!marketBusiness(s,'kitchen')&&!marketBusiness(s,'kitchen').left;if(['boatyard','estate'].includes(station))return s.specialists.includes(station)&&!underConstruction(s,station)&&(s.charter||PATHS[s.specialisation]?.station===station);return key==='fishing'?has(s,'fishing')&&!underConstruction(s,'fishing'):['olives','press'].includes(key)?has(s,'olive')&&!underConstruction(s,'olive'):true;}
 export function harvest(s){if(!s.ripe)return false;s.ripe=false;s.stock.wheat+=6;s.harvests++;note(s,'Harvest collected · +6 wheat');return true;}
-export function start(s,key,quiet=false){if(!unlocked(s,key))return false;const r=RECIPES[key];if(key==='field'&&s.ripe)return false;if(s.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(s,r.station)||!canAfford(s,r.cost))return false;spend(s,r.cost);s.jobs.push({key,left:recipeDuration(s,key)});if(!quiet)note(s,r.name+' queued');return true;}
+export function start(s,key,quiet=false){if(!unlocked(s,key))return false;const r=RECIPES[key];if(key==='field'&&s.ripe)return false;if(s.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(s,r.station)||!canAfford(s,r.cost))return false;spend(s,r.cost);s.jobs.push({key,left:recipeDuration(s,key),...(yieldQuarters(s,key)>4?{yieldQuarters:yieldQuarters(s,key)}:{})});if(!quiet)note(s,r.name+' queued');return true;}
 // Bulk controls spend only available ingredients and respect shared station queues.
 export function maxBatches(s,key){
  if(!unlocked(s,key)||(key==='field'&&s.ripe))return 0;
@@ -32,14 +32,14 @@ export function harvestReplant(s){
  start(s,'field',true);
  return true;
 }
-export function incoming(s,item){return s.jobs.reduce((sum,j)=>sum+(RECIPES[j.key].output[item]||0),0);}
+export function incoming(s,item){return queuedOutputs(s).reduce((sum,output)=>sum+(output[item]||0),0);}
 export function canCancel(s,index){const j=s.jobs[index];return !!j&&s.jobs.slice(0,index).some(x=>RECIPES[x.key].station===RECIPES[j.key].station);}
 export function cancel(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const [j]=s.jobs.splice(index,1);add(s,RECIPES[j.key].cost);note(s,'Queued batch cancelled · ingredients returned');return true;}
 export function prioritize(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const station=RECIPES[s.jobs[index].key].station,first=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(index===first+1)return false;const [j]=s.jobs.splice(index,1);s.jobs.splice(first+1,0,j);note(s,'Batch moved to the front of its waiting queue');return true;}
 export function setTarget(s,key,target){if(!s.pier||!unlocked(s,key)||![0,6,12].includes(target))return false;s.targets[key]=target;note(s,target?RECIPES[key].name+' · maintain '+target+' in stock':'Automatic '+RECIPES[key].name.toLowerCase()+' stopped');return true;}
-function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],incoming=s.jobs.reduce((n,j)=>n+(RECIPES[j.key].output[item]||0),0);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+incoming<target)start(s,key,true);}}
-export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);completed+=tickFleet(s,elapsed);automate(s);return completed;}
-function withCharter(s,route){if(route.locked)return route;return {...route,coins:Math.round(route.coins*(s.charter?1.2:1)*(s.townFocus==='trade'?1.35:1)),wood:Math.round((route.wood||0)*(s.townFocus==='builders'?1.5:1)),stone:Math.round((route.stone||0)*(s.townFocus==='builders'?1.5:1))};}
+function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],queued=incoming(s,item);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+queued<target)start(s,key,true);}}
+export function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;const output=j.key==='field'?r.output:finishOutput(s,j);if(j.key==='field')s.ripe=true;else add(s,output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);completed+=tickFleet(s,elapsed);automate(s);return completed;}
+function withCharter(s,route){if(route.locked)return route;return {...route,coins:Math.round(route.coins*Math.min(1.5,(s.charter?1.2:1)*(s.townFocus==='trade'?1.35:1))),wood:Math.round((route.wood||0)*(s.townFocus==='builders'?1.5:1)),stone:Math.round((route.stone||0)*(s.townFocus==='builders'?1.5:1))};}
 export function orders(s){
  if(!s.deliveries)return [{id:'local',name:'Cala Verde',description:'Supply the village market with its first bread delivery.',cost:{bread:4},coins:80,wood:8,stone:4}];
  if(!s.expansion)return [{id:'local',name:'New coastal routes',description:'Build a fishing jetty or olive workshop to open new supply routes.',cost:{},locked:true}];
@@ -67,8 +67,8 @@ export function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
- if(x&&Number.isInteger(x.version)&&x.version>13)throw Error('This town was saved by a newer version. Open it in that version or export it for later.');
- if(!x||![1,2,3,4,5,6,7,8,9,10,11,12,13].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
+ if(x&&Number.isInteger(x.version)&&x.version>14)throw Error('This town was saved by a newer version. Open it in that version or export it for later.');
+ if(!x||![1,2,3,4,5,6,7,8,9,10,11,12,13,14].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  if(x.townFocus!==undefined&&x.townFocus!==null&&!Object.hasOwn(TOWN_FOCUSES,x.townFocus))invalid();s.townFocus=x.townFocus||null;if(s.townFocus&&!x.pier)invalid();
  for(const k of ['coins','deliveries','harvests','milled','baked']){if(!Number.isSafeInteger(x[k])||x[k]<0||x[k]>1e9)invalid();s[k]=x[k];}
@@ -102,14 +102,17 @@ export function parseSave(raw){
  }
  if(s.selectedOrder==='waterfront'&&s.waterfront.stage!==3)invalid();
  if(x.jobs.length>100)invalid();
- if(x.version>=7)validateMarket(s,x.market,invalid);
+ if(x.version>=7)validateMarket(s,x.market,invalid,x.version);
  if(x.version>=8)validateInland(s,x.inland,invalid);
  if(x.version>=9)validateFleet(s,x.fleet,invalid,x.version);
  if(x.version>=11)validateNeighbourhood(s,x.neighbourhood,invalid);
  if(x.version>=12)validateFerry(s,x.ferry,invalid);
   if(x.version>=13)validateResidents(s,x.residents,invalid);
+ if(x.version>=14)validateInvestments(s,x,invalid);
+ if(s.market.plots[2]&&!thirdMarketReady(s))invalid();
+ if(s.fleet.thirdBerth&&(s.ferry.stage!==3||s.fleet.development.quarry!==3||s.fleet.development.island!==3||!s.fleet.boats[0]||!s.fleet.boats[1]))invalid();
  if(s.selectedOrder==='inland'&&!inlandTradeReady(s))invalid();
- for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>MAX_SAVE_TIMER)invalid();s.jobs.push({key:j.key,left:j.left});}
+ for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>MAX_SAVE_TIMER)invalid();if(j.yieldQuarters!==undefined&&(x.version<14||![5,6].includes(j.yieldQuarters)||j.yieldQuarters!==yieldQuarters(s,j.key)))invalid();s.jobs.push({key:j.key,left:j.left,...(j.yieldQuarters?{yieldQuarters:j.yieldQuarters}:{})});}
  for(const station of new Set(Object.values(RECIPES).map(r=>r.station)))if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
  if(s.ripe&&s.jobs.some(j=>j.key==='field'))invalid();
  if(x.log.length>5||x.log.some(t=>typeof t!=='string'||t.length>250))invalid();s.log=x.log.map(t=>t.replace(/[<>]/g,''));
@@ -173,7 +176,7 @@ export function openingGuide(s){
 }
 
 // Refit choices compete with expansion funds, but never gate basic trading.
-export function recipeDuration(s,key){const garden=residentsComplete(s,'garden')&&['flaxgarden','weaver','carpenter','sailmaker','field','terrace0','terrace1'].includes(RECIPES[key].station);return Math.round(RECIPES[key].duration*(garden?.8:1)*(['flax','cloth','furniture','sails'].includes(key)&&s.neighbourhood?.plots.some(p=>p?.type==='square')?.9:1)*(s.refits?.[RECIPES[key].station]==='speed'?.6:1)*1000)/1000;}
+export function recipeDuration(s,key){const garden=residentsComplete(s,'garden')&&['flaxgarden','weaver','carpenter','sailmaker','field','terrace0','terrace1'].includes(RECIPES[key].station);return Math.round(RECIPES[key].duration*(garden?.8:1)*(['flax','cloth','furniture','sails'].includes(key)&&s.neighbourhood?.plots.some(p=>p?.type==='square')?.9:1)*(s.refits?.[RECIPES[key].station]==='speed'?.6:1)*advancedSpeed(s,key)*1000)/1000;}
 export function refitBlocker(s,station,mode){
  if(!Object.hasOwn(REFITS,station)||!['speed','queue'].includes(mode))return 'Choose a valid workshop setup.';
  if(!s.expansion||underConstruction(s,s.expansion))return 'Finish your first business before investing in refits.';
@@ -218,16 +221,18 @@ export function chapterThree(s){
 export function goalCost(s,id){
  if(typeof id!=='string')return null;
  const parts=id.split(':');
+ if(id==='thirdberth'&&!s.fleet.thirdBerth&&thirdBerthEligible(s))return {...THIRD_BERTH_COST};
+ if(parts[0]==='advanced'&&parts.length===5){const [,station,tier,mode,epoch]=parts,p=advancedRefitPlan(s,station,Number(tier),mode);return p&&String(p.epoch)===epoch&&String(p.tier)===tier&&!advancedAccessBlocker(s,station,p.tier,mode,false)?{...p.cost}:null;}
  if(parts[0]==='ferryfund'&&parts.length===2&&parts[1]===String(s.ferry.stage)&&ferryEligible(s)&&s.ferry.stage<3&&!s.ferry.funded)return {...FERRY_STAGES[s.ferry.stage].cost};
  if(parts[0]==='ferry'&&parts.length===3&&parts[1]===String(s.ferry.stage)&&parts[2]===String(s.ferry.delivered)&&ferryEligible(s)&&s.ferry.stage<3&&s.ferry.funded)return {...FERRY_STAGES[s.ferry.stage].supplies};
- if(parts[0]==='ferryservice'&&parts.length===3&&/^[01]$/.test(parts[1])){const slot=Number(parts[1]),p=ferryPlan(s,slot,parts[2]);return p&&!ferryServiceAccessBlocker(s,slot,parts[2])?{...p.cost}:null;}
+ if(parts[0]==='ferryservice'&&parts.length===3&&/^[012]$/.test(parts[1])){const slot=Number(parts[1]),p=ferryPlan(s,slot,parts[2]);return p&&!ferryServiceAccessBlocker(s,slot,parts[2])?{...p.cost}:null;}
 
  if(parts[0]==='neighbourhood')return neighbourhoodGoalCost(s,parts);
   if(parts[0]==='residents')return residentsGoalCost(s,parts);
- if(parts[0]==='circuit'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[2])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),stops=[{route:'quarry',tier:Number(parts[2])},{route:'island',tier:Number(parts[3])}],p=circuitPlan(s,slot,stops);return p&&!fleetBoat(s,slot).trip&&!circuitAccessBlocker(s,slot,stops)?{...p.cost}:null;}
+ if(parts[0]==='circuit'&&parts.length===4&&/^[012]$/.test(parts[1])&&/^[123]$/.test(parts[2])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),stops=[{route:'quarry',tier:Number(parts[2])},{route:'island',tier:Number(parts[3])}],p=circuitPlan(s,slot,stops);return p&&!fleetBoat(s,slot).trip&&!circuitAccessBlocker(s,slot,stops)?{...p.cost}:null;}
  if(parts[0]==='coastal'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.development[parts[1]])&&!coastalProjectAccessBlocker(s,parts[1]))return {...COASTAL_PROJECTS[parts[1]][s.fleet.development[parts[1]]].cost};
  if(parts[0]==='commission'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.commissions[parts[1]])&&s.fleet.development[parts[1]]===3)return {...commissionPlan(s,parts[1]).cost};
- if(parts[0]==='fleet'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
+ if(parts[0]==='fleet'&&parts.length===4&&/^[012]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
  if(parts[0]==='lighthouse'&&parts.length===2&&parts[1]===String(s.fleet.lighthouse.stage)&&!lighthouseAccessBlocker(s))return {...LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].cost};
  if(parts[0]==='trade'&&parts.length===2){const route=orders(s).find(o=>o.id===parts[1]);return route&&!route.locked?{...route.cost}:null;}
  if(parts[0]==='contract'&&parts.length===2&&s.contract?.id===parts[1])return {...CONTRACTS[parts[1]].cost};
@@ -238,6 +243,8 @@ export function goalCost(s,id){
 export function goalTitle(s,id){
  if(!goalCost(s,id))return null;
  const [kind,key,route,tier]=id.split(':');
+ if(kind==='thirdberth')return 'Third working berth';
+ if(kind==='advanced')return ADVANCED_STATIONS[key]+' · advanced refit';
  if(kind==='ferryfund')return FERRY_STAGES[s.ferry.stage].name+' funding';
  if(kind==='ferry')return FERRY_STAGES[s.ferry.stage].name+' · supply '+(s.ferry.delivered+1)+' of 3';
  if(kind==='ferryservice')return FERRY_SERVICES[route].name+' · berth '+(Number(key)+1);
@@ -277,13 +284,14 @@ export function marketBlocker(s,type,plot){
  if(marketBusiness(s,type))return 'This business is already built or under construction.';
  if(plot!==definition.plot)return plot===2?'This plot is reserved for a future business.':'Choose the marked plot for this business.';
  if(s.market.plots[plot])return 'This market plot is already occupied.';
- if(!has(s,definition.requires)||underConstruction(s,definition.requires))return 'Finish the '+(definition.requires==='fishing'?'fishing jetty':'olive workshop')+' first.';
+ if(definition.plot===2&&!thirdMarketReady(s))return 'Finish the courtyard and both original market businesses first.';
+ if(definition.requires&&(!has(s,definition.requires)||underConstruction(s,definition.requires)))return 'Finish the '+(definition.requires==='fishing'?'fishing jetty':'olive workshop')+' first.';
  if(!canAfford(s,definition.cost))return 'Trade for the remaining coins and building materials.';
  return '';
 }
 export function buildMarketBusiness(s,type,plot){if(marketBlocker(s,type,plot))return false;spend(s,MARKET_BUSINESSES[type].cost);s.market.plots[plot]=type;s.market.businesses[type]={plot,left:MARKET_SECONDS.business,demand:3,replenish:0,auto:false,deliveries:0};note(s,MARKET_BUSINESSES[type].name+' construction started');return true;}
-export function marketOrder(s,type){const b=marketBusiness(s,type),definition=MARKET_BUSINESSES[type];if(!marketReady(s)||!b||b.left)return null;return {id:type,name:definition.name+' standing order',cost:{...definition.order},coins:Math.round(definition.coins*(s.inland.courtyard&&!s.inland.courtyardLeft?1.25:1)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1)),demand:b.demand};}
-export function dispatchMarket(s,type){const o=marketOrder(s,type),b=marketBusiness(s,type),goal='market:'+type;if(!o||!b.demand||!canAfford(s,o.cost,goal))return false;spend(s,o.cost,goal);releaseReservation(s,goal);s.coins+=o.coins;if(b.demand===3)b.replenish=0;b.demand--;b.deliveries++;note(s,o.name+' supplied · +'+o.coins+' coins');return true;}
+export function marketOrder(s,type){const b=marketBusiness(s,type),definition=MARKET_BUSINESSES[type];if(!marketReady(s)||!b||b.left)return null;return {id:type,name:definition.name+' standing order',cost:{...definition.order},coins:Math.round(definition.coins*Math.min(1.5,(s.inland.courtyard&&!s.inland.courtyardLeft?1.25:1)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1))),reward:{...definition.reward},demand:b.demand};}
+export function dispatchMarket(s,type){const o=marketOrder(s,type),b=marketBusiness(s,type),goal='market:'+type;if(!o||!b.demand||!canAfford(s,o.cost,goal))return false;spend(s,o.cost,goal);releaseReservation(s,goal);s.coins+=o.coins;add(s,o.reward);if(b.demand===3)b.replenish=0;b.demand--;b.deliveries++;note(s,o.name+' supplied · '+(o.coins?'+'+o.coins+' coins':Object.entries(o.reward).map(([k,n])=>'+'+n+' '+ITEMS[k]).join(', ')));return true;}
 export function setMarketAuto(s,type,on){const b=marketBusiness(s,type);if(!b||typeof on!=='boolean')return false;b.auto=on;note(s,MARKET_BUSINESSES[type].name+' automatic supply '+(on?'enabled':'stopped'));return true;}
 function tickMarket(s,elapsed){
  let changed=0;
@@ -295,16 +303,16 @@ function tickMarket(s,elapsed){
  }
  return changed;
 }
-function validateMarket(s,m,invalid){
- if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MAX_SAVE_TIMER||!Array.isArray(m.plots)||m.plots.length!==3||m.plots[2]!==null||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
+function validateMarket(s,m,invalid,version){
+ if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MAX_SAVE_TIMER||!Array.isArray(m.plots)||m.plots.length!==3||(version<14&&m.plots[2]!==null)||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
  if((m.access&&s.waterfront.stage!==3)||(!m.access&&(m.left||m.plots.some(Boolean)||Object.keys(m.businesses).length))||(m.left&&Object.keys(m.businesses).length))invalid();
  const out={access:m.access,left:m.left,plots:[...m.plots],businesses:{}};
  for(const [type,b]of Object.entries(m.businesses)){
   const definition=Object.hasOwn(MARKET_BUSINESSES,type)?MARKET_BUSINESSES[type]:null;
-  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||!has(s,definition.requires)||underConstruction(s,definition.requires)||!Number.isFinite(b.left)||b.left<0||b.left>MAX_SAVE_TIMER||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>MAX_SAVE_TIMER||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
+  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||(definition.requires&&(!has(s,definition.requires)||underConstruction(s,definition.requires)))||!Number.isFinite(b.left)||b.left<0||b.left>MAX_SAVE_TIMER||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>MAX_SAVE_TIMER||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
   out.businesses[type]={plot:b.plot,left:b.left,demand:b.demand,replenish:b.replenish,auto:b.auto,deliveries:b.deliveries};
  }
- for(let i=0;i<2;i++)if(m.plots[i]!==null&&(!Object.hasOwn(out.businesses,m.plots[i])||out.businesses[m.plots[i]].plot!==i))invalid();
+ for(let i=0;i<3;i++)if(m.plots[i]!==null&&(!Object.hasOwn(out.businesses,m.plots[i])||out.businesses[m.plots[i]].plot!==i))invalid();
  s.market=out;
 }
 export function marketGuide(s){
@@ -352,12 +360,12 @@ function validateInland(s,i,invalid){
 // Voyages capture cargo and rewards when launched. Future balance changes do not
 // change paid voyages; settlement clears the trip before crediting its snapshot.
 export function fleetEligible(s){return s.inland.shipments>=1;}
-export function berthCount(s){return s.fleet.lighthouse.stage===3?2:1;}
-function fleetBoat(s,slot){return Number.isInteger(slot)&&slot>=0&&slot<2?s.fleet.boats[slot]:null;}
+export function berthCount(s){return s.fleet.thirdBerth?3:s.fleet.lighthouse.stage===3?2:1;}
+function fleetBoat(s,slot){return Number.isInteger(slot)&&slot>=0&&slot<3?s.fleet.boats[slot]:null;}
 export function boatBlocker(s,slot,type){
- if(![0,1].includes(slot)||!Object.hasOwn(FLEET_BOATS,type))return 'Choose a berth and boat type.';
+ if(![0,1,2].includes(slot)||!Object.hasOwn(FLEET_BOATS,type))return 'Choose a berth and boat type.';
  if(!fleetEligible(s))return 'Send your first inland preserves shipment first.';
- if(slot>=berthCount(s))return 'Complete the lighthouse to open the second berth.';
+ if(slot>=berthCount(s))return slot===2?'Fund the third working berth first.':'Complete the lighthouse to open the second berth.';
  if(slot===1&&!s.fleet.boats[0])return 'Buy a boat for the first berth first.';
  if(s.fleet.boats[slot])return 'This berth already has a boat.';
  if(!canAfford(s,FLEET_BOATS[type].cost))return 'Trade for the remaining boat funds and materials.';
@@ -407,7 +415,7 @@ export function buildLighthouseStage(s,expectedStage){const l=s.fleet.lighthouse
 function tickFleet(s,elapsed){
  let changed=0;const l=s.fleet.lighthouse;
  if(l.left>0){l.left=Math.max(0,l.left-elapsed);if(!l.left){note(s,LIGHTHOUSE_STAGES[l.stage].name+' complete');l.stage++;changed++;}}
- for(let slot=0;slot<2;slot++){
+ for(let slot=0;slot<3;slot++){
   const b=s.fleet.boats[slot];if(!b)continue;
   if(b.trip){b.trip.left=Math.max(0,b.trip.left-elapsed);if(!b.trip.left){const trip=b.trip;b.trip=null;s.coins+=trip.reward.coins||0;add(s,Object.fromEntries(Object.entries(trip.reward).filter(([k])=>k!=='coins')));if(trip.ferry){s.ferry.runs++;note(s,FERRY_SERVICES[trip.route].name+' returned · fares received');}else{for(const stop of trip.stops||[{route:trip.route}])s.fleet.visits[stop.route]++;note(s,trip.stops?'Coastal circuit returned · both destinations supplied':FLEET_ROUTES[trip.route].name+' voyage returned · '+s.fleet.visits[trip.route]+' completed visit'+(s.fleet.visits[trip.route]===1?'':'s'));}changed++;}}
   // At most one settlement per berth per tick. A new repeat trip begins now;
@@ -429,9 +437,10 @@ export function fleetGuide(s){
 }
 function validateFleet(s,f,invalid,version){
  const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),count=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
- if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==2||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
+ if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==(version>=14?3:2)||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
+ if(version>=14&&typeof f.thirdBerth!=='boolean')invalid();
  const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>MAX_SAVE_TIMER||(l.stage===3&&l.left))invalid();
- const out={development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
+ const out={thirdBerth:version>=14?f.thirdBerth:false,development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
  if(version>=10){
   if(!obj(f.development)||!obj(f.commissions)||Object.keys(f.development).length!==2||Object.keys(f.commissions).length!==2)invalid();
   for(const route of ['quarry','island']){const stage=f.development[route],n=f.commissions[route];if(!Number.isInteger(stage)||stage<0||stage>3||!count(n)||(n&&stage!==3)||(stage&&(!f.boats[0]||f.visits[route]<COASTAL_PROJECTS[route][stage-1].visits)))invalid();out.development[route]=stage;out.commissions[route]=n;}
@@ -440,9 +449,9 @@ function validateFleet(s,f,invalid,version){
  if(!f.boats[0]&&(f.boats[1]!==null||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
  if(l.stage||l.left){const requirement=LIGHTHOUSE_STAGES[l.left?l.stage:l.stage-1].requires;if(Object.entries(requirement).some(([route,n])=>f.visits[route]<n))invalid();}
  const packet=(value,allowed)=>{if(!obj(value)||!Object.keys(value).length)invalid();const result={};for(const[k,n]of Object.entries(value)){if(!allowed.includes(k)||!Number.isSafeInteger(n)||n<=0||n>1000000)invalid();result[k]=n;}return result;};
- for(let slot=0;slot<2;slot++){
-  const b=f.boats[slot];if(b===null)continue;
-  if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot===1&&l.stage!==3)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
+ for(let slot=0;slot<3;slot++){
+  const b=f.boats[slot];if(slot===2&&version<14)continue;if(b===null)continue;
+  if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot>=1&&l.stage!==3)||(slot===2&&!f.thirdBerth)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
   if(version>=11&&typeof b.sails!=='boolean')invalid();const result={type:b.type,upgrade:b.upgrade,sails:version>=11?b.sails:false,trip:null,repeat:null};
   const validRoute=(route,tier)=>Object.hasOwn(FLEET_ROUTES,route)&&Number.isInteger(tier)&&tier>=1&&tier<=3&&f.visits[route]>=FLEET_ROUTES[route].tiers[tier-1].visits&&(!FLEET_ROUTES[route].tiers[tier-1].lighthouse||l.stage===3);
   if(b.trip!==null){const t=b.trip;if(!obj(t)||!validRoute(t.route,t.tier)||!Number.isFinite(t.duration)||t.duration<=0||t.duration>86400||!Number.isFinite(t.left)||t.left<=0||t.left>t.duration)invalid();result.trip={route:t.route,tier:t.tier,cargo:packet(t.cargo,Object.keys(s.stock)),reward:packet(t.reward,['coins','wood','stone']),duration:t.duration,left:t.left};if(t.stops!==undefined){if(version<10||!Array.isArray(t.stops)||t.stops.length!==2||t.stops[0]?.route!=='quarry'||t.stops[1]?.route!=='island'||t.route!==t.stops[0].route||t.tier!==t.stops[0].tier||t.stops.some(stop=>!obj(stop)||!validRoute(stop.route,stop.tier)))invalid();result.trip.stops=t.stops.map(stop=>({route:stop.route,tier:stop.tier}));}if(t.ferry!==undefined){if(version<12||t.ferry!==true||t.tier!==1||t.stops!==undefined)invalid();result.trip.ferry=true;}}
@@ -495,7 +504,7 @@ export function removeNeighbourhoodBuilding(s,index){if(neighbourhoodRemoveBlock
 function sailRefitAccessBlocker(s,slot){const b=fleetBoat(s,slot);if(!neighbourhoodReady(s)||!b||!s.neighbourhood.plots.some(p=>p?.type==='sailmaker'))return 'Open the sail loft and choose an owned boat.';if(b.sails)return 'Permanent sail refit already installed.';if(b.trip)return 'Wait for the boat to return before refitting its sails.';return '';}
 export function sailRefitBlocker(s,slot){const reason=sailRefitAccessBlocker(s,slot);if(reason)return reason;return canAfford(s,SAIL_REFIT_COST,`neighbourhood:sails:${slot}`)?'':'Prepare sails, timber and the refit fee.';}
 export function refitBoatSails(s,slot){if(sailRefitBlocker(s,slot))return false;const goal=`neighbourhood:sails:${slot}`;spend(s,SAIL_REFIT_COST,goal);releaseReservation(s,goal);fleetBoat(s,slot).sails=true;note(s,'Permanent sail refit installed · future voyages 10% faster');return true;}
-export function neighbourhoodOrder(s){const id=s.neighbourhood.orders,d=NEIGHBOURHOOD_ORDERS[id%NEIGHBOURHOOD_ORDERS.length];return {...d,cost:{...d.cost},reward:{...d.reward,coins:Math.round((d.reward.coins||0)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1))},id,goal:`neighbourhood:order:${id}`};}
+export function neighbourhoodOrder(s){const id=s.neighbourhood.orders,d=NEIGHBOURHOOD_ORDERS[id%NEIGHBOURHOOD_ORDERS.length];return {...d,cost:{...d.cost},reward:{...d.reward,coins:Math.round((d.reward.coins||0)*Math.min(1.5,(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1)))},id,goal:`neighbourhood:order:${id}`};}
 export function neighbourhoodOrderBlocker(s){if(!neighbourhoodReady(s))return 'Open the neighbourhood first.';const p=neighbourhoodOrder(s);return canAfford(s,p.cost,p.goal)?'':'Prepare the local order supplies or release other reservations.';}
 export function completeNeighbourhoodOrder(s,expectedCount){const p=neighbourhoodOrder(s);if(expectedCount!==p.id||neighbourhoodOrderBlocker(s))return false;spend(s,p.cost,p.goal);releaseReservation(s,p.goal);s.coins+=p.reward.coins||0;add(s,Object.fromEntries(Object.entries(p.reward).filter(([k])=>k!=='coins')));s.neighbourhood.orders++;note(s,p.name+' delivered · next local order ready');return true;}
 function neighbourhoodGoalCost(s,parts){const [,kind,index,type]=parts,slot=Number(index);if(kind==='access'&&parts.length===2&&!s.neighbourhood.access&&neighbourhoodEligible(s))return {...NEIGHBOURHOOD_ACCESS_COST};if(kind==='plot'&&parts.length===3&&String(slot)===index&&!plotAccessBlocker(s,slot))return {...PLOT_COST};if(kind==='build'&&parts.length===4&&String(slot)===index&&!neighbourhoodBuildAccessBlocker(s,slot,type))return {...NEIGHBOURHOOD_BUILDINGS[type].cost};if(kind==='home'&&parts.length===3&&String(slot)===index&&!homeUpgradeAccessBlocker(s,slot))return {...HOME_UPGRADE_COST};if(kind==='sails'&&parts.length===3&&String(slot)===index&&!sailRefitAccessBlocker(s,slot))return {...SAIL_REFIT_COST};if(kind==='order'&&parts.length===3&&neighbourhoodReady(s)&&index===String(s.neighbourhood.orders))return {...neighbourhoodOrder(s).cost};return null;}
@@ -559,9 +568,76 @@ export function ferryGuide(s){if(s.ferry.stage<3){const d=FERRY_STAGES[s.ferry.s
 function validateFerry(s,f,invalid){if(!f||typeof f!=='object'||Array.isArray(f)||!Number.isInteger(f.stage)||f.stage<0||f.stage>3||typeof f.funded!=='boolean'||!Number.isInteger(f.delivered)||f.delivered<0||f.delivered>2||!Number.isSafeInteger(f.runs)||f.runs<0||f.runs>1e9)invalid();if((!f.funded&&f.delivered)||(f.stage===3&&f.funded)||(f.runs&&f.stage!==3)||((f.stage||f.funded||f.delivered||f.runs)&&!ferryEligible(s))||s.fleet.boats.some(b=>b?.trip?.ferry&&f.stage!==3))invalid();s.ferry={stage:f.stage,funded:f.funded,delivered:f.delivered,runs:f.runs};}
 
 export const TOWN_FOCUSES={
- trade:{name:'Trading port',benefit:'35% more coins from harbour shipments.',description:'Keep bread and export goods flowing. Invest in workshop capacity and ship larger orders.'},
+ trade:{name:'Trading port',benefit:'35% more coins from harbour shipments; combined coin bonuses cap at 50%.',description:'Keep bread and export goods flowing. Invest in workshop capacity and ship larger orders.'},
  builders:{name:'Builders’ town',benefit:'50% more timber and stone from harbour shipments, rounded to whole units.',description:'Trade for materials, restore public spaces and expand your town sooner.'},
- community:{name:'Local life',benefit:'50% more coins from market-shop and neighbourhood orders.',description:'Supply local businesses and residents. Best once the market quarter is open.'}
+ community:{name:'Local life',benefit:'50% more coins from market-shop and neighbourhood orders; combined coin bonuses cap at 50%.',description:'Supply local businesses and residents. Best once the market quarter is open.'}
 };
 export function townFocusBlocker(s,key){if(!Object.hasOwn(TOWN_FOCUSES,key))return 'Choose an available town direction.';if(!s.pier||underConstruction(s,'pier'))return 'Finish extending the quay to choose a direction.';if(s.townFocus===key)return 'This direction is already active.';if(s.townFocus&&!canAfford(s,{coins:100}))return 'Changing direction needs 100 unreserved coins.';return '';}
 export function setTownFocus(s,key){if(townFocusBlocker(s,key))return false;if(s.townFocus)spend(s,{coins:100});s.townFocus=key;note(s,'Town direction · '+TOWN_FOCUSES[key].name);return true;}
+
+
+// Advanced profiles are retained investments, selected with stale-action epochs.
+function advancedSpeed(s,key){const p=s.advancedRefits?.[RECIPES[key].station];return p?.mode==='speed'?ADVANCED_REFITS[p.tier].speed:1;}
+function yieldQuarters(s,key){const p=s.advancedRefits?.[RECIPES[key].station];return p?.mode==='yield'?ADVANCED_REFITS[p.tier].yieldQuarters:4;}
+function outputWithCredit(key,quarters,credits){
+ const output={};for(const [item,n]of Object.entries(RECIPES[key].output)){const value=n*quarters+(credits[key]||0);output[item]=Math.floor(value/4);if(value%4)credits[key]=value%4;else delete credits[key];}
+ return output;
+}
+function finishOutput(s,job){return outputWithCredit(job.key,job.yieldQuarters||4,s.yieldCredits??={});}
+export function queuedOutputs(s){const credits={...s.yieldCredits};return s.jobs.map(j=>outputWithCredit(j.key,j.yieldQuarters||4,credits));}
+function pendingCredit(s,key){const credits={...s.yieldCredits};for(const j of s.jobs)if(j.key===key)outputWithCredit(j.key,j.yieldQuarters||4,credits);return credits[key]||0;}
+export function recipeOutput(s,key,batches=1){const credits={[key]:pendingCredit(s,key)};return outputWithCredit(key,yieldQuarters(s,key)*batches,credits);}
+export function recipeBatches(s,key,item,amount,planned=0){const batch=RECIPES[key].output[item]*yieldQuarters(s,key),credit=(pendingCredit(s,key)+batch*planned)%4;return Math.max(0,Math.ceil((amount*4-credit)/batch));}
+function advancedAccessBlocker(s,station,tier,mode,checkWork=true){
+ if(!Object.hasOwn(ADVANCED_STATIONS,station)||![2,3].includes(tier)||!['speed','yield','original'].includes(mode))return 'Choose a workshop, tier and profile.';
+ if(!Object.entries(RECIPES).some(([key,r])=>r.station===station&&unlocked(s,key)))return 'Build and finish this workshop first.';
+ if(s.fleet.lighthouse.stage!==3)return 'Complete the lighthouse first.';
+ const old=s.advancedRefits[station];
+ if(tier===3&&!old)return 'Purchase tier 2 first.';
+ if(tier===3&&(s.fleet.development.quarry!==3||s.fleet.development.island!==3))return 'Finish both coastal development tracks first.';
+ if(old&&tier<old.tier)return 'This workshop already owns a higher tier.';
+ if(mode==='original'&&(!old||old.tier!==tier))return 'There is no advanced setup to restore.';
+ if(old?.tier===tier&&old.mode===mode)return 'Already installed.';
+ if(checkWork&&s.jobs.some(j=>RECIPES[j.key].station===station))return 'Finish or cancel queued work before refitting.';
+ return '';
+}
+export function advancedRefitPlan(s,station,tier,mode){
+ if(!Object.hasOwn(ADVANCED_STATIONS,station)||![2,3].includes(tier)||!['speed','yield','original'].includes(mode))return null;
+ const old=s.advancedRefits[station],epoch=old?.epoch||0,cost=mode==='original'?{}:old?.tier===tier?{coins:ADVANCED_REFITS[tier].retune}:{...ADVANCED_REFITS[tier].cost};
+ return {station,tier,mode,epoch,cost,goal:`advanced:${station}:${tier}:${mode}:${epoch}`};
+}
+export function advancedRefitBlocker(s,station,tier,mode){const reason=advancedAccessBlocker(s,station,tier,mode);if(reason)return reason;const p=advancedRefitPlan(s,station,tier,mode);return canAfford(s,p.cost,p.goal)?'':'Prepare the refit funds and materials.';}
+export function installAdvancedRefit(s,station,tier,mode,epoch){
+ const p=advancedRefitPlan(s,station,tier,mode);if(!p||p.epoch!==epoch||advancedRefitBlocker(s,station,tier,mode))return false;
+ spend(s,p.cost,p.goal);s.advancedRefits[station]={tier,mode,epoch:epoch+1};pruneReservations(s);note(s,ADVANCED_STATIONS[station]+' · '+(mode==='original'?'original setup restored':'tier '+tier+' '+mode+' profile'));return true;
+}
+function validateInvestments(s,x,invalid){
+ const obj=o=>o&&typeof o==='object'&&!Array.isArray(o);
+ if(!obj(x.advancedRefits)||!obj(x.yieldCredits)||!Number.isSafeInteger(x.marketRevision)||x.marketRevision<0||x.marketRevision>1e9)invalid();s.marketRevision=x.marketRevision;
+ for(const [station,p]of Object.entries(x.advancedRefits)){
+  if(!Object.hasOwn(ADVANCED_STATIONS,station)||!obj(p)||![2,3].includes(p.tier)||!['speed','yield','original'].includes(p.mode)||!Number.isSafeInteger(p.epoch)||p.epoch<1||p.epoch>1e9||s.fleet.lighthouse.stage!==3||(p.tier===3&&(s.fleet.development.quarry!==3||s.fleet.development.island!==3)))invalid();
+  s.advancedRefits[station]={tier:p.tier,mode:p.mode,epoch:p.epoch};
+ }
+ for(const [key,n]of Object.entries(x.yieldCredits)){if(!Object.hasOwn(RECIPES,key)||!Number.isInteger(n)||n<0||n>3||(n&&!s.advancedRefits[RECIPES[key].station]))invalid();if(n)s.yieldCredits[key]=n;}
+}
+function thirdMarketReady(s){return s.inland.courtyard&&!s.inland.courtyardLeft&&['fishmonger','kitchen'].every(k=>s.market.businesses[k]&&!s.market.businesses[k].left);}
+export function switchMarketBlocker(s,type,expected){
+ if(!['provisioner','exchange'].includes(type)||!expected||s.market.plots[2]!==expected||type===expected)return 'Choose a different business for the third plot.';
+ const b=s.market.businesses[expected];if(!b||b.left)return 'Finish constructing this stall first.';
+ if(s.reservations['market:'+expected])return 'Release the reserved order for this stall before switching.';
+ return canAfford(s,MARKET_SWITCH_COST)?'':'Prepare the switching fee and planks.';
+}
+export function switchMarketBusiness(s,type,expected,revision){
+ if(switchMarketBlocker(s,type,expected)||s.marketRevision!==revision)return false;
+ spend(s,MARKET_SWITCH_COST);const b=s.market.businesses[expected];delete s.market.businesses[expected];s.market.businesses[type]={...b};s.market.plots[2]=type;s.marketRevision++;note(s,'Third market plot · '+MARKET_BUSINESSES[type].name);return true;
+}
+function thirdBerthEligible(s){return s.ferry.stage===3&&s.fleet.development.quarry===3&&s.fleet.development.island===3&&s.fleet.boats[0]&&s.fleet.boats[1];}
+export function thirdBerthBlocker(s){if(s.fleet.thirdBerth)return 'The third berth is already open.';if(!thirdBerthEligible(s))return 'Complete the ferry and both coastal settlements, and own two boats first.';return canAfford(s,THIRD_BERTH_COST,'thirdberth')?'':'Prepare the berth funding and materials.';}
+export function buildThirdBerth(s){if(thirdBerthBlocker(s))return false;spend(s,THIRD_BERTH_COST,'thirdberth');releaseReservation(s,'thirdberth');s.fleet.thirdBerth=true;note(s,'Third working berth open · choose a boat');return true;}
+
+export function legacyExportBlocker(s){return s.fleet.thirdBerth||s.fleet.boats[2]||s.market.plots[2]||Object.keys(s.advancedRefits).length||Object.keys(s.yieldCredits).length||Object.keys(s.reservations).some(id=>id==='thirdberth'||id.startsWith('advanced:'))?'This town uses new investments or reservations. Export for the updated browser or keep a native backup.':'';}
+export function legacyBrowserSave(s){
+ const reason=legacyExportBlocker(s);if(reason)throw Error(reason);
+ const old=JSON.parse(JSON.stringify(s));old.version=13;delete old.advancedRefits;delete old.yieldCredits;delete old.marketRevision;delete old.fleet.thirdBerth;old.fleet.boats=old.fleet.boats.slice(0,2);
+ return JSON.stringify(old);
+}

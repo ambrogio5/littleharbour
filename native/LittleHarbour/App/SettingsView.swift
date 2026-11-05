@@ -23,11 +23,15 @@ struct SettingsView: View {
                     Text("\(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "Little Harbour") · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("installed-build")
                 }
                 Section("Your town") {
+                    NavigationLink("Town identity & coast library") { CoastLibraryView() }.accessibilityIdentifier("coast-library")
                     Text(store.protectedSave ? "Save protected · play paused" : "Saved on this device")
                     if let date = store.lastSaved { Text("Last saved \(date.formatted(date: .omitted, time: .shortened))").font(.caption) }
                     Text("Time pauses outside the app. There are no real-time deadlines or offline penalties. Autosaves run every 15 seconds and after actions.").font(.footnote)
                     Button("Export native town & evolution") { prepareExport() }
-                    Button("Export for browser game") { prepareExport(browser: true) }.disabled(store.protectedSave)
+                    Button("Export for updated browser game") { prepareExport(browser: true) }.disabled(store.protectedSave)
+                    Text("Browser exports omit native seasons, relationships, chronicle projects, festival progress, city imports, ceramics and expeditions; active city cargo and queued jars are returned in the exported copy; reserved native supplies are returned in the exported copy. Keep a native backup for the complete town. New browser exports require the updated browser game with advanced investments.").font(.footnote)
+                    Button("Export for older browser") { prepareExport(browser: true, legacy: true) }.disabled(store.protectedSave || store.snapshot?.legacyBrowserAvailable != true)
+                    if store.snapshot?.legacyBrowserAvailable == false { Text("Older-browser export is unavailable because it would lose new investments or reservations. Keep a native backup for the complete town.").font(.footnote) }
                     if (store.snapshot?.festival.stage ?? 0) > 0 {
                         Text("Browser exports omit festival progress, decorations and new requests. Goods already contributed stay spent. Use a native export to keep the complete town.").font(.footnote)
                     }
@@ -91,8 +95,8 @@ struct SettingsView: View {
             .navigationDestination(isPresented: $showPrivacy) { PrivacyView() }
         }
     }
-    private func prepareExport(original: Bool = false, browser: Bool = false) {
-        do { exportURL = try store.export(original: original, browser: browser) } catch { store.message = error.localizedDescription }
+    private func prepareExport(original: Bool = false, browser: Bool = false, legacy: Bool = false) {
+        do { exportURL = try store.export(original: original, browser: browser, legacy: legacy) } catch { store.message = error.localizedDescription }
     }
     private func reloadBackups() { do { backups = try store.saves.backupFiles() } catch { store.message = error.localizedDescription } }
 }

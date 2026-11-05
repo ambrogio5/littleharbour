@@ -63,7 +63,7 @@ test('The public garden needs three different supply deliveries and adds one wor
  assert(!e.deliverResidentsSupplies(s,'garden',2));
 });
 
-test('The commercial square boosts only local-market and neighbourhood order earnings, stacking with the existing town direction',()=>{
+test('The commercial square boosts only local-market and neighbourhood order earnings, respecting the combined bonus cap',()=>{
  const s=town();
  s.townFocus='community';
  const marketBefore=e.marketOrder(s,'fishmonger').coins;
@@ -74,8 +74,8 @@ test('The commercial square boosts only local-market and neighbourhood order ear
  assert.equal(e.marketOrder(s,'fishmonger').coins,marketBefore);
  assert.equal(e.neighbourhoodOrder(s).reward.coins,localBefore);
  assert(e.deliverResidentsSupplies(s,'square',2));
- assert.equal(e.marketOrder(s,'fishmonger').coins,Math.round(marketBefore*1.35));
- assert.equal(e.neighbourhoodOrder(s).reward.coins,Math.round(localBefore*1.35));
+ assert.equal(e.marketOrder(s,'fishmonger').coins,marketBefore);
+ assert.equal(e.neighbourhoodOrder(s).reward.coins,localBefore);
  assert.deepEqual(e.order(s),tradeBefore);
  assert.equal(e.capacity(s,'carpenter'),2);
  assert.deepEqual(e.parseSave(JSON.stringify(s)),s);
@@ -102,9 +102,9 @@ test('Reservations belong to the chosen proposal, survive while valid, and relea
 
 test('Version 12 saves migrate to the new civic state, while malformed version 13 states are rejected',()=>{
  const s=town(),old=structuredClone(s);
- old.version=12;delete old.residents;
+ old.version=12;old.fleet.boats=old.fleet.boats.slice(0,2);delete old.residents;
  const migrated=e.parseSave(JSON.stringify(old));
- assert.equal(migrated.version,13);
+ assert.equal(migrated.version,14);
  assert.deepEqual(migrated.residents,{proposal:null,delivered:0});
  assert.deepEqual(e.parseSave(JSON.stringify(migrated)),migrated);
  for(const patch of [

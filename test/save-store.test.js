@@ -17,7 +17,7 @@ test('Quota, unreadable storage and failed backup verification prevent replaceme
 });
 test('Migration archives exact source including whitespace and unknown metadata, then deduplicates writes',()=>{
  const legacy={...fresh(),version:1,extra:'original'};const raw=' \n'+JSON.stringify(legacy)+'\n';
- const storage=memory(raw),store=createSaveStore(storage,'town');const {state}=store.read();assert.equal(state.version,13);
+ const storage=memory(raw),store=createSaveStore(storage,'town');const {state}=store.read();assert.equal(state.version,14);
  assert(store.write(state));assert.equal(store.backups()[0].raw,raw);assert(store.write(state));assert.equal(store.writes,1);
 });
 test('Competing tab writes stop autosave and explicit replacement archives the latest bytes',()=>{
@@ -33,8 +33,8 @@ test('A pre-balance timer and a refit timer preserve paid work on reload',()=>{
  for(const left of [0,-1,Infinity,86401]){s.jobs[0].left=left;assert.throws(()=>parseSave(JSON.stringify(s)));}
 });
 test('Every supported schema migrates idempotently; future versions fail explicitly',()=>{
- for(let version=1;version<=13;version++){const state=parseSave(JSON.stringify({...fresh(),version}));assert.deepEqual(parseSave(JSON.stringify(state)),state);}
- assert.throws(()=>parseSave(JSON.stringify({...fresh(),version:14})),/newer version/);
+ for(let version=1;version<=14;version++){const state=parseSave(JSON.stringify({...fresh(),version,fleet:{...fresh().fleet,boats:version<14?[null,null]:[null,null,null]}}));assert.deepEqual(parseSave(JSON.stringify(state)),state);}
+ assert.throws(()=>parseSave(JSON.stringify({...fresh(),version:15})),/newer version/);
 });
 
 test('Repeated recovery at the same timestamp cannot replace earlier backups',()=>{

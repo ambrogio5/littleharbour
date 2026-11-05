@@ -1,5 +1,5 @@
-import {FERRY_STAGES,FLEET_BOATS,FLEET_ROUTES,ferryEligible,ferryFundingBlocker,ferryDeliveryBlocker,ferryPlan,ferryServiceBlocker} from './engine.js?v=0.20.1';
-import {fleetHull} from './boat-art.js?v=0.20.1';
+import {FERRY_STAGES,FLEET_BOATS,FLEET_ROUTES,ferryEligible,ferryFundingBlocker,ferryDeliveryBlocker,ferryPlan,ferryServiceBlocker} from './engine.js?v=0.21.0';
+import {fleetHull} from './boat-art.js?v=0.21.0';
 
 function ferryFundingView(cost,goal,view){return `<div class="cost">${view.costs(cost)}</div>${view.ingredients(cost,goal)}${view.goalTools(goal)}`;}
 function ferryRemainingSupplies(supplies,batches){return Object.fromEntries(Object.entries(supplies).map(([key,count])=>[key,count*batches]));}

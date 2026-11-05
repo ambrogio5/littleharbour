@@ -9,30 +9,34 @@ const E=require("dist/engine.js");
 const V=require("dist/lab/evolution.js");
 const {worldEntities}=require("dist/world-model.js");
 const {currentObjective}=require("dist/progression.js");
-const {projectPlan,queueProject}=require("dist/project-planning.js");
+const {projectPlan,queueProject,costPlan,queueCost}=require("dist/project-planning.js");
 const {sampleTown}=require("dist/demo-town.js");
 const {nextStep}=require("native/guidance.js");
 const {directions}=require("native/directions.js");
 const F=require("native/festival.js");
-let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival();
+const S=require("native/story.js");
+const C=require("native/chronicle.js");
+const Y=require("native/city-port.js");
+let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival(), chronicle=null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
 const effects={dispatch:'ship-cargo',dispatchContract:'ship-cargo',dispatchMarket:'ship-cargo',upgrade:'expand-quay',fundFerryStage:'expand-quay',buildNeighbourhood:'fund-festival',deliverResidentsSupplies:'fund-festival',openNeighbourhood:'fund-festival',fundWaterfront:'repair-waterfront',supplyWaterfront:'repair-waterfront',upgradeWorkshops:'train-artisans',invest:'train-artisans',buildMarketBusiness:'train-artisans',buildKiln:'train-artisans',buildTerrace:'restore-grove',inlandAccess:'restore-grove'};
 function mutate(s,fn,args){
  // Native's larger target still uses the original unlock checks and automation worker.
- // The canonical town remains loadable by the deployed browser (maximum target 12).
+ // Browser exports retain a maximum target of 12; new investments require schema 14.
  if(fn==='setTarget'&&args[1]===24){if(!E.setTarget(s,args[0],12))return false;s.log[0]=E.RECIPES[args[0]].name+' · maintain 24 in stock';return true;}
  if(fn==='queueProject')return queueProject(s,...args).queued>0;if(fn==='speed'){if(![0,1,3].includes(args[0]))return false;s.speed=args[0];return true;}return E[fn](s,...args);}
-function registry(s,f=festival){
+function registry(s,f=festival,c=chronicle){
  const out=[];
  function add(category,title,fn,args=[],cost=null,reason='',goal=null,destructive=false){
   let enabled=false;try{const copy=clone(s),before=JSON.stringify(copy);enabled=!!mutate(copy,fn,args)&&JSON.stringify(copy)!==before;}catch{}
-  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
+  if(c?.city.voyages[args[0]]&&['startVoyage','startFerryService','startCircuit','setRepeatVoyage','installBoatUpgrade','refitBoatSails','cancelVoyage'].includes(fn)){enabled=false;reason='This boat is on a city voyage. Wait for its return or recall that voyage.';}
+  out.push({id:JSON.stringify([fn,args]),category,title,fn,args,partner:S.partner(fn,args),detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
  }
  add('Production','Harvest & replant','harvestReplant',[],null,'Wait for the wheat to ripen.');
  for(const [key,r]of Object.entries(E.RECIPES))if(E.unlocked(s,key)){
   add('Production',r.name,'start',[key],r.cost,`Needs ingredients and a free ${r.station} queue slot. A ripe crop must be harvested.`,null);
-  out[out.length-1].detail=`${E.recipeDuration(s,key)}s · makes ${costText(r.output)}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
+  out[out.length-1].detail=`${E.recipeDuration(s,key)}s · makes ${costText(E.recipeOutput(s,key))}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
   if(s.pier)for(const n of [0,6,12,24])add('Automation',`${r.name} · ${n?'maintain '+n:'stop target'}`,'setTarget',[key,n]);
  }
  s.jobs.forEach((j,i)=>{if(E.canCancel(s,i)){add('Queues','Cancel '+E.RECIPES[j.key].name,'cancel',[i],null,'Only waiting batches can be cancelled.');add('Queues','Make next: '+E.RECIPES[j.key].name,'prioritize',[i]);}});
@@ -48,6 +52,11 @@ function registry(s,f=festival){
   const path=E.PATHS[s.specialisation];if(path&&!s.specialists.includes(path.station))add('Build','Build '+path.building,'invest',[],path.cost,'Complete the required livelihood and collect building supplies.');
   for(const [id,p]of Object.entries(E.TOWN_FOCUSES))add('Build',p.name+' · '+p.benefit,'setTownFocus',[id],s.townFocus?{coins:100}:null,E.townFocusBlocker(s,id),null,!!s.townFocus);
   for(const [station,r]of Object.entries(E.REFITS))if(station!=='fishing'||s.businesses.includes(station))for(const mode of ['speed','queue'])add('Refits',r.name+' · '+r[mode].name,'installRefit',[station,mode],r[mode].cost,E.refitBlocker(s,station,mode),null,!!s.refits[station]);
+  if(s.fleet.lighthouse.stage===3)for(const [station,name]of Object.entries(E.ADVANCED_STATIONS))if(Object.entries(E.RECIPES).some(([key,r])=>r.station===station&&E.unlocked(s,key)))for(const tier of [2,3])for(const mode of ['speed','yield','original']){
+   const p=E.advancedRefitPlan(s,station,tier,mode);if(mode==='original'&&s.advancedRefits[station]?.tier!==tier)continue;if((s.advancedRefits[station]?.tier||2)>tier)continue;
+   add('Refits',name+' · '+(mode==='original'?'Restore original setup':'Tier '+tier+' · '+(mode==='speed'?'faster batches':'more output')),'installAdvancedRefit',[station,tier,mode,p.epoch],p.cost,E.advancedRefitBlocker(s,station,tier,mode),p.goal,!!s.advancedRefits[station]);
+   const preview=clone(s);preview.advancedRefits[station]={tier,mode,epoch:p.epoch};out[out.length-1].detail=(costText(p.cost)||'No charge')+'\n'+Object.entries(E.RECIPES).filter(([key,r])=>r.station===station&&E.unlocked(s,key)).map(([key,r])=>r.name+': '+E.recipeDuration(preview,key)+'s, next batch '+costText(E.recipeOutput(preview,key))).join('; ');
+  }
   if(!s.charter)add('Contracts','Establish harbour charter','establishCharter',[],E.CHARTER_COST,'Complete two different contracts.');
  }
  if(s.contract){const c=E.CONTRACTS[s.contract.id];add('Contracts',`Deliver ${c.name} · ${s.contract.shipped+1}/${c.shipments}`,'dispatchContract',[],c.cost,'Prepare the contracted cargo.','contract:'+s.contract.id);add('Contracts','Release current contract','abandonContract',[],null,'',null,true);}
@@ -58,8 +67,9 @@ function registry(s,f=festival){
  }
  if(!s.market.access)add('Market','Open market quarter','marketAccess',[],E.MARKET_ACCESS_COST,E.marketAccessBlocker(s));
  else for(const [id,b]of Object.entries(E.MARKET_BUSINESSES)){
-  if(!s.market.businesses[id])add('Market','Build '+b.name,'buildMarketBusiness',[id,b.plot],b.cost,E.marketBlocker(s,id,b.plot));
-  else{const o=E.marketOrder(s,id);add('Market','Supply '+b.name,'dispatchMarket',[id],o?.cost,'Wait for construction, demand and supplies.','market:'+id);add('Market',`${s.market.businesses[id].auto?'Stop':'Enable'} automatic supply · ${b.name}`,'setMarketAuto',[id,!s.market.businesses[id].auto]);}
+  if(b.plot===2&&s.market.plots[2]&&s.market.plots[2]!==id)add('Market','Switch to '+b.name,'switchMarketBusiness',[id,s.market.plots[2],s.marketRevision],E.MARKET_SWITCH_COST,E.switchMarketBlocker(s,id,s.market.plots[2]),null,true);
+  else if(!s.market.businesses[id])add('Market','Build '+b.name,'buildMarketBusiness',[id,b.plot],b.cost,E.marketBlocker(s,id,b.plot));
+  else{const o=E.marketOrder(s,id);add('Market','Supply '+b.name+(o?' · receive '+costText({...o.reward,...(o.coins?{coins:o.coins}:{})}):''),'dispatchMarket',[id],o?.cost,'Wait for construction, demand and supplies.','market:'+id);add('Market',`${s.market.businesses[id].auto?'Stop':'Enable'} automatic supply · ${b.name}`,'setMarketAuto',[id,!s.market.businesses[id].auto]);}
  }
  if(!s.inland.access)add('Inland','Open inland terraces','inlandAccess',[],E.INLAND_ACCESS_COST,E.inlandAccessBlocker(s));
  else{
@@ -67,7 +77,8 @@ function registry(s,f=festival){
   if(!s.inland.kiln)add('Inland','Build kiln & preserving room','buildKiln',[],E.KILN_COST,E.kilnBlocker(s));
   if(!s.inland.courtyard)add('Inland','Tile market courtyard','buildCourtyard',[],E.COURTYARD_COST,E.courtyardBlocker(s));
  }
- for(let slot=0;slot<2;slot++){
+ if(!s.fleet.thirdBerth)add('Fleet','Open the third working berth','buildThirdBerth',[],E.THIRD_BERTH_COST,E.thirdBerthBlocker(s),'thirdberth');
+ for(let slot=0;slot<3;slot++){
   const b=s.fleet.boats[slot];
   if(!b){for(const[id,d]of Object.entries(E.FLEET_BOATS))add('Fleet',`Buy ${d.name} · berth ${slot+1}`,'buyBoat',[slot,id],d.cost,E.boatBlocker(s,slot,id));continue;}
   if(b.trip)add('Fleet',`Recall berth ${slot+1} · refund cargo`,'cancelVoyage',[slot],null,'',null,true);
@@ -104,9 +115,15 @@ function registry(s,f=festival){
  }
  if(s.ferry.stage<3){const f=s.ferry,d=E.FERRY_STAGES[f.stage];if(!f.funded)add('Ferry','Fund '+d.name,'fundFerryStage',[f.stage],d.cost,E.ferryFundingBlocker(s),'ferryfund:'+f.stage);else add('Ferry',`Supply ${d.name} · ${f.delivered+1}/3`,'deliverFerrySupplies',[f.stage,f.delivered],d.supplies,E.ferryDeliveryBlocker(s),`ferry:${f.stage}:${f.delivered}`);}
  for(const id of Object.keys(s.reservations))add('Reservations','Release '+(E.goalTitle(s,id)||id),'releaseReservation',[id]);
- for(const offer of F.offers(s,f)){
-  const copy=clone(s), progress=clone(f), enabled=F.mutateFestival(copy,progress,offer.fn,offer.args);
-  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Festival',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason||'Prepare the finished supplies or release reservations held for other projects.',goal:null,destructive:false});
+ for(const offer of F.offers(s,f,c?.festivalTickets)){
+  const copy=clone(s), progress=clone(f), history=c?clone(c):null,goal='native-festival:'+JSON.stringify([offer.fn,offer.args]);
+  for(const[k,n]of Object.entries(history?.reservations[goal]||{})){if(k==='coins')copy.coins+=n;else copy.stock[k]+=n;}
+  const enabled=F.mutateFestival(copy,progress,offer.fn,offer.args,history?.festivalTickets);
+  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Festival',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason||'Prepare the finished supplies or release reservations held for other projects.',goal:Object.keys(offer.cost).length?goal:null,destructive:false});
+ }
+ for(const offer of C.actions(s,c,f)){
+  const enabled=C.mutate(clone(s),clone(c||C.freshChronicle()),f,offer.fn,offer.args);
+  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Goals',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason,goal:offer.goal||null,destructive:offer.destructive||false});
  }
  return out;
 }
@@ -117,38 +134,49 @@ function checkedStockTargets(s,raw){
  return Object.fromEntries(entries);
 }
 function load(raw){
- const input=JSON.parse(raw);let next,evo,targets={},progress=F.freshFestival();
+ const input=JSON.parse(raw);let next,evo,targets={},progress=F.freshFestival(),history=null;
  if(input&&Object.hasOwn(input,'nativeVersion')){
-  if(![1,2,3].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
+  if(![1,2,3,4].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
   next=E.parseSave(JSON.stringify(input.town));evo=V.restoreEvolution(JSON.stringify(input.evolution));
   if(input.nativeVersion>=2)targets=checkedStockTargets(next,input.stockTargets);
   else if(Object.hasOwn(input,'stockTargets'))throw Error('Native stock targets require save version 2.');
-  if(input.nativeVersion===3)progress=F.restoreFestival(next,input.festival);
+  if(input.nativeVersion>=3){if(input.nativeVersion===4&&JSON.stringify(input.festival)===JSON.stringify(F.freshFestival()))progress=F.freshFestival();else progress=F.restoreFestival(next,input.festival);}
   else if(Object.hasOwn(input,'festival'))throw Error('Festival progress requires native save version 3.');
+  if(input.nativeVersion===4)history=C.restore(next,progress,input.chronicle);
+  else if(Object.hasOwn(input,'chronicle'))throw Error('Chronicle progress requires native save version 4.');
  }else{next=E.parseSave(raw);evo=V.createEvolution();}
- town=next;evolution=evo;stockTargets=targets;festival=progress;return true;
+ town=next;evolution=evo;stockTargets=targets;festival=progress;chronicle=history;return true;
 }
 function save(){
  const extended=Object.keys(stockTargets).length>0;
- return JSON.stringify({nativeVersion:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((extended||festival.stage>0)?{stockTargets}:{}),...(festival.stage>0?{festival}:{} )});
+ return JSON.stringify({nativeVersion:chronicle?4:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((chronicle||extended||festival.stage>0)?{stockTargets}:{}),...((chronicle||festival.stage>0)?{festival}:{}),...(chronicle?{chronicle}:{})});
 }
-function browserSave(){return JSON.stringify(town);}
-function reset(sample=false){town=sample?sampleTown():E.fresh();evolution=V.createEvolution();stockTargets={};festival=F.freshFestival();return true;}
+function browserSave(){return JSON.stringify(C.exportTown(town,chronicle));}
+function legacyBrowserSave(){return E.legacyBrowserSave(C.exportTown(town,chronicle));}
+function reset(sample=false){town=sample?sampleTown():E.fresh();evolution=V.createEvolution();stockTargets={};festival=F.freshFestival();chronicle=null;return true;}
 function tick(dt){
  // Apply native caps only during the synchronous engine step. Production costs,
  // queues, reservations and target accounting are all the original engine logic.
- const before=town.fleet.boats.map(b=>b?.trip?clone(b.trip):null);
+ const before=town.fleet.boats.map(b=>b?.trip?clone(b.trip):null),seconds=town.seconds;
  for(const key of Object.keys(stockTargets))town.targets[key]=24;
  try{E.tick(town,dt);}finally{for(const key of Object.keys(stockTargets))town.targets[key]=12;}
  F.recordArrivals(town,festival,before);
+ C.tick(town,chronicle,before,town.seconds-seconds);
  return true;
 }
 function speed(value){if(![0,1,3].includes(value))throw Error('Invalid speed');town.speed=value;return true;}
 function act(id){
  const action=registry(town).find(a=>a.id===id);if(!action||!action.enabled)return false;
  // Work on a transaction copy: reject invalid results before changing the live town.
- const next=clone(town),progress=clone(festival);
- const changed=action.fn.startsWith('festival')?F.mutateFestival(next,progress,action.fn,action.args):mutate(next,action.fn,action.args);if(!changed)return false;
+ const next=clone(town),progress=clone(festival),history=chronicle?clone(chronicle):null;
+ const nextChronicle=action.fn==='chronicleBegin'?(history||C.freshChronicle()):history;
+ if(action.fn.startsWith('festival')&&nextChronicle){
+  for(const[k,n]of Object.entries(nextChronicle.reservations[action.goal]||{})){if(k==='coins')next.coins+=n;else next.stock[k]+=n;}
+  delete nextChronicle.reservations[action.goal];
+  // Theme changes return any previous theme's unspent reserved supplies.
+  if(action.fn==='festivalChoose')for(const g of Object.keys(nextChronicle.reservations))if(g.startsWith('native-festival:')){if(!C.release(next,nextChronicle,g))return false;}
+ }
+ const changed=action.fn.startsWith('chronicle')?C.mutate(next,nextChronicle,progress,action.fn,action.args):action.fn.startsWith('festival')?F.mutateFestival(next,progress,action.fn,action.args,nextChronicle?.festivalTickets):mutate(next,action.fn,action.args);if(!changed)return false;
  const validated=E.parseSave(JSON.stringify(next));let nextEvolution=evolution;
  let effect=effects[action.fn];if(action.fn==='build')effect=action.args[0]==='olive'?'restore-grove':'expand-quay';if(action.fn==='specialise')effect=action.args[0]==='estate'?'restore-grove':'train-artisans';if(action.fn==='setTownFocus')effect=action.args[0]==='trade'?'ship-cargo':action.args[0]==='builders'?'train-artisans':'fund-festival';
  if(effect)nextEvolution=V.applyChoice(evolution,effect);
@@ -157,17 +185,40 @@ function act(id){
  if(action.fn==='setTarget'){if(action.args[1]===24)targets[action.args[0]]=24;else delete targets[action.args[0]];}
  for(const key of Object.keys(targets))if(validated.targets[key]!==12||!E.unlocked(validated,key))delete targets[key];
  if(progress.stage>0)F.restoreFestival(validated,progress);
- town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;return true;
+ if(nextChronicle)C.enableFestival(nextChronicle,progress);
+ C.departure(nextChronicle,action.fn,action.args);
+ if(nextChronicle)C.restore(validated,progress,nextChronicle);
+ town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;chronicle=nextChronicle;return true;
 }
 function resolve(option){evolution=V.resolveEvent(evolution,option);return true;}
-function reserve(goal){const next=clone(town);if(!E.reserveFor(next,goal))return false;town=E.parseSave(JSON.stringify(next));return true;}
-function plan(goal){return JSON.stringify(projectPlan(town,goal));}
-function queuePlan(goal){const next=clone(town),result=queueProject(next,goal);town=E.parseSave(JSON.stringify(next));return result.queued;}
+function newCoast(coast,name){
+ if(!['rocky','marsh','windy'].includes(coast))return false;
+ const next=E.fresh(),history=C.freshChronicle();history.coast=coast;history.townName=name.trim();
+ C.restore(next,F.freshFestival(),history);reset();chronicle=history;return true;
+}
+function identity(name,awning){const history=clone(chronicle||C.freshChronicle());history.townName=name.trim();history.awning=awning;C.restore(town,festival,history);chronicle=history;return true;}
+function pin(goal){
+ if(goal!==null&&!['guide','festival',...directions(town,registry(town)).map(d=>'direction:'+d.id),...(chronicle?.offers.map(o=>'year:'+o.id)||[]),...Object.keys(chronicle?.projects||{}).map(id=>'chronicle:'+id)].includes(goal))return false;
+ const next=clone(chronicle||C.freshChronicle());next.pin=goal;C.enableFestival(next,festival);chronicle=C.restore(town,festival,next);return true;
+}
+function reserve(goal){const next=clone(town),history=chronicle?clone(chronicle):goal.startsWith('native-festival:')?C.freshChronicle():null;if(history)C.enableFestival(history,festival);const ok=C.goalCost(history,goal,festival,next)?C.reserve(next,history,goal,festival):E.reserveFor(next,goal);if(!ok)return false;const validated=E.parseSave(JSON.stringify(next));if(history)C.restore(validated,festival,history);town=validated;chronicle=history;return true;}
+function plan(goal){const cost=C.goalCost(chronicle,goal,festival,town),p=cost?costPlan(C.planTown(town,chronicle,goal),goal,cost,(registry(town).find(a=>a.goal===goal)?.title||C.goalTitle(chronicle,goal))):projectPlan(town,goal);for(const r of p.requirements)r.reserved=chronicle?.reservations[goal]?.[r.item]||town.reservations[goal]?.[r.item]||0;return JSON.stringify(S.presentation(p));}
+function queuePlan(goal){const next=clone(town),cost=C.goalCost(chronicle,goal,festival,town),held=chronicle?.reservations[goal]||{};const result=cost?queueCost(next,goal,Object.fromEntries(Object.entries(cost).map(([k,n])=>[k,n-(held[k]||0)])),(registry(town).find(a=>a.goal===goal)?.title||C.goalTitle(chronicle,goal))):queueProject(next,goal);town=E.parseSave(JSON.stringify(next));return result.queued;}
 function snapshot(){
- const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;return e;});
+ const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;const rank=town.advancedRefits[e.select||e.kind]?.tier;if(rank&&e.stage==='built')e.level=rank;return e;});
  for(const [id,x,y,label]of [['boatyard',1080,1390,'Boatyard'],['estate',790,790,'Vineyard & cellar']])entities.push({id,x,y,zone:id==='estate'?'inland':'market',kind:id,label,select:id,stage:town.specialists.includes(id)?(E.underConstruction(town,id)?'building':'built'):'unbuilt',level:town.specialists.includes(id)?1:0});
+ for(const e of entities){
+  const station=e.id==='kiln'?(town.advancedRefits.preserving?.tier===3&&town.advancedRefits.kiln?.tier!==3?'preserving':'kiln'):Object.hasOwn(E.ADVANCED_STATIONS,e.id)?e.id:e.select||e.kind;
+  const rank=town.advancedRefits[station]?.tier;
+  if(rank&&e.stage==='built'){e.level=rank;if(rank===3)e.artwork='advanced-'+station;}
+ }
+ if(chronicle?.started){
+  const locations=[[300,1750],[780,1720],[1220,2460],[350,2440],[1230,1730],[200,590],[830,2470],[900,1020]];
+  for(const p of C.view(town,chronicle,festival).projects){const i=C.PROJECTS.findIndex(d=>d.id===p.id),[x,y]=locations[i];entities.push({id:'chronicle-'+p.id,x,y,zone:'harbour',kind:'chronicle-'+p.id,label:p.title,tab:'goals',stage:p.stage<=0?'unbuilt':p.stage<4?'building':'built',level:p.branch+1});}
+ }
  const actions=registry(town),baseObjective=currentObjective(town),festivalView=F.festivalView(town,festival);
  if(festivalView.unlocked){const court=entities.find(e=>e.id==='courtyard');court.tab='festival';court.label='Festival courtyard';}
+ if(chronicle?.festivalTickets&&festival.stage===4)festivalView.body='Choose between two festival requests. Completing one keeps the other offer and its reserved supplies. Your courtyard stays decorated.';
  const objective=festivalView.unlocked?{...baseObjective,chapter:6,chapterName:'Harbour festival',title:festivalView.title,description:festivalView.body,target:'festival',complete:festival.stage===4}:baseObjective;
  let guidance;
  if(festivalView.unlocked&&festival.stage<4){
@@ -181,17 +232,17 @@ function snapshot(){
  }else guidance=nextStep(town,actions,objective);
  const workshops=Object.fromEntries(Object.entries(E.RECIPES).filter(([key])=>E.unlocked(town,key)).map(([key,r])=>{
   const item=Object.keys(r.output)[0],target=stockTargets[key]||town.targets[key]||0,stock=town.stock[item]||0,incoming=E.incoming(town,item);
-  return [key,{target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
+  return [key,{station:r.station,target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
  }));
- return JSON.stringify({festival:festivalView,directions:directions(town,actions),workshops,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats});
+ return JSON.stringify(S.presentation({chronicle:C.view(town,chronicle,festival),story:{...S.story(town,evolution,festival,objective,guidance),townName:chronicle?.townName||S.TOWN_NAME},festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:Y.boats(town,chronicle)}));
 }
 
-Object.assign(exports,{load,save,browserSave,reset,tick,speed,act,resolve,reserve,plan,queuePlan,snapshot});
+Object.assign(exports,{load,save,browserSave,legacyBrowserSave,reset,tick,speed,act,resolve,newCoast,identity,pin,reserve,plan,queuePlan,snapshot});
 },
 "dist/engine.js":function(exports,require){
-const {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES}=require("dist/catalog.js");
+const {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES,ADVANCED_STATIONS,ADVANCED_REFITS,MARKET_SWITCH_COST,THIRD_BERTH_COST}=require("dist/catalog.js");
 Object.assign(exports,require("dist/catalog.js"));
-function fresh(){return {version:13,townFocus:null,residents:{proposal:null,delivered:0},ferry:{stage:0,funded:false,delivered:0,runs:0},neighbourhood:{access:false,plots:[null,null,null,null,null,null],orders:0},fleet:{development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0,flax:0,cloth:0,furniture:0,sails:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
+function fresh(){return {version:14,advancedRefits:{},yieldCredits:{},marketRevision:0,townFocus:null,residents:{proposal:null,delivered:0},ferry:{stage:0,funded:false,delivered:0,runs:0},neighbourhood:{access:false,plots:[null,null,null,null,null,null],orders:0},fleet:{thirdBerth:false,development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null,null],visits:{quarry:0,island:0},lighthouse:{stage:0,left:0}},inland:{access:false,left:0,terraces:[null,null],kiln:null,courtyard:false,courtyardLeft:0,shipments:0},reservations:{},market:{access:false,left:0,plots:[null,null,null],businesses:{}},waterfront:{path:null,stage:0,funded:false,delivered:0,left:0},refits:{},specialisation:null,specialists:[],contract:null,contractsDone:[],contractDeliveries:0,charter:false,construction:[],coins:80,stock:{wheat:0,flour:0,bread:0,olives:0,oil:0,fish:0,wood:24,stone:16,planks:0,boatparts:0,grapes:0,wine:0,provisions:0,clay:0,fruit:0,vegetables:0,jars:0,tiles:0,preserves:0,flax:0,cloth:0,furniture:0,sails:0},jobs:[],ripe:true,speed:1,seconds:0,deliveries:0,expansion:null,businesses:[],pier:false,workshopUpgrade:false,targets:{},selectedOrder:'local',onboarded:false,harvests:0,milled:0,baked:0,log:['Your harbour is ready. Start with the wheat field.']};}
 function has(s,type){return s.businesses.includes(type);}
 function reserved(s,item){return Object.values(s.reservations||{}).reduce((sum,c)=>sum+(c[item]||0),0);}
 function available(s,item,goalId=null){return (item==='coins'?s.coins:s.stock[item]||0)-reserved(s,item)+(s.reservations?.[goalId]?.[item]||0);}
@@ -204,7 +255,7 @@ const CONSTRUCTION_SECONDS=8;
 function underConstruction(s,type){return s.construction.find(p=>p.type===type)||null;}
 function unlocked(s,key){if(!Object.hasOwn(RECIPES,key))return false;const station=RECIPES[key].station;if(['flaxgarden','weaver','carpenter','sailmaker'].includes(station))return neighbourhoodReady(s)&&s.neighbourhood.plots.some(p=>p?.type===station);if(['claypit','terrace0','terrace1','kiln','preserving'].includes(station)){if(!inlandReady(s))return false;if(station==='claypit')return true;if(station.startsWith('terrace')){const plot=Number(station.slice(-1)),t=s.inland.terraces[plot];return !!t&&!t.left&&key===t.type+plot;}return !!s.inland.kiln&&!s.inland.kiln.left&&(station!=='preserving'||s.inland.terraces.some(t=>t&&!t.left&&t.type===(key==='fruitPreserves'?'orchard':'garden')));}if(station==='kitchen')return marketReady(s)&&!!marketBusiness(s,'kitchen')&&!marketBusiness(s,'kitchen').left;if(['boatyard','estate'].includes(station))return s.specialists.includes(station)&&!underConstruction(s,station)&&(s.charter||PATHS[s.specialisation]?.station===station);return key==='fishing'?has(s,'fishing')&&!underConstruction(s,'fishing'):['olives','press'].includes(key)?has(s,'olive')&&!underConstruction(s,'olive'):true;}
 function harvest(s){if(!s.ripe)return false;s.ripe=false;s.stock.wheat+=6;s.harvests++;note(s,'Harvest collected · +6 wheat');return true;}
-function start(s,key,quiet=false){if(!unlocked(s,key))return false;const r=RECIPES[key];if(key==='field'&&s.ripe)return false;if(s.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(s,r.station)||!canAfford(s,r.cost))return false;spend(s,r.cost);s.jobs.push({key,left:recipeDuration(s,key)});if(!quiet)note(s,r.name+' queued');return true;}
+function start(s,key,quiet=false){if(!unlocked(s,key))return false;const r=RECIPES[key];if(key==='field'&&s.ripe)return false;if(s.jobs.filter(j=>RECIPES[j.key].station===r.station).length>=capacity(s,r.station)||!canAfford(s,r.cost))return false;spend(s,r.cost);s.jobs.push({key,left:recipeDuration(s,key),...(yieldQuarters(s,key)>4?{yieldQuarters:yieldQuarters(s,key)}:{})});if(!quiet)note(s,r.name+' queued');return true;}
 // Bulk controls spend only available ingredients and respect shared station queues.
 function maxBatches(s,key){
  if(!unlocked(s,key)||(key==='field'&&s.ripe))return 0;
@@ -223,14 +274,14 @@ function harvestReplant(s){
  start(s,'field',true);
  return true;
 }
-function incoming(s,item){return s.jobs.reduce((sum,j)=>sum+(RECIPES[j.key].output[item]||0),0);}
+function incoming(s,item){return queuedOutputs(s).reduce((sum,output)=>sum+(output[item]||0),0);}
 function canCancel(s,index){const j=s.jobs[index];return !!j&&s.jobs.slice(0,index).some(x=>RECIPES[x.key].station===RECIPES[j.key].station);}
 function cancel(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const [j]=s.jobs.splice(index,1);add(s,RECIPES[j.key].cost);note(s,'Queued batch cancelled · ingredients returned');return true;}
 function prioritize(s,index){if(!Number.isInteger(index)||!canCancel(s,index))return false;const station=RECIPES[s.jobs[index].key].station,first=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(index===first+1)return false;const [j]=s.jobs.splice(index,1);s.jobs.splice(first+1,0,j);note(s,'Batch moved to the front of its waiting queue');return true;}
 function setTarget(s,key,target){if(!s.pier||!unlocked(s,key)||![0,6,12].includes(target))return false;s.targets[key]=target;note(s,target?RECIPES[key].name+' · maintain '+target+' in stock':'Automatic '+RECIPES[key].name.toLowerCase()+' stopped');return true;}
-function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],incoming=s.jobs.reduce((n,j)=>n+(RECIPES[j.key].output[item]||0),0);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+incoming<target)start(s,key,true);}}
-function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;if(j.key==='field')s.ripe=true;else add(s,r.output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(r.output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);completed+=tickFleet(s,elapsed);automate(s);return completed;}
-function withCharter(s,route){if(route.locked)return route;return {...route,coins:Math.round(route.coins*(s.charter?1.2:1)*(s.townFocus==='trade'?1.35:1)),wood:Math.round((route.wood||0)*(s.townFocus==='builders'?1.5:1)),stone:Math.round((route.stone||0)*(s.townFocus==='builders'?1.5:1))};}
+function automate(s){if(!s.pier)return;for(const key of Object.keys(RECIPES)){const target=s.targets[key]||0;if(!target||!unlocked(s,key))continue;const r=RECIPES[key],item=Object.keys(r.output)[0],queued=incoming(s,item);if(key==='field'&&s.ripe&&s.stock.wheat<target)harvest(s);if(s.stock[item]+queued<target)start(s,key,true);}}
+function tick(s,dt,onEvent){if(!s.speed||!Number.isFinite(dt)||dt<=0)return;const elapsed=Math.min(dt,60)*s.speed;s.seconds+=elapsed;let completed=0;const w=s.waterfront;if(w.left>0){w.left=Math.max(0,w.left-elapsed);if(w.left===0){note(s,WATERFRONT_STAGES[w.stage].name+' restored');w.stage++;w.funded=false;w.delivered=0;completed++;}}for(const project of [...s.construction]){project.left-=elapsed;if(project.left<=0){s.construction.splice(s.construction.indexOf(project),1);completed++;note(s,({olive:'Olive workshop',fishing:'Fishing jetty',pier:'Quay extension',storehouse:'Storehouse improvement',boatyard:'Boatyard',estate:'Vineyard and cellar',charter:'Harbour charter office'})[project.type]+' construction complete');}}const stations=[...new Set(s.jobs.map(j=>RECIPES[j.key].station))];for(const station of stations){let budget=elapsed;while(budget>0){const i=s.jobs.findIndex(j=>RECIPES[j.key].station===station);if(i<0)break;const j=s.jobs[i],r=RECIPES[j.key];if(j.left>budget){j.left-=budget;break;}budget-=j.left;s.jobs.splice(i,1);completed++;const output=j.key==='field'?r.output:finishOutput(s,j);if(j.key==='field')s.ripe=true;else add(s,output);if(j.key==='mill')s.milled++;if(j.key==='bakery')s.baked++;if(j.key!=='field')onEvent?.({type:'produced',key:j.key});note(s,j.key==='field'?'Wheat is ready to harvest.':r.name+' complete · '+Object.entries(output).map(([k,v])=>'+'+v+' '+ITEMS[k].toLowerCase()).join(', '));}}completed+=tickMarket(s,elapsed);completed+=tickInland(s,elapsed);completed+=tickFleet(s,elapsed);automate(s);return completed;}
+function withCharter(s,route){if(route.locked)return route;return {...route,coins:Math.round(route.coins*Math.min(1.5,(s.charter?1.2:1)*(s.townFocus==='trade'?1.35:1))),wood:Math.round((route.wood||0)*(s.townFocus==='builders'?1.5:1)),stone:Math.round((route.stone||0)*(s.townFocus==='builders'?1.5:1))};}
 function orders(s){
  if(!s.deliveries)return [{id:'local',name:'Cala Verde',description:'Supply the village market with its first bread delivery.',cost:{bread:4},coins:80,wood:8,stone:4}];
  if(!s.expansion)return [{id:'local',name:'New coastal routes',description:'Build a fishing jetty or olive workshop to open new supply routes.',cost:{},locked:true}];
@@ -258,8 +309,8 @@ function parseSave(raw){
  if(typeof raw!=='string'||raw.length>100000)throw Error('This is not a valid harbour save.');
  let x;try{x=JSON.parse(raw);}catch{throw Error('This file is not a readable harbour save.');}
  const invalid=()=>{throw Error('This save contains incomplete or invalid game data.');};
- if(x&&Number.isInteger(x.version)&&x.version>13)throw Error('This town was saved by a newer version. Open it in that version or export it for later.');
- if(!x||![1,2,3,4,5,6,7,8,9,10,11,12,13].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
+ if(x&&Number.isInteger(x.version)&&x.version>14)throw Error('This town was saved by a newer version. Open it in that version or export it for later.');
+ if(!x||![1,2,3,4,5,6,7,8,9,10,11,12,13,14].includes(x.version)||!x.stock||typeof x.stock!=='object'||!Array.isArray(x.jobs)||!Array.isArray(x.log))invalid();
  const s=fresh();
  if(x.townFocus!==undefined&&x.townFocus!==null&&!Object.hasOwn(TOWN_FOCUSES,x.townFocus))invalid();s.townFocus=x.townFocus||null;if(s.townFocus&&!x.pier)invalid();
  for(const k of ['coins','deliveries','harvests','milled','baked']){if(!Number.isSafeInteger(x[k])||x[k]<0||x[k]>1e9)invalid();s[k]=x[k];}
@@ -293,14 +344,17 @@ function parseSave(raw){
  }
  if(s.selectedOrder==='waterfront'&&s.waterfront.stage!==3)invalid();
  if(x.jobs.length>100)invalid();
- if(x.version>=7)validateMarket(s,x.market,invalid);
+ if(x.version>=7)validateMarket(s,x.market,invalid,x.version);
  if(x.version>=8)validateInland(s,x.inland,invalid);
  if(x.version>=9)validateFleet(s,x.fleet,invalid,x.version);
  if(x.version>=11)validateNeighbourhood(s,x.neighbourhood,invalid);
  if(x.version>=12)validateFerry(s,x.ferry,invalid);
   if(x.version>=13)validateResidents(s,x.residents,invalid);
+ if(x.version>=14)validateInvestments(s,x,invalid);
+ if(s.market.plots[2]&&!thirdMarketReady(s))invalid();
+ if(s.fleet.thirdBerth&&(s.ferry.stage!==3||s.fleet.development.quarry!==3||s.fleet.development.island!==3||!s.fleet.boats[0]||!s.fleet.boats[1]))invalid();
  if(s.selectedOrder==='inland'&&!inlandTradeReady(s))invalid();
- for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>MAX_SAVE_TIMER)invalid();s.jobs.push({key:j.key,left:j.left});}
+ for(const j of x.jobs){if(!j||!Object.hasOwn(RECIPES,j.key)||!unlocked(s,j.key)||!Number.isFinite(j.left)||j.left<=0||j.left>MAX_SAVE_TIMER)invalid();if(j.yieldQuarters!==undefined&&(x.version<14||![5,6].includes(j.yieldQuarters)||j.yieldQuarters!==yieldQuarters(s,j.key)))invalid();s.jobs.push({key:j.key,left:j.left,...(j.yieldQuarters?{yieldQuarters:j.yieldQuarters}:{})});}
  for(const station of new Set(Object.values(RECIPES).map(r=>r.station)))if(s.jobs.filter(j=>RECIPES[j.key].station===station).length>capacity(s,station))invalid();
  if(s.ripe&&s.jobs.some(j=>j.key==='field'))invalid();
  if(x.log.length>5||x.log.some(t=>typeof t!=='string'||t.length>250))invalid();s.log=x.log.map(t=>t.replace(/[<>]/g,''));
@@ -364,7 +418,7 @@ function openingGuide(s){
 }
 
 // Refit choices compete with expansion funds, but never gate basic trading.
-function recipeDuration(s,key){const garden=residentsComplete(s,'garden')&&['flaxgarden','weaver','carpenter','sailmaker','field','terrace0','terrace1'].includes(RECIPES[key].station);return Math.round(RECIPES[key].duration*(garden?.8:1)*(['flax','cloth','furniture','sails'].includes(key)&&s.neighbourhood?.plots.some(p=>p?.type==='square')?.9:1)*(s.refits?.[RECIPES[key].station]==='speed'?.6:1)*1000)/1000;}
+function recipeDuration(s,key){const garden=residentsComplete(s,'garden')&&['flaxgarden','weaver','carpenter','sailmaker','field','terrace0','terrace1'].includes(RECIPES[key].station);return Math.round(RECIPES[key].duration*(garden?.8:1)*(['flax','cloth','furniture','sails'].includes(key)&&s.neighbourhood?.plots.some(p=>p?.type==='square')?.9:1)*(s.refits?.[RECIPES[key].station]==='speed'?.6:1)*advancedSpeed(s,key)*1000)/1000;}
 function refitBlocker(s,station,mode){
  if(!Object.hasOwn(REFITS,station)||!['speed','queue'].includes(mode))return 'Choose a valid workshop setup.';
  if(!s.expansion||underConstruction(s,s.expansion))return 'Finish your first business before investing in refits.';
@@ -409,16 +463,18 @@ function chapterThree(s){
 function goalCost(s,id){
  if(typeof id!=='string')return null;
  const parts=id.split(':');
+ if(id==='thirdberth'&&!s.fleet.thirdBerth&&thirdBerthEligible(s))return {...THIRD_BERTH_COST};
+ if(parts[0]==='advanced'&&parts.length===5){const [,station,tier,mode,epoch]=parts,p=advancedRefitPlan(s,station,Number(tier),mode);return p&&String(p.epoch)===epoch&&String(p.tier)===tier&&!advancedAccessBlocker(s,station,p.tier,mode,false)?{...p.cost}:null;}
  if(parts[0]==='ferryfund'&&parts.length===2&&parts[1]===String(s.ferry.stage)&&ferryEligible(s)&&s.ferry.stage<3&&!s.ferry.funded)return {...FERRY_STAGES[s.ferry.stage].cost};
  if(parts[0]==='ferry'&&parts.length===3&&parts[1]===String(s.ferry.stage)&&parts[2]===String(s.ferry.delivered)&&ferryEligible(s)&&s.ferry.stage<3&&s.ferry.funded)return {...FERRY_STAGES[s.ferry.stage].supplies};
- if(parts[0]==='ferryservice'&&parts.length===3&&/^[01]$/.test(parts[1])){const slot=Number(parts[1]),p=ferryPlan(s,slot,parts[2]);return p&&!ferryServiceAccessBlocker(s,slot,parts[2])?{...p.cost}:null;}
+ if(parts[0]==='ferryservice'&&parts.length===3&&/^[012]$/.test(parts[1])){const slot=Number(parts[1]),p=ferryPlan(s,slot,parts[2]);return p&&!ferryServiceAccessBlocker(s,slot,parts[2])?{...p.cost}:null;}
 
  if(parts[0]==='neighbourhood')return neighbourhoodGoalCost(s,parts);
   if(parts[0]==='residents')return residentsGoalCost(s,parts);
- if(parts[0]==='circuit'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[2])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),stops=[{route:'quarry',tier:Number(parts[2])},{route:'island',tier:Number(parts[3])}],p=circuitPlan(s,slot,stops);return p&&!fleetBoat(s,slot).trip&&!circuitAccessBlocker(s,slot,stops)?{...p.cost}:null;}
+ if(parts[0]==='circuit'&&parts.length===4&&/^[012]$/.test(parts[1])&&/^[123]$/.test(parts[2])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),stops=[{route:'quarry',tier:Number(parts[2])},{route:'island',tier:Number(parts[3])}],p=circuitPlan(s,slot,stops);return p&&!fleetBoat(s,slot).trip&&!circuitAccessBlocker(s,slot,stops)?{...p.cost}:null;}
  if(parts[0]==='coastal'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.development[parts[1]])&&!coastalProjectAccessBlocker(s,parts[1]))return {...COASTAL_PROJECTS[parts[1]][s.fleet.development[parts[1]]].cost};
  if(parts[0]==='commission'&&parts.length===3&&Object.hasOwn(COASTAL_PROJECTS,parts[1])&&parts[2]===String(s.fleet.commissions[parts[1]])&&s.fleet.development[parts[1]]===3)return {...commissionPlan(s,parts[1]).cost};
- if(parts[0]==='fleet'&&parts.length===4&&/^[01]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
+ if(parts[0]==='fleet'&&parts.length===4&&/^[012]$/.test(parts[1])&&/^[123]$/.test(parts[3])){const slot=Number(parts[1]),tier=Number(parts[3]),b=s.fleet.boats[slot],p=voyagePlan(s,slot,parts[2],tier);return b&&!b.trip&&p&&!voyageAccessBlocker(s,slot,parts[2],tier)?{...p.cost}:null;}
  if(parts[0]==='lighthouse'&&parts.length===2&&parts[1]===String(s.fleet.lighthouse.stage)&&!lighthouseAccessBlocker(s))return {...LIGHTHOUSE_STAGES[s.fleet.lighthouse.stage].cost};
  if(parts[0]==='trade'&&parts.length===2){const route=orders(s).find(o=>o.id===parts[1]);return route&&!route.locked?{...route.cost}:null;}
  if(parts[0]==='contract'&&parts.length===2&&s.contract?.id===parts[1])return {...CONTRACTS[parts[1]].cost};
@@ -429,6 +485,8 @@ function goalCost(s,id){
 function goalTitle(s,id){
  if(!goalCost(s,id))return null;
  const [kind,key,route,tier]=id.split(':');
+ if(kind==='thirdberth')return 'Third working berth';
+ if(kind==='advanced')return ADVANCED_STATIONS[key]+' · advanced refit';
  if(kind==='ferryfund')return FERRY_STAGES[s.ferry.stage].name+' funding';
  if(kind==='ferry')return FERRY_STAGES[s.ferry.stage].name+' · supply '+(s.ferry.delivered+1)+' of 3';
  if(kind==='ferryservice')return FERRY_SERVICES[route].name+' · berth '+(Number(key)+1);
@@ -468,13 +526,14 @@ function marketBlocker(s,type,plot){
  if(marketBusiness(s,type))return 'This business is already built or under construction.';
  if(plot!==definition.plot)return plot===2?'This plot is reserved for a future business.':'Choose the marked plot for this business.';
  if(s.market.plots[plot])return 'This market plot is already occupied.';
- if(!has(s,definition.requires)||underConstruction(s,definition.requires))return 'Finish the '+(definition.requires==='fishing'?'fishing jetty':'olive workshop')+' first.';
+ if(definition.plot===2&&!thirdMarketReady(s))return 'Finish the courtyard and both original market businesses first.';
+ if(definition.requires&&(!has(s,definition.requires)||underConstruction(s,definition.requires)))return 'Finish the '+(definition.requires==='fishing'?'fishing jetty':'olive workshop')+' first.';
  if(!canAfford(s,definition.cost))return 'Trade for the remaining coins and building materials.';
  return '';
 }
 function buildMarketBusiness(s,type,plot){if(marketBlocker(s,type,plot))return false;spend(s,MARKET_BUSINESSES[type].cost);s.market.plots[plot]=type;s.market.businesses[type]={plot,left:MARKET_SECONDS.business,demand:3,replenish:0,auto:false,deliveries:0};note(s,MARKET_BUSINESSES[type].name+' construction started');return true;}
-function marketOrder(s,type){const b=marketBusiness(s,type),definition=MARKET_BUSINESSES[type];if(!marketReady(s)||!b||b.left)return null;return {id:type,name:definition.name+' standing order',cost:{...definition.order},coins:Math.round(definition.coins*(s.inland.courtyard&&!s.inland.courtyardLeft?1.25:1)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1)),demand:b.demand};}
-function dispatchMarket(s,type){const o=marketOrder(s,type),b=marketBusiness(s,type),goal='market:'+type;if(!o||!b.demand||!canAfford(s,o.cost,goal))return false;spend(s,o.cost,goal);releaseReservation(s,goal);s.coins+=o.coins;if(b.demand===3)b.replenish=0;b.demand--;b.deliveries++;note(s,o.name+' supplied · +'+o.coins+' coins');return true;}
+function marketOrder(s,type){const b=marketBusiness(s,type),definition=MARKET_BUSINESSES[type];if(!marketReady(s)||!b||b.left)return null;return {id:type,name:definition.name+' standing order',cost:{...definition.order},coins:Math.round(definition.coins*Math.min(1.5,(s.inland.courtyard&&!s.inland.courtyardLeft?1.25:1)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1))),reward:{...definition.reward},demand:b.demand};}
+function dispatchMarket(s,type){const o=marketOrder(s,type),b=marketBusiness(s,type),goal='market:'+type;if(!o||!b.demand||!canAfford(s,o.cost,goal))return false;spend(s,o.cost,goal);releaseReservation(s,goal);s.coins+=o.coins;add(s,o.reward);if(b.demand===3)b.replenish=0;b.demand--;b.deliveries++;note(s,o.name+' supplied · '+(o.coins?'+'+o.coins+' coins':Object.entries(o.reward).map(([k,n])=>'+'+n+' '+ITEMS[k]).join(', ')));return true;}
 function setMarketAuto(s,type,on){const b=marketBusiness(s,type);if(!b||typeof on!=='boolean')return false;b.auto=on;note(s,MARKET_BUSINESSES[type].name+' automatic supply '+(on?'enabled':'stopped'));return true;}
 function tickMarket(s,elapsed){
  let changed=0;
@@ -486,16 +545,16 @@ function tickMarket(s,elapsed){
  }
  return changed;
 }
-function validateMarket(s,m,invalid){
- if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MAX_SAVE_TIMER||!Array.isArray(m.plots)||m.plots.length!==3||m.plots[2]!==null||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
+function validateMarket(s,m,invalid,version){
+ if(!m||typeof m!=='object'||Array.isArray(m)||typeof m.access!=='boolean'||!Number.isFinite(m.left)||m.left<0||m.left>MAX_SAVE_TIMER||!Array.isArray(m.plots)||m.plots.length!==3||(version<14&&m.plots[2]!==null)||!m.businesses||typeof m.businesses!=='object'||Array.isArray(m.businesses))invalid();
  if((m.access&&s.waterfront.stage!==3)||(!m.access&&(m.left||m.plots.some(Boolean)||Object.keys(m.businesses).length))||(m.left&&Object.keys(m.businesses).length))invalid();
  const out={access:m.access,left:m.left,plots:[...m.plots],businesses:{}};
  for(const [type,b]of Object.entries(m.businesses)){
   const definition=Object.hasOwn(MARKET_BUSINESSES,type)?MARKET_BUSINESSES[type]:null;
-  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||!has(s,definition.requires)||underConstruction(s,definition.requires)||!Number.isFinite(b.left)||b.left<0||b.left>MAX_SAVE_TIMER||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>MAX_SAVE_TIMER||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
+  if(!definition||!b||typeof b!=='object'||Array.isArray(b)||b.plot!==definition.plot||m.plots[b.plot]!==type||(definition.requires&&(!has(s,definition.requires)||underConstruction(s,definition.requires)))||!Number.isFinite(b.left)||b.left<0||b.left>MAX_SAVE_TIMER||!Number.isSafeInteger(b.demand)||b.demand<0||b.demand>3||!Number.isFinite(b.replenish)||b.replenish<0||b.replenish>MAX_SAVE_TIMER||typeof b.auto!=='boolean'||!Number.isSafeInteger(b.deliveries)||b.deliveries<0||b.deliveries>1e9||(b.demand===3&&b.replenish)||(b.left&&(b.demand!==3||b.replenish||b.deliveries)))invalid();
   out.businesses[type]={plot:b.plot,left:b.left,demand:b.demand,replenish:b.replenish,auto:b.auto,deliveries:b.deliveries};
  }
- for(let i=0;i<2;i++)if(m.plots[i]!==null&&(!Object.hasOwn(out.businesses,m.plots[i])||out.businesses[m.plots[i]].plot!==i))invalid();
+ for(let i=0;i<3;i++)if(m.plots[i]!==null&&(!Object.hasOwn(out.businesses,m.plots[i])||out.businesses[m.plots[i]].plot!==i))invalid();
  s.market=out;
 }
 function marketGuide(s){
@@ -543,12 +602,12 @@ function validateInland(s,i,invalid){
 // Voyages capture cargo and rewards when launched. Future balance changes do not
 // change paid voyages; settlement clears the trip before crediting its snapshot.
 function fleetEligible(s){return s.inland.shipments>=1;}
-function berthCount(s){return s.fleet.lighthouse.stage===3?2:1;}
-function fleetBoat(s,slot){return Number.isInteger(slot)&&slot>=0&&slot<2?s.fleet.boats[slot]:null;}
+function berthCount(s){return s.fleet.thirdBerth?3:s.fleet.lighthouse.stage===3?2:1;}
+function fleetBoat(s,slot){return Number.isInteger(slot)&&slot>=0&&slot<3?s.fleet.boats[slot]:null;}
 function boatBlocker(s,slot,type){
- if(![0,1].includes(slot)||!Object.hasOwn(FLEET_BOATS,type))return 'Choose a berth and boat type.';
+ if(![0,1,2].includes(slot)||!Object.hasOwn(FLEET_BOATS,type))return 'Choose a berth and boat type.';
  if(!fleetEligible(s))return 'Send your first inland preserves shipment first.';
- if(slot>=berthCount(s))return 'Complete the lighthouse to open the second berth.';
+ if(slot>=berthCount(s))return slot===2?'Fund the third working berth first.':'Complete the lighthouse to open the second berth.';
  if(slot===1&&!s.fleet.boats[0])return 'Buy a boat for the first berth first.';
  if(s.fleet.boats[slot])return 'This berth already has a boat.';
  if(!canAfford(s,FLEET_BOATS[type].cost))return 'Trade for the remaining boat funds and materials.';
@@ -598,7 +657,7 @@ function buildLighthouseStage(s,expectedStage){const l=s.fleet.lighthouse;if(exp
 function tickFleet(s,elapsed){
  let changed=0;const l=s.fleet.lighthouse;
  if(l.left>0){l.left=Math.max(0,l.left-elapsed);if(!l.left){note(s,LIGHTHOUSE_STAGES[l.stage].name+' complete');l.stage++;changed++;}}
- for(let slot=0;slot<2;slot++){
+ for(let slot=0;slot<3;slot++){
   const b=s.fleet.boats[slot];if(!b)continue;
   if(b.trip){b.trip.left=Math.max(0,b.trip.left-elapsed);if(!b.trip.left){const trip=b.trip;b.trip=null;s.coins+=trip.reward.coins||0;add(s,Object.fromEntries(Object.entries(trip.reward).filter(([k])=>k!=='coins')));if(trip.ferry){s.ferry.runs++;note(s,FERRY_SERVICES[trip.route].name+' returned · fares received');}else{for(const stop of trip.stops||[{route:trip.route}])s.fleet.visits[stop.route]++;note(s,trip.stops?'Coastal circuit returned · both destinations supplied':FLEET_ROUTES[trip.route].name+' voyage returned · '+s.fleet.visits[trip.route]+' completed visit'+(s.fleet.visits[trip.route]===1?'':'s'));}changed++;}}
   // At most one settlement per berth per tick. A new repeat trip begins now;
@@ -620,9 +679,10 @@ function fleetGuide(s){
 }
 function validateFleet(s,f,invalid,version){
  const obj=x=>x&&typeof x==='object'&&!Array.isArray(x),count=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
- if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==2||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
+ if(!obj(f)||!Array.isArray(f.boats)||f.boats.length!==(version>=14?3:2)||!obj(f.visits)||Object.keys(f.visits).length!==2||!count(f.visits.quarry)||!count(f.visits.island)||!obj(f.lighthouse))invalid();
+ if(version>=14&&typeof f.thirdBerth!=='boolean')invalid();
  const l=f.lighthouse;if(!Number.isInteger(l.stage)||l.stage<0||l.stage>3||!Number.isFinite(l.left)||l.left<0||l.left>MAX_SAVE_TIMER||(l.stage===3&&l.left))invalid();
- const out={development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
+ const out={thirdBerth:version>=14?f.thirdBerth:false,development:{quarry:0,island:0},commissions:{quarry:0,island:0},boats:[null,null,null],visits:{quarry:f.visits.quarry,island:f.visits.island},lighthouse:{stage:l.stage,left:l.left}};
  if(version>=10){
   if(!obj(f.development)||!obj(f.commissions)||Object.keys(f.development).length!==2||Object.keys(f.commissions).length!==2)invalid();
   for(const route of ['quarry','island']){const stage=f.development[route],n=f.commissions[route];if(!Number.isInteger(stage)||stage<0||stage>3||!count(n)||(n&&stage!==3)||(stage&&(!f.boats[0]||f.visits[route]<COASTAL_PROJECTS[route][stage-1].visits)))invalid();out.development[route]=stage;out.commissions[route]=n;}
@@ -631,9 +691,9 @@ function validateFleet(s,f,invalid,version){
  if(!f.boats[0]&&(f.boats[1]!==null||f.visits.quarry||f.visits.island||l.stage||l.left))invalid();
  if(l.stage||l.left){const requirement=LIGHTHOUSE_STAGES[l.left?l.stage:l.stage-1].requires;if(Object.entries(requirement).some(([route,n])=>f.visits[route]<n))invalid();}
  const packet=(value,allowed)=>{if(!obj(value)||!Object.keys(value).length)invalid();const result={};for(const[k,n]of Object.entries(value)){if(!allowed.includes(k)||!Number.isSafeInteger(n)||n<=0||n>1000000)invalid();result[k]=n;}return result;};
- for(let slot=0;slot<2;slot++){
-  const b=f.boats[slot];if(b===null)continue;
-  if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot===1&&l.stage!==3)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
+ for(let slot=0;slot<3;slot++){
+  const b=f.boats[slot];if(slot===2&&version<14)continue;if(b===null)continue;
+  if(!obj(b)||!Object.hasOwn(FLEET_BOATS,b.type)||![null,'speed','cargo'].includes(b.upgrade)||(slot>=1&&l.stage!==3)||(slot===2&&!f.thirdBerth)||(b.upgrade&&f.visits.quarry+f.visits.island<3))invalid();
   if(version>=11&&typeof b.sails!=='boolean')invalid();const result={type:b.type,upgrade:b.upgrade,sails:version>=11?b.sails:false,trip:null,repeat:null};
   const validRoute=(route,tier)=>Object.hasOwn(FLEET_ROUTES,route)&&Number.isInteger(tier)&&tier>=1&&tier<=3&&f.visits[route]>=FLEET_ROUTES[route].tiers[tier-1].visits&&(!FLEET_ROUTES[route].tiers[tier-1].lighthouse||l.stage===3);
   if(b.trip!==null){const t=b.trip;if(!obj(t)||!validRoute(t.route,t.tier)||!Number.isFinite(t.duration)||t.duration<=0||t.duration>86400||!Number.isFinite(t.left)||t.left<=0||t.left>t.duration)invalid();result.trip={route:t.route,tier:t.tier,cargo:packet(t.cargo,Object.keys(s.stock)),reward:packet(t.reward,['coins','wood','stone']),duration:t.duration,left:t.left};if(t.stops!==undefined){if(version<10||!Array.isArray(t.stops)||t.stops.length!==2||t.stops[0]?.route!=='quarry'||t.stops[1]?.route!=='island'||t.route!==t.stops[0].route||t.tier!==t.stops[0].tier||t.stops.some(stop=>!obj(stop)||!validRoute(stop.route,stop.tier)))invalid();result.trip.stops=t.stops.map(stop=>({route:stop.route,tier:stop.tier}));}if(t.ferry!==undefined){if(version<12||t.ferry!==true||t.tier!==1||t.stops!==undefined)invalid();result.trip.ferry=true;}}
@@ -686,7 +746,7 @@ function removeNeighbourhoodBuilding(s,index){if(neighbourhoodRemoveBlocker(s,in
 function sailRefitAccessBlocker(s,slot){const b=fleetBoat(s,slot);if(!neighbourhoodReady(s)||!b||!s.neighbourhood.plots.some(p=>p?.type==='sailmaker'))return 'Open the sail loft and choose an owned boat.';if(b.sails)return 'Permanent sail refit already installed.';if(b.trip)return 'Wait for the boat to return before refitting its sails.';return '';}
 function sailRefitBlocker(s,slot){const reason=sailRefitAccessBlocker(s,slot);if(reason)return reason;return canAfford(s,SAIL_REFIT_COST,`neighbourhood:sails:${slot}`)?'':'Prepare sails, timber and the refit fee.';}
 function refitBoatSails(s,slot){if(sailRefitBlocker(s,slot))return false;const goal=`neighbourhood:sails:${slot}`;spend(s,SAIL_REFIT_COST,goal);releaseReservation(s,goal);fleetBoat(s,slot).sails=true;note(s,'Permanent sail refit installed · future voyages 10% faster');return true;}
-function neighbourhoodOrder(s){const id=s.neighbourhood.orders,d=NEIGHBOURHOOD_ORDERS[id%NEIGHBOURHOOD_ORDERS.length];return {...d,cost:{...d.cost},reward:{...d.reward,coins:Math.round((d.reward.coins||0)*(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1))},id,goal:`neighbourhood:order:${id}`};}
+function neighbourhoodOrder(s){const id=s.neighbourhood.orders,d=NEIGHBOURHOOD_ORDERS[id%NEIGHBOURHOOD_ORDERS.length];return {...d,cost:{...d.cost},reward:{...d.reward,coins:Math.round((d.reward.coins||0)*Math.min(1.5,(s.townFocus==='community'?1.5:1)*(residentsComplete(s,'square')?1.35:1)))},id,goal:`neighbourhood:order:${id}`};}
 function neighbourhoodOrderBlocker(s){if(!neighbourhoodReady(s))return 'Open the neighbourhood first.';const p=neighbourhoodOrder(s);return canAfford(s,p.cost,p.goal)?'':'Prepare the local order supplies or release other reservations.';}
 function completeNeighbourhoodOrder(s,expectedCount){const p=neighbourhoodOrder(s);if(expectedCount!==p.id||neighbourhoodOrderBlocker(s))return false;spend(s,p.cost,p.goal);releaseReservation(s,p.goal);s.coins+=p.reward.coins||0;add(s,Object.fromEntries(Object.entries(p.reward).filter(([k])=>k!=='coins')));s.neighbourhood.orders++;note(s,p.name+' delivered · next local order ready');return true;}
 function neighbourhoodGoalCost(s,parts){const [,kind,index,type]=parts,slot=Number(index);if(kind==='access'&&parts.length===2&&!s.neighbourhood.access&&neighbourhoodEligible(s))return {...NEIGHBOURHOOD_ACCESS_COST};if(kind==='plot'&&parts.length===3&&String(slot)===index&&!plotAccessBlocker(s,slot))return {...PLOT_COST};if(kind==='build'&&parts.length===4&&String(slot)===index&&!neighbourhoodBuildAccessBlocker(s,slot,type))return {...NEIGHBOURHOOD_BUILDINGS[type].cost};if(kind==='home'&&parts.length===3&&String(slot)===index&&!homeUpgradeAccessBlocker(s,slot))return {...HOME_UPGRADE_COST};if(kind==='sails'&&parts.length===3&&String(slot)===index&&!sailRefitAccessBlocker(s,slot))return {...SAIL_REFIT_COST};if(kind==='order'&&parts.length===3&&neighbourhoodReady(s)&&index===String(s.neighbourhood.orders))return {...neighbourhoodOrder(s).cost};return null;}
@@ -750,14 +810,81 @@ function ferryGuide(s){if(s.ferry.stage<3){const d=FERRY_STAGES[s.ferry.stage];r
 function validateFerry(s,f,invalid){if(!f||typeof f!=='object'||Array.isArray(f)||!Number.isInteger(f.stage)||f.stage<0||f.stage>3||typeof f.funded!=='boolean'||!Number.isInteger(f.delivered)||f.delivered<0||f.delivered>2||!Number.isSafeInteger(f.runs)||f.runs<0||f.runs>1e9)invalid();if((!f.funded&&f.delivered)||(f.stage===3&&f.funded)||(f.runs&&f.stage!==3)||((f.stage||f.funded||f.delivered||f.runs)&&!ferryEligible(s))||s.fleet.boats.some(b=>b?.trip?.ferry&&f.stage!==3))invalid();s.ferry={stage:f.stage,funded:f.funded,delivered:f.delivered,runs:f.runs};}
 
 const TOWN_FOCUSES={
- trade:{name:'Trading port',benefit:'35% more coins from harbour shipments.',description:'Keep bread and export goods flowing. Invest in workshop capacity and ship larger orders.'},
+ trade:{name:'Trading port',benefit:'35% more coins from harbour shipments; combined coin bonuses cap at 50%.',description:'Keep bread and export goods flowing. Invest in workshop capacity and ship larger orders.'},
  builders:{name:'Builders’ town',benefit:'50% more timber and stone from harbour shipments, rounded to whole units.',description:'Trade for materials, restore public spaces and expand your town sooner.'},
- community:{name:'Local life',benefit:'50% more coins from market-shop and neighbourhood orders.',description:'Supply local businesses and residents. Best once the market quarter is open.'}
+ community:{name:'Local life',benefit:'50% more coins from market-shop and neighbourhood orders; combined coin bonuses cap at 50%.',description:'Supply local businesses and residents. Best once the market quarter is open.'}
 };
 function townFocusBlocker(s,key){if(!Object.hasOwn(TOWN_FOCUSES,key))return 'Choose an available town direction.';if(!s.pier||underConstruction(s,'pier'))return 'Finish extending the quay to choose a direction.';if(s.townFocus===key)return 'This direction is already active.';if(s.townFocus&&!canAfford(s,{coins:100}))return 'Changing direction needs 100 unreserved coins.';return '';}
 function setTownFocus(s,key){if(townFocusBlocker(s,key))return false;if(s.townFocus)spend(s,{coins:100});s.townFocus=key;note(s,'Town direction · '+TOWN_FOCUSES[key].name);return true;}
 
-Object.assign(exports,{fresh,has,reserved,available,canAfford,capacity,CONSTRUCTION_SECONDS,underConstruction,unlocked,harvest,start,maxBatches,queueBatch,harvestReplant,incoming,canCancel,cancel,prioritize,setTarget,tick,orders,order,selectOrder,dispatch,buildCost,build,upgrade,upgradeWorkshops,milestone,parseSave,restore,pathBlocker,specialise,invest,availableContracts,acceptContract,contractReady,dispatchContract,abandonContract,establishCharter,chapterTwo,openingGuide,recipeDuration,refitBlocker,installRefit,waterfrontBlocker,fundWaterfront,waterfrontSupplies,supplyWaterfront,chapterThree,goalCost,goalTitle,reserveFor,releaseReservation,marketReady,marketBusiness,marketAccessBlocker,marketAccess,marketBlocker,buildMarketBusiness,marketOrder,dispatchMarket,setMarketAuto,marketGuide,inlandEligible,inlandReady,inlandTradeReady,inlandAccessBlocker,inlandAccess,terraceBlocker,buildTerrace,kilnBlocker,buildKiln,courtyardBlocker,buildCourtyard,inlandGuide,fleetEligible,berthCount,boatBlocker,buyBoat,voyagePlan,voyageBlocker,startVoyage,cancelVoyage,repeatVoyageBlocker,setRepeatVoyage,boatUpgradeBlocker,installBoatUpgrade,lighthouseBlocker,buildLighthouseStage,fleetGuide,boatCargoCapacity,circuitPlan,circuitBlocker,startCircuit,coastalProjectBlocker,fundCoastalProject,commissionPlan,commissionBlocker,completeCommission,neighbourhoodEligible,neighbourhoodReady,neighbourhoodCapacity,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,neighbourhoodMoveBlocker,moveNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,sailRefitBlocker,refitBoatSails,neighbourhoodOrder,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,neighbourhoodGuide,residentsComplete,residentsGoalCost,residentsGoalTitle,chooseResidentsProposal,residentsDeliveryBlocker,deliverResidentsSupplies,ferryEligible,ferryFundingBlocker,fundFerryStage,ferryDeliveryBlocker,deliverFerrySupplies,ferryPlan,ferryServiceBlocker,startFerryService,ferryGuide,TOWN_FOCUSES,townFocusBlocker,setTownFocus});
+
+// Advanced profiles are retained investments, selected with stale-action epochs.
+function advancedSpeed(s,key){const p=s.advancedRefits?.[RECIPES[key].station];return p?.mode==='speed'?ADVANCED_REFITS[p.tier].speed:1;}
+function yieldQuarters(s,key){const p=s.advancedRefits?.[RECIPES[key].station];return p?.mode==='yield'?ADVANCED_REFITS[p.tier].yieldQuarters:4;}
+function outputWithCredit(key,quarters,credits){
+ const output={};for(const [item,n]of Object.entries(RECIPES[key].output)){const value=n*quarters+(credits[key]||0);output[item]=Math.floor(value/4);if(value%4)credits[key]=value%4;else delete credits[key];}
+ return output;
+}
+function finishOutput(s,job){return outputWithCredit(job.key,job.yieldQuarters||4,s.yieldCredits??={});}
+function queuedOutputs(s){const credits={...s.yieldCredits};return s.jobs.map(j=>outputWithCredit(j.key,j.yieldQuarters||4,credits));}
+function pendingCredit(s,key){const credits={...s.yieldCredits};for(const j of s.jobs)if(j.key===key)outputWithCredit(j.key,j.yieldQuarters||4,credits);return credits[key]||0;}
+function recipeOutput(s,key,batches=1){const credits={[key]:pendingCredit(s,key)};return outputWithCredit(key,yieldQuarters(s,key)*batches,credits);}
+function recipeBatches(s,key,item,amount,planned=0){const batch=RECIPES[key].output[item]*yieldQuarters(s,key),credit=(pendingCredit(s,key)+batch*planned)%4;return Math.max(0,Math.ceil((amount*4-credit)/batch));}
+function advancedAccessBlocker(s,station,tier,mode,checkWork=true){
+ if(!Object.hasOwn(ADVANCED_STATIONS,station)||![2,3].includes(tier)||!['speed','yield','original'].includes(mode))return 'Choose a workshop, tier and profile.';
+ if(!Object.entries(RECIPES).some(([key,r])=>r.station===station&&unlocked(s,key)))return 'Build and finish this workshop first.';
+ if(s.fleet.lighthouse.stage!==3)return 'Complete the lighthouse first.';
+ const old=s.advancedRefits[station];
+ if(tier===3&&!old)return 'Purchase tier 2 first.';
+ if(tier===3&&(s.fleet.development.quarry!==3||s.fleet.development.island!==3))return 'Finish both coastal development tracks first.';
+ if(old&&tier<old.tier)return 'This workshop already owns a higher tier.';
+ if(mode==='original'&&(!old||old.tier!==tier))return 'There is no advanced setup to restore.';
+ if(old?.tier===tier&&old.mode===mode)return 'Already installed.';
+ if(checkWork&&s.jobs.some(j=>RECIPES[j.key].station===station))return 'Finish or cancel queued work before refitting.';
+ return '';
+}
+function advancedRefitPlan(s,station,tier,mode){
+ if(!Object.hasOwn(ADVANCED_STATIONS,station)||![2,3].includes(tier)||!['speed','yield','original'].includes(mode))return null;
+ const old=s.advancedRefits[station],epoch=old?.epoch||0,cost=mode==='original'?{}:old?.tier===tier?{coins:ADVANCED_REFITS[tier].retune}:{...ADVANCED_REFITS[tier].cost};
+ return {station,tier,mode,epoch,cost,goal:`advanced:${station}:${tier}:${mode}:${epoch}`};
+}
+function advancedRefitBlocker(s,station,tier,mode){const reason=advancedAccessBlocker(s,station,tier,mode);if(reason)return reason;const p=advancedRefitPlan(s,station,tier,mode);return canAfford(s,p.cost,p.goal)?'':'Prepare the refit funds and materials.';}
+function installAdvancedRefit(s,station,tier,mode,epoch){
+ const p=advancedRefitPlan(s,station,tier,mode);if(!p||p.epoch!==epoch||advancedRefitBlocker(s,station,tier,mode))return false;
+ spend(s,p.cost,p.goal);s.advancedRefits[station]={tier,mode,epoch:epoch+1};pruneReservations(s);note(s,ADVANCED_STATIONS[station]+' · '+(mode==='original'?'original setup restored':'tier '+tier+' '+mode+' profile'));return true;
+}
+function validateInvestments(s,x,invalid){
+ const obj=o=>o&&typeof o==='object'&&!Array.isArray(o);
+ if(!obj(x.advancedRefits)||!obj(x.yieldCredits)||!Number.isSafeInteger(x.marketRevision)||x.marketRevision<0||x.marketRevision>1e9)invalid();s.marketRevision=x.marketRevision;
+ for(const [station,p]of Object.entries(x.advancedRefits)){
+  if(!Object.hasOwn(ADVANCED_STATIONS,station)||!obj(p)||![2,3].includes(p.tier)||!['speed','yield','original'].includes(p.mode)||!Number.isSafeInteger(p.epoch)||p.epoch<1||p.epoch>1e9||s.fleet.lighthouse.stage!==3||(p.tier===3&&(s.fleet.development.quarry!==3||s.fleet.development.island!==3)))invalid();
+  s.advancedRefits[station]={tier:p.tier,mode:p.mode,epoch:p.epoch};
+ }
+ for(const [key,n]of Object.entries(x.yieldCredits)){if(!Object.hasOwn(RECIPES,key)||!Number.isInteger(n)||n<0||n>3||(n&&!s.advancedRefits[RECIPES[key].station]))invalid();if(n)s.yieldCredits[key]=n;}
+}
+function thirdMarketReady(s){return s.inland.courtyard&&!s.inland.courtyardLeft&&['fishmonger','kitchen'].every(k=>s.market.businesses[k]&&!s.market.businesses[k].left);}
+function switchMarketBlocker(s,type,expected){
+ if(!['provisioner','exchange'].includes(type)||!expected||s.market.plots[2]!==expected||type===expected)return 'Choose a different business for the third plot.';
+ const b=s.market.businesses[expected];if(!b||b.left)return 'Finish constructing this stall first.';
+ if(s.reservations['market:'+expected])return 'Release the reserved order for this stall before switching.';
+ return canAfford(s,MARKET_SWITCH_COST)?'':'Prepare the switching fee and planks.';
+}
+function switchMarketBusiness(s,type,expected,revision){
+ if(switchMarketBlocker(s,type,expected)||s.marketRevision!==revision)return false;
+ spend(s,MARKET_SWITCH_COST);const b=s.market.businesses[expected];delete s.market.businesses[expected];s.market.businesses[type]={...b};s.market.plots[2]=type;s.marketRevision++;note(s,'Third market plot · '+MARKET_BUSINESSES[type].name);return true;
+}
+function thirdBerthEligible(s){return s.ferry.stage===3&&s.fleet.development.quarry===3&&s.fleet.development.island===3&&s.fleet.boats[0]&&s.fleet.boats[1];}
+function thirdBerthBlocker(s){if(s.fleet.thirdBerth)return 'The third berth is already open.';if(!thirdBerthEligible(s))return 'Complete the ferry and both coastal settlements, and own two boats first.';return canAfford(s,THIRD_BERTH_COST,'thirdberth')?'':'Prepare the berth funding and materials.';}
+function buildThirdBerth(s){if(thirdBerthBlocker(s))return false;spend(s,THIRD_BERTH_COST,'thirdberth');releaseReservation(s,'thirdberth');s.fleet.thirdBerth=true;note(s,'Third working berth open · choose a boat');return true;}
+
+function legacyExportBlocker(s){return s.fleet.thirdBerth||s.fleet.boats[2]||s.market.plots[2]||Object.keys(s.advancedRefits).length||Object.keys(s.yieldCredits).length||Object.keys(s.reservations).some(id=>id==='thirdberth'||id.startsWith('advanced:'))?'This town uses new investments or reservations. Export for the updated browser or keep a native backup.':'';}
+function legacyBrowserSave(s){
+ const reason=legacyExportBlocker(s);if(reason)throw Error(reason);
+ const old=JSON.parse(JSON.stringify(s));old.version=13;delete old.advancedRefits;delete old.yieldCredits;delete old.marketRevision;delete old.fleet.thirdBerth;old.fleet.boats=old.fleet.boats.slice(0,2);
+ return JSON.stringify(old);
+}
+
+Object.assign(exports,{fresh,has,reserved,available,canAfford,capacity,CONSTRUCTION_SECONDS,underConstruction,unlocked,harvest,start,maxBatches,queueBatch,harvestReplant,incoming,canCancel,cancel,prioritize,setTarget,tick,orders,order,selectOrder,dispatch,buildCost,build,upgrade,upgradeWorkshops,milestone,parseSave,restore,pathBlocker,specialise,invest,availableContracts,acceptContract,contractReady,dispatchContract,abandonContract,establishCharter,chapterTwo,openingGuide,recipeDuration,refitBlocker,installRefit,waterfrontBlocker,fundWaterfront,waterfrontSupplies,supplyWaterfront,chapterThree,goalCost,goalTitle,reserveFor,releaseReservation,marketReady,marketBusiness,marketAccessBlocker,marketAccess,marketBlocker,buildMarketBusiness,marketOrder,dispatchMarket,setMarketAuto,marketGuide,inlandEligible,inlandReady,inlandTradeReady,inlandAccessBlocker,inlandAccess,terraceBlocker,buildTerrace,kilnBlocker,buildKiln,courtyardBlocker,buildCourtyard,inlandGuide,fleetEligible,berthCount,boatBlocker,buyBoat,voyagePlan,voyageBlocker,startVoyage,cancelVoyage,repeatVoyageBlocker,setRepeatVoyage,boatUpgradeBlocker,installBoatUpgrade,lighthouseBlocker,buildLighthouseStage,fleetGuide,boatCargoCapacity,circuitPlan,circuitBlocker,startCircuit,coastalProjectBlocker,fundCoastalProject,commissionPlan,commissionBlocker,completeCommission,neighbourhoodEligible,neighbourhoodReady,neighbourhoodCapacity,neighbourhoodAccessBlocker,openNeighbourhood,plotBlocker,buyNeighbourhoodPlot,neighbourhoodBuildBlocker,buildNeighbourhood,neighbourhoodMoveBlocker,moveNeighbourhoodBuilding,homeUpgradeBlocker,upgradeNeighbourhoodHome,neighbourhoodRemoveBlocker,removeNeighbourhoodBuilding,sailRefitBlocker,refitBoatSails,neighbourhoodOrder,neighbourhoodOrderBlocker,completeNeighbourhoodOrder,neighbourhoodGuide,residentsComplete,residentsGoalCost,residentsGoalTitle,chooseResidentsProposal,residentsDeliveryBlocker,deliverResidentsSupplies,ferryEligible,ferryFundingBlocker,fundFerryStage,ferryDeliveryBlocker,deliverFerrySupplies,ferryPlan,ferryServiceBlocker,startFerryService,ferryGuide,TOWN_FOCUSES,townFocusBlocker,setTownFocus,queuedOutputs,recipeOutput,recipeBatches,advancedRefitPlan,advancedRefitBlocker,installAdvancedRefit,switchMarketBlocker,switchMarketBusiness,thirdBerthBlocker,buildThirdBerth,legacyExportBlocker,legacyBrowserSave});
 },
 "dist/catalog.js":function(exports,require){
 const ITEMS={wheat:'Wheat',flour:'Flour',bread:'Bread',olives:'Olives',oil:'Olive oil',fish:'Fish',wood:'Timber',stone:'Stone',planks:'Planks',boatparts:'Boat fittings',grapes:'Grapes',wine:'Wine',provisions:'Provisions',clay:'Clay',fruit:'Fruit',vegetables:'Vegetables',jars:'Jars',tiles:'Tiles',preserves:'Preserves',flax:'Flax',cloth:'Cloth',furniture:'Furniture',sails:'Sails'};
@@ -843,12 +970,12 @@ const FLEET_ROUTES={
  quarry:{name:'Pietra Cove',description:'Preserves, bread and empty jars supply the quarry crews. Return with building materials.',tiers:[
   {name:'Quarry supply run',cost:{preserves:4,bread:4,jars:2},reward:{coins:80,wood:14,stone:18},duration:40,visits:0,lighthouse:false},
   {name:'Quarry partnership',cost:{preserves:4,bread:4,jars:2},reward:{coins:100,wood:18,stone:23},duration:40,visits:3,lighthouse:false},
-  {name:'Outer quarry expedition',cost:{preserves:8,bread:8,jars:4},reward:{coins:240,wood:42,stone:54},duration:70,visits:3,lighthouse:true}
+  {name:'Outer quarry expedition',cost:{preserves:8,bread:8,jars:4},reward:{coins:240,wood:56,stone:72},duration:70,visits:3,lighthouse:true}
  ]},
  island:{name:'Isola dei Pescatori',description:'Preserves, bread and roof tiles support the island fishing community. Return with stronger coin earnings.',tiers:[
-  {name:'Island supply run',cost:{preserves:4,bread:2,tiles:2},reward:{coins:340,wood:4,stone:4},duration:48,visits:0,lighthouse:false},
-  {name:'Island partnership',cost:{preserves:4,bread:2,tiles:2},reward:{coins:425,wood:5,stone:5},duration:48,visits:3,lighthouse:false},
-  {name:'Outer island expedition',cost:{preserves:8,bread:4,tiles:4},reward:{coins:1020,wood:12,stone:12},duration:84,visits:3,lighthouse:true}
+  {name:'Island supply run',cost:{preserves:4,bread:2,tiles:2},reward:{coins:240,wood:4,stone:4},duration:48,visits:0,lighthouse:false},
+  {name:'Island partnership',cost:{preserves:4,bread:2,tiles:2},reward:{coins:300,wood:5,stone:5},duration:48,visits:3,lighthouse:false},
+  {name:'Outer island expedition',cost:{preserves:8,bread:4,tiles:4},reward:{coins:600,wood:12,stone:12},duration:84,visits:3,lighthouse:true}
  ]}
 };
 const LIGHTHOUSE_SECONDS=18;
@@ -877,9 +1004,9 @@ const COASTAL_COMMISSIONS={
   {name:'Crew pantry restock',cost:{jars:8,preserves:8,oil:4},reward:{coins:180,wood:36,stone:36}}
  ],
  island:[
-  {name:'Harbour feast',cost:{bread:10,fish:8,preserves:6},reward:{coins:720}},
-  {name:'Roofing the waterfront',cost:{tiles:12,wood:10},reward:{coins:620}},
-  {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:820}}
+  {name:'Harbour feast',cost:{bread:10,fish:8,preserves:6},reward:{coins:480}},
+  {name:'Roofing the waterfront',cost:{tiles:12,wood:10},reward:{coins:420}},
+  {name:'Chandlery provisions',cost:{jars:10,oil:6,preserves:8},reward:{coins:540}}
  ]
 };
 
@@ -925,7 +1052,21 @@ const RESIDENT_PROPOSALS=Object.freeze({
  ]}
 });
 
-Object.assign(exports,{ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_SECONDS,LIGHTHOUSE_STAGES,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,FERRY_STAGES,FERRY_SERVICES,RESIDENT_PROPOSALS});
+// Long-play investments share the canonical economy and save format.
+const ADVANCED_STATIONS={mill:'Stone mill',bakery:'Bakery',fishing:'Fishing jetty',olive:'Olive workshop',boatyard:'Boatyard',estate:'Vineyard & cellar',kitchen:'Harbour kitchen',kiln:'Kiln',preserving:'Preserving room',weaver:'Weaving studio',carpenter:'Carpenter',sailmaker:'Sail loft'};
+const ADVANCED_REFITS={
+ 2:{cost:{coins:600,planks:12,boatparts:4,tiles:8},speed:.85,yieldQuarters:5,retune:150},
+ 3:{cost:{coins:1400,planks:20,boatparts:8,tiles:16},speed:.70,yieldQuarters:6,retune:350}
+};
+const THIRD_MARKET_COST={coins:1000,planks:24,tiles:16,furniture:8};
+const MARKET_SWITCH_COST={coins:250,planks:6};
+const THIRD_BERTH_COST={coins:4000,planks:60,boatparts:20,stone:80,tiles:24,sails:8};
+Object.assign(MARKET_BUSINESSES,{
+ provisioner:{name:'Provisioners’ stall',plot:2,cost:THIRD_MARKET_COST,order:{bread:6,preserves:4,oil:2},coins:210,description:'Turn mixed provisions into local income.'},
+ exchange:{name:'Craft exchange',plot:2,cost:THIRD_MARKET_COST,order:{cloth:4,furniture:2},coins:0,reward:{sails:1,boatparts:2},description:'Exchange local crafts for sails and fittings.'}
+});
+
+Object.assign(exports,{ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_SECONDS,LIGHTHOUSE_STAGES,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,FERRY_STAGES,FERRY_SERVICES,RESIDENT_PROPOSALS,ADVANCED_STATIONS,ADVANCED_REFITS,THIRD_MARKET_COST,MARKET_SWITCH_COST,THIRD_BERTH_COST});
 },
 "dist/lab/evolution.js":function(exports,require){
 /**
@@ -993,7 +1134,7 @@ function assertState(s){if(!validState(s))throw new Error('Invalid or incompatib
 Object.assign(exports,{EVOLUTION_SCHEMA,AXES,ACTIONS,createEvolution,applyChoice,advanceSeason,currentEvent,resolveEvent,deriveWorldStyle,serializeEvolution,restoreEvolution,assertState});
 },
 "dist/world-model.js":function(exports,require){
-const {underConstruction,neighbourhoodReady,residentsComplete}=require("dist/engine.js");
+const {underConstruction,neighbourhoodReady,residentsComplete,MARKET_BUSINESSES}=require("dist/engine.js");
 const WORLD_LAYOUT={
  size:{w:1800,h:2700},
  regions:{
@@ -1029,18 +1170,20 @@ function worldEntities(s){
   if(id==='ferry'){level=s.ferry.stage;stage=s.ferry.funded?'building':level?'built':'unbuilt';}
   return {id,...site,stage,level,ripe:id==='field'&&s.ripe};
  });
+ if(!s.market.plots[2])entities.push({id:'market3',x:1230,y:1530,zone:'market',kind:'market',label:'Third market plot',tab:'market',stage:'unbuilt',level:0});
  const region=WORLD_LAYOUT.regions.neighbourhood;
  for(let i=0;i<6;i++){
   const p=s.neighbourhood.plots[i];
   entities.push({id:'plot'+i,x:region.x+170+i%2*350,y:region.y+160+Math.floor(i/2)*200,zone:'neighbourhood',kind:p?.type||'home',label:p?.type||'Town plot',plot:i,stage:p?.type?'built':'unbuilt',level:p?.type==='home'?1+p.level:p?.type?1:0});
  }
- for(const [type,b]of Object.entries(s.market.businesses))entities.push({id:type,x:type==='kitchen'?1450:1150,y:1150,zone:'market',kind:'market',label:type==='kitchen'?'Harbour kitchen':'Fishmonger',tab:'market',stage:b.left?'building':'built',level:1});
+ for(const [type,b]of Object.entries(s.market.businesses))entities.push({id:type,x:b.plot===2?1230:type==='kitchen'?1450:1150,y:b.plot===2?1530:1150,zone:'market',kind:'market',label:MARKET_BUSINESSES[type].name,tab:'market',stage:b.left?'building':'built',level:1});
  for(let i=0;i<2;i++){const t=s.inland.terraces[i];entities.push({id:'terrace'+i,x:550+i*380,y:200,zone:'inland',kind:t?.type||'field',label:t?.type==='garden'?'Kitchen garden':'Fruit terrace',tab:'inland',stage:t?(t.left?'building':'built'):'unbuilt',level:t?1:0});}
  entities.push({id:'kiln',x:1350,y:360,zone:'inland',kind:'workshop',label:'Kiln & preserving room',tab:'inland',stage:s.inland.kiln?(s.inland.kiln.left?'building':'built'):'unbuilt',level:s.inland.kiln?1:0});
  entities.push({id:'claypit',x:280,y:170,zone:'inland',kind:'clay',label:'Clay bank',tab:'inland',stage:s.inland.access&&!s.inland.left?'built':'unbuilt',level:s.inland.access?1:0});
  entities.push({id:'courtyard',x:1500,y:1450,zone:'market',kind:'square',label:'Market courtyard',tab:'inland',stage:s.inland.courtyard?(s.inland.courtyardLeft?'building':'built'):'unbuilt',level:s.inland.courtyard?1:0});
- for(let slot=0;slot<2;slot++){const b=s.fleet.boats[slot];if(b)entities.push({id:'boat'+slot,x:1630,y:2100+slot*240,zone:'coast',kind:'boat',label:b.trip?'Boat at sea':'Berth '+(slot+1),tab:'fleet',stage:'built',level:b.upgrade?2:1});}
+ for(let slot=0;slot<3;slot++){const b=s.fleet.boats[slot];if(b)entities.push({id:'boat'+slot,x:1630,y:2100+slot*240,zone:'coast',kind:'boat',label:b.trip?'Boat at sea':'Berth '+(slot+1),tab:'fleet',stage:'built',level:b.upgrade?2:1});}
  entities.push({id:'civic',x:690,y:1510,zone:'neighbourhood',kind:s.residents.proposal||'garden',label:'Residents’ plot',tab:'residents',stage:residentsComplete(s)?'built':s.residents.delivered?'building':'unbuilt',level:s.residents.delivered});
+ if(s.fleet.thirdBerth)entities.push({id:'thirdberth',x:1450,y:2560,zone:'coast',kind:'pier',label:'Third working berth',tab:'fleet',stage:'built',level:2});
  return entities;
 }
 
@@ -1073,14 +1216,14 @@ function currentObjective(s){
 Object.assign(exports,{CHAPTERS,currentObjective});
 },
 "dist/project-planning.js":function(exports,require){
-const {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start}=require("dist/engine.js");
+const {ITEMS,RECIPES,goalCost,goalTitle,available,unlocked,recipeDuration,capacity,maxBatches,start,incoming,recipeOutput,recipeBatches}=require("dist/engine.js");
 const itemName=item=>item==='coins'?'Coins':ITEMS[item]||item;
-const queuedStock=s=>s.jobs.reduce((pool,j)=>{for(const [item,n]of Object.entries(RECIPES[j.key].output))pool[item]=(pool[item]||0)+n;return pool;},{});
+const queuedStock=s=>Object.fromEntries(Object.keys(s.stock).map(item=>[item,incoming(s,item)]));
 
 // Planning never changes town state. Allocate all final requirements before any
 // upstream input so, for example, cloth promised to a home cannot also feed sails.
-function analyseProject(s,goal){
- const cost=goalCost(s,goal),empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
+function analyseProject(s,goal,explicitCost,explicitTitle){
+ const cost=explicitCost===undefined?goalCost(s,goal):explicitCost,empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
  if(!cost)return {plan:empty,spendable:{}};
  const incoming=queuedStock(s),pool={},spendable={},requirements=[],recipes=[],recipeIndex=new Map(),blockers=[];
  for(const item of ['coins',...Object.keys(s.stock)]){spendable[item]=Math.max(0,available(s,item));pool[item]=spendable[item]+(incoming[item]||0);}
@@ -1101,12 +1244,13 @@ function analyseProject(s,goal){
   const [key,r]=choices.find(([,r])=>Object.entries(r.cost).every(([k,n])=>(pool[k]||0)>=n))||choices[0];
   if(path.includes(item)){blockers.push({item,kind:'cycle',missing:amount,message:`Resolve the production dependency for ${itemName(item).toLowerCase()}.`});return;}
   if(key==='field'&&s.ripe){blockers.push({item,kind:'harvest',missing:amount,message:'Harvest the ripe wheat field first.'});return;}
-  const batches=Math.ceil(amount/r.output[item]);
+  const planned=recipeIndex.get(key)?.batches||0,batches=recipeBatches(s,key,item,amount,planned),previous=recipeOutput(s,key,planned),output=recipeOutput(s,key,planned+batches);
+  for(const k of Object.keys(output))output[k]-=previous[k];
   for(const [input,n]of Object.entries(r.cost))need(input,n*batches,[...path,item]);
-  for(const [output,n]of Object.entries(r.output))pool[output]=(pool[output]||0)+n*batches;
+  for(const [itemOut,n]of Object.entries(output))pool[itemOut]=(pool[itemOut]||0)+n;
   pool[item]-=amount;
   if(recipeIndex.has(key))recipeIndex.get(key).batches+=batches;
-  else {const entry={key,station:r.station,batches,output:{...r.output},seconds:0,queueable:0};recipeIndex.set(key,entry);recipes.push(entry);}
+  else {const entry={key,station:r.station,batches,output:recipeOutput(s,key),seconds:0,queueable:0};recipeIndex.set(key,entry);recipes.push(entry);}
  }
  // Root stock was already allocated above. Do not allocate it a second time.
  for(const [item,n]of rootMissing)need(item,n);
@@ -1119,24 +1263,28 @@ function analyseProject(s,goal){
   slots[r.station]-=r.queueable;for(const [k,n]of Object.entries(d.cost))simulation[k]-=n*r.queueable;
  }
  const stations={};for(const r of recipes){stations[r.station]??={station:r.station,seconds:0,batches:0};stations[r.station].seconds+=r.seconds;stations[r.station].batches+=r.batches;}
- const plan={goal,title:goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
+ const plan={goal,title:explicitTitle??goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
  return {plan,spendable};
 }
 function projectPlan(s,goal){return analyseProject(s,goal).plan;}
 
 // One pass only: finished inputs are usable now; promised output is never spent.
 // Final goods remain physically untouched without silently reserving anything.
-function queueProject(s,goal){
- const {plan}=analyseProject(s,goal),batches=[];
+function queueProject(s,goal){return queueCost(s,goal);}
+
+// Explicit-cost plans let native goals share the tested dependency allocator.
+function costPlan(s,goal,cost,title){return analyseProject(s,goal,cost,title).plan;}
+function queueCost(s,goal,cost,title){
+ const {plan}=analyseProject(s,goal,cost,title),batches=[];
  if(!plan.valid)return {queued:0,batches,reasons:['That project is no longer available.'],plan};
  for(const recipe of plan.recipes){let count=0;const limit=Math.min(recipe.queueable,maxBatches(s,recipe.key));for(let i=0;i<limit;i++){if(!start(s,recipe.key,true))break;count++;}if(count)batches.push({key:recipe.key,count});}
- const queued=batches.reduce((n,b)=>n+b.count,0),after=projectPlan(s,goal),reasons=after.blockers.map(b=>b.message);
+ const queued=batches.reduce((n,b)=>n+b.count,0),after=costPlan(s,goal,cost,title),reasons=after.blockers.map(b=>b.message);
  if(!queued&&!reasons.length&&!after.ready)reasons.push(after.recipes.length?'Wait for ingredients or free workshop queue space.':'The remaining supplies are already in production.');
  if(after.ready&&!queued)reasons.push('All project supplies are ready.');
  return {queued,batches,reasons,plan:after};
 }
 
-Object.assign(exports,{projectPlan,queueProject});
+Object.assign(exports,{projectPlan,queueProject,costPlan,queueCost});
 },
 "dist/demo-town.js":function(exports,require){
 const {fresh,parseSave}=require("dist/engine.js");
@@ -1287,6 +1435,10 @@ function directions(s,actions){
   const route=['quarry','island'].find(r=>f.development[r]<3), stage=E.COASTAL_PROJECTS[route][f.development[route]];
   const visits=f.visits[route]<stage.visits;
   add('coast','Coastal partnerships',visits?'Build trust at '+E.FLEET_ROUTES[route].name:stage.name,visits?`Complete ${stage.visits} visits to unlock the next settlement project. Repeat sailings can keep a boat working while you manage the town.`:'Invest in this settlement to improve coastal trade. Six projects across both destinations lead to rotating workshop commissions.',developed,6,visits?'Fleet':'Destinations',visits?ids('startVoyage',a=>a[1]===route&&a[2]===1):ids('fundCoastalProject',a=>a[0]===route));
+ }else if(!f.thirdBerth){
+  add('coast','Coastal partnerships','Open a third working berth','Give cargo, passengers and coastal supplies their own boat. Finish the ferry and own two boats, then invest in a vacant berth; its hull is a separate purchase.',2,3,'Fleet',ids('buildThirdBerth'),true);
+ }else if(!f.boats[2]){
+  add('coast','Coastal partnerships','Choose the third boat','The berth is ready. Choose a quick cutter or a larger coaster, then assign this boat its own mission.',2,3,'Fleet',ids('buyBoat',a=>a[0]===2),true,'thirdberth');
  }else{
   const n=f.commissions.quarry+f.commissions.island;
   add('coast','Coastal partnerships','Complete '+milestone(n,5)+' coastal commissions','The masons and chandlery rotate their requests. Alternate destinations to fit your stocks; each fulfilled commission pays its original reward.',n,milestone(n,5),'Destinations',ids('completeCommission'));
@@ -1295,6 +1447,7 @@ function directions(s,actions){
   const market=s.market.access&&!s.market.left;
   add('community','Local prosperity',market?'Supply the market':'Make room for local life',market?'Market shops recover demand over time. Keep their supply chains balanced while Elena opens the neighbourhood.':'Open the market and neighbourhood through the main chapters. Homes, local orders and civic projects form a different way to grow.',Object.values(s.market.businesses).reduce((n,b)=>n+b.deliveries,0),milestone(Object.values(s.market.businesses).reduce((n,b)=>n+b.deliveries,0),10),'Market',ids('dispatchMarket'),market);
  }else if(!E.residentsComplete(s))add('community','Local prosperity','Build a residents’ project','Choose the public garden for capacity or the commercial square for local earnings. Your first delivery commits the choice; three deliveries finish the project.',s.residents.delivered,3,'Residents',ids(s.residents.proposal?'deliverResidentsSupplies':'chooseResidentsProposal'));
+ else if(!s.market.plots[2])add('community','Local prosperity','Choose the third market business','A provisioner earns coins from food; a craft exchange turns cloth and furniture into sails and fittings. Finish the courtyard and both original stalls to open this plot.',2,3,'Market',ids('buildMarketBusiness',a=>a[1]===2),true,'market3');
  else{
   const n=s.neighbourhood.orders;
   add('community','Local prosperity','Fulfil '+milestone(n,5)+' neighbourhood orders','Furniture, cloth and local goods support rotating orders. Furnished homes expand queues; the Local life town direction increases these earnings.',n,milestone(n,5),'Neighbourhood',ids('completeNeighbourhoodOrder'));
@@ -1302,8 +1455,11 @@ function directions(s,actions){
  const chain=['field','mill','bakery'], active=chain.filter(k=>(s.targets[k]||0)>0);
  if(!s.pier)add('industry','A town that keeps working','Open the quay','The quay unlocks automatic stock targets. Then connect wheat, flour and bread into a self-supplying chain.',0,3,'Production',[],false);
  else if(active.length<3){const key=chain.find(k=>!active.includes(k));add('industry','A town that keeps working','Set a stock target for '+({field:'wheat',mill:'flour',bakery:'bread'}[key]),'Set a stock target beside this workshop. Automation pays normal ingredient costs and waits for stock or queue space; it does not create free goods.',active.length,3,'Production',ids('start',a=>a[0]===key),true,key);}
- else if(Object.keys(s.refits).length<3)add('industry','A town that keeps working','Refit three workshops','Choose faster batches or longer queues for each workshop. Match capacity to your trade and local orders; changing a setup has its real stated cost.',Object.keys(s.refits).length,3,'Refits',ids('installRefit'));
- else add('industry','A town that keeps working','Reach '+milestone(s.deliveries,25)+' harbour deliveries','Keep the automated chain supplied, choose a cargo route and ship when ready. Trade and builder town directions offer different coin/material returns.',s.deliveries,milestone(s.deliveries,25),'Trade',ids('dispatch'));
+ else if(s.fleet.lighthouse.stage<3&&Object.keys(s.refits).length<3)add('industry','A town that keeps working','Refit three workshops','Choose faster batches or longer queues for each workshop. Match capacity to your trade and local orders; changing a setup has its real stated cost.',Object.keys(s.refits).length,3,'Refits',ids('installRefit'));
+ else if(s.fleet.lighthouse.stage===3&&Object.entries(E.ADVANCED_STATIONS).some(([station])=>!s.advancedRefits[station]&&Object.entries(E.RECIPES).some(([key,r])=>r.station===station&&E.unlocked(s,key)))){
+  const count=Object.keys(s.advancedRefits).length;
+  add('industry','A town that keeps working','Choose an advanced workshop profile','Refit the workshop that limits your town: speed finishes batches sooner; yield makes more from the same inputs. Finish its queue before installing. Both coastal partnerships unlock tier 3.',count,Object.keys(E.ADVANCED_STATIONS).length,'Refits',ids('installAdvancedRefit',a=>a[1]===2&&!s.advancedRefits[a[0]]));
+ }else add('industry','A town that keeps working','Reach '+milestone(s.deliveries,25)+' harbour deliveries','Keep the automated chain supplied, choose a cargo route and ship when ready. Trade and builder town directions offer different coin/material returns.',s.deliveries,milestone(s.deliveries,25),'Trade',ids('dispatch'));
  return result;
 }
 
@@ -1336,7 +1492,7 @@ function restoreFestival(s,raw){
  return {stage,choice,baselineRuns,visits:{quarry:visits.quarry,island:visits.island},orders};
 }
 function note(s,message){s.log.unshift(message);s.log=s.log.slice(0,5);}
-function offers(s,f){
+function offers(s,f,tickets=null){
  if(!available(s,f))return [];
  if(f.stage===0)return [{fn:'festivalPrepare',args:[],title:'Prepare the festival courtyard',cost:PREPARATION}];
  if(f.stage===1)return [
@@ -1344,11 +1500,11 @@ function offers(s,f){
   {fn:'festivalSupply',args:[f.choice],title:f.choice==='food'?'Stock the food fair':'Supply the craft exhibition',cost:SUPPLIES[f.choice]}
  ];
  if(f.stage===3)return [{fn:'festivalCelebrate',args:[f.choice],title:'Open the harbour festival',cost:FINALE[f.choice]}];
- if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
+ if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[tickets?tickets.slots[index].template:(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[tickets?tickets.slots[index].epoch:f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
  return [];
 }
-function mutateFestival(s,f,fn,args){
- const action=offers(s,f).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
+function mutateFestival(s,f,fn,args,tickets=null){
+ const action=offers(s,f,tickets).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
  if(!action||Object.entries(action.cost).some(([item,n])=>E.available(s,item)<n))return false;
  if(fn==='festivalChoose'&&f.choice===args[0])return false;
  if(action.reward&&s.coins+action.reward>1e9)return false;
@@ -1358,7 +1514,7 @@ function mutateFestival(s,f,fn,args){
  if(fn==='festivalChoose')f.choice=args[0];
  if(fn==='festivalSupply'){f.stage=2;f.baselineRuns=s.ferry.runs;}
  if(fn==='festivalCelebrate')f.stage=4;
- if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;}
+ if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;if(tickets){const epoch=tickets.next++;tickets.slots[args[1]]={epoch,template:(epoch*2+args[1])%REQUESTS.length};}}
  note(s,fn==='festivalCelebrate'?'The harbour festival is open · courtyard decorations and festival requests unlocked':action.title+' · saved');
  return true;
 }
@@ -1384,5 +1540,330 @@ function festivalView(s,f){
 }
 
 Object.assign(exports,{PREPARATION,SUPPLIES,FINALE,REQUESTS,freshFestival,available,restoreFestival,offers,mutateFestival,recordArrivals,festivalView});
+},
+"native/story.js":function(exports,require){
+// Read-only native storytelling. No clock, preference or save writes belong here.
+const E=require("dist/engine.js");
+const TOWN_NAME='Porto Lume';
+const OPENINGS=[
+ 'I’m Elena. I’ll help you turn this first harvest into a working harbour.',
+ 'I know every family along this quay. Let’s give them a town of their own.',
+ 'I can picture the hillside stalls already. Let’s connect our growers to the market.',
+ 'I used to watch for sails from this shore. Now we can build the boats that bring them home.',
+ 'I’d like our neighbours to visit for more than trade. Let’s welcome the first passengers.',
+ 'I’ve been saving an idea for this courtyard: a festival made by the whole town.'
+];
+const COMPLETIONS=[
+ 'I remember our first sacks of wheat. Look at the working quay we’ve built together.',
+ 'I can hear work along the waterfront again. This place is becoming our own.',
+ 'I promised the hillside growers a way to market. Today we kept that promise.',
+ 'I see lights on the coast and neighbours making plans. We’ve built more than a fleet.',
+ 'I’ve waited a long time to say this: our first passengers are home.',
+ 'I’ll remember this gathering whenever I cross the courtyard. We made room for everyone.'
+];
+const FESTIVAL_LINES=[
+ 'I’ll find a place for the tables. Will you help me prepare the courtyard?',
+ 'I love a good meal and a clever piece of craft. Which shall we share with our visitors?',
+ 'I’ve sent word to both shores. Let’s bring our guests across on the passenger boats.',
+ 'I can hear our guests arriving. A few final supplies, and we can open the celebration.',
+ 'I’m glad we kept the bunting. There’s always another reason to gather here.'
+];
+const WAITING_LINES=[
+ 'I’ll keep an eye on the work. You can explore while the crews finish.',
+ 'I know waiting can feel slow. Your paid work is safe while the town clock runs.',
+ 'I can see the next step taking shape. Let’s give the workshops a little time.'
+];
+const SMALL_MOMENTS=[
+ 'I still remember the smell of our first batch of bread.',
+ 'I’d choose a trade that feels like home. Either path can grow into a fine town.',
+ 'I like seeing familiar boats return. Each berth can have its own job.',
+ 'I’ll listen while the residents decide what belongs in their square.',
+ 'I’m proud of this harbour. What would you like us to work on next?',
+ 'I’m happy to wait here. Resume the town whenever you’re ready.'
+];
+function displayText(value){return typeof value==='string'?value.replaceAll('Isola dei Pescatori','Olive Island'):value;}
+// Normalize only the detached presentation tree, never the canonical save or catalog.
+function presentation(value){
+ if(typeof value==='string')return displayText(value);
+ if(Array.isArray(value))return value.map(presentation);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,presentation(v)]));
+ return value;
+}
+function partner(fn,args){
+ if(['fundCoastalProject','completeCommission'].includes(fn))return args[0]==='quarry'
+  ? 'Matteo · Pietra Cove mason: “Help me mend the landing, and we’ll keep stone moving across the bay.”'
+  : 'Lucia · Olive Island chandler: “Every lamp and length of rope starts with a dependable harbour.”';
+ if(['marketAccess','buildMarketBusiness','dispatchMarket'].includes(fn))return 'Sofia · market steward: “Bring what your neighbours make; I’ll find it a place on the stalls.”';
+ if(['chooseResidentsProposal','deliverResidentsSupplies'].includes(fn))return 'Nico · residents’ spokesperson: “Let’s choose a place we’ll want to share, then build it together.”';
+ return null;
+}
+function story(s,e,f,o,g){
+ const completed=s.ferry.runs>0?5:(s.ferry.stage>0||s.ferry.funded||o.chapter>=5)?4:s.inland.shipments>0?3:s.waterfront.stage===3?2:(s.pier&&!E.underConstruction(s,'pier'))?1:0;
+ const titles=['A working harbour','A town of your own','From hillside to market','A living coast','Connect the harbour','The first harbour festival'];
+ const art=['pier-built','waterfront-built','kiln-built','lighthouse-built','ferry-built','square-upgraded'];
+ const memories=[];
+ for(let i=0;i<completed;i++)memories.push({id:'chapter-'+(i+1),chapter:i+1,title:titles[i],body:COMPLETIONS[i],art:art[i],dateLabel:'Chapter '+(i+1)+' · completion date not recorded'});
+ if(f.stage===4)memories.push({id:'chapter-6',chapter:6,title:titles[5],body:COMPLETIONS[5]+' '+(f.choice==='craft'?'Our craft exhibition filled the square with woven cloth and handmade pieces.':'Our food fair filled the square with bread, preserves and stories.'),art:art[5],dateLabel:'Chapter 6 · completion date not recorded'});
+ if(s.residents.delivered>0)memories.push({id:'residents',chapter:null,title:E.RESIDENT_PROPOSALS[s.residents.proposal].name,body:'Nico remembers the first delivery that made our choice a promise. '+(s.residents.delivered===3?'The residents’ project is complete.':'The residents are still building it together.'),art:s.residents.proposal==='garden'?'olive-tree':'square-built',dateLabel:'Residents’ choice · date not recorded'});
+ if(s.townFocus)memories.push({id:'direction',chapter:null,title:'Our direction · '+E.TOWN_FOCUSES[s.townFocus].name,body:E.TOWN_FOCUSES[s.townFocus].benefit+' This is the direction we’re pursuing now.',art:'pier-built',dateLabel:'Current town direction · date not recorded'});
+ // Evolution retains the actual season of these choices, but only its latest 32 entries.
+ const history=e.history.map((entry,i)=>({id:'decision-'+i,chapter:null,title:({'Fund a village festival':'Support community life','Expand the working quay':'Invest in the waterfront','Restore olive terraces':'Care for the hillside','Repair the waterfront':'Back waterfront repairs'}[entry.label]||entry.label),body:'A choice that shaped the character of '+TOWN_NAME+'.',art:/grove|olive|garden/i.test(entry.label)?'olive-tree':'square-built',dateLabel:'Season '+entry.season}));
+ let voice=OPENINGS[Math.min(5,o.chapter-1)];
+ if(f.stage>0||s.ferry.runs>0)voice=FESTIVAL_LINES[f.stage];
+ else if(g.category==='Residents')voice=SMALL_MOMENTS[3];
+ else if(g.category==='Fleet')voice=SMALL_MOMENTS[2];
+ else if(o.chapter===2&&s.specialisation===null)voice=SMALL_MOMENTS[1];
+ else if(o.chapter===1&&s.deliveries>0)voice=SMALL_MOMENTS[0];
+ if(g.waiting){const hash=Array.from(g.body).reduce((n,c)=>n+c.charCodeAt(0),0);voice=WAITING_LINES[hash%WAITING_LINES.length];}
+ if(s.speed===0)voice=SMALL_MOMENTS[5];
+ if(f.stage===4&&g.category==='Ambitions')voice=SMALL_MOMENTS[4];
+ return {townName:TOWN_NAME,voice,opening:OPENINGS[Math.min(5,o.chapter-1)],festivalLine:FESTIVAL_LINES[f.stage],memories:[...memories.filter(m=>m.chapter!==null).reverse(),...memories.filter(m=>m.chapter===null)],decisions:history.reverse()};
+}
+
+Object.assign(exports,{TOWN_NAME,OPENINGS,COMPLETIONS,FESTIVAL_LINES,WAITING_LINES,SMALL_MOMENTS,displayText,presentation,partner,story});
+},
+"native/chronicle.js":function(exports,require){
+// Native-only harbour year. No wall-clock catch-up, random rewards or browser mutations.
+const E=require("dist/engine.js");
+const F=require("native/festival.js");
+const Y=require("native/city-port.js");
+const SEASONS=['Spring','Summer','Autumn','Winter'];
+const PARTNERS={matteo:{name:'Matteo',role:'Mason of Pietra Cove',line:'A landing should belong to the people who use it.'},lucia:{name:'Lucia',role:'Chandler of Olive Island',line:'Give a good craftsperson a reason to try something new.'},sofia:{name:'Sofia',role:'Market steward',line:'A visiting family needs more than a full storehouse.'},nico:{name:'Nico',role:'Neighbourhood organiser',line:'Let us make a place we will still enjoy next year.'},ada:{name:'Captain Ada',role:'Ferry captain',line:'Two boats can connect people as well as move cargo.'}};
+const STEPS=[1,3,6,10,15];
+const PROJECTS=[
+ {id:'restoration',title:'A coast for everyone',partner:'matteo',branches:['Public waterfront','Working landing'],items:[['tiles','furniture','cloth'],['planks','boatparts','sails']],outcomes:['A shaded promenade welcomes visiting families.','A restored landing hosts travelling craftspeople.'],art:'restoration'},
+ {id:'exhibition',title:'The shipwright’s exhibition',partner:'lucia',branches:['Living workshop','Seafaring collection'],items:[['planks','boatparts','cloth'],['sails','furniture','jars']],outcomes:['Artisans demonstrate their craft beside the boats.','Coastal keepsakes have a permanent home.'],art:'exhibition'},
+ {id:'seawall',title:'The living sea wall',partner:'matteo',branches:['Rock pools','Working steps'],items:[['stone','tiles','jars'],['stone','planks','boatparts']],outcomes:['Tide pools turn the waterfront into a place to explore.','Broad steps connect the workshops to the shore.'],art:'seawall'},
+ {id:'belltower',title:'A bell for Porto Lume',partner:'nico',branches:['Garden square','Market square'],items:[['stone','tiles','furniture'],['planks','tiles','cloth']],outcomes:['A quiet gathering place surrounds the new tower.','A gathering place for visiting makers surrounds the tower.'],art:'belltower'},
+ {id:'garden',title:'The keeper’s garden',partner:'sofia',branches:['Kitchen garden','Coastal sanctuary'],items:[['jars','planks','preserves'],['tiles','jars','cloth']],outcomes:['The keeper shares seasonal recipes with visitors.','A shelter for native coastal plants welcomes explorers.'],art:'garden'},
+ {id:'school',title:'The harbour school',partner:'nico',branches:['Navigation school','Craft school'],items:[['planks','furniture','sails'],['tiles','furniture','cloth']],outcomes:['Ada teaches the next generation to read the coast.','Lucia teaches the next generation to make and mend.'],art:'school'},
+ {id:'regatta',title:'A regatta for the coast',partner:'ada',branches:['Sailing celebration','Coastal discovery'],items:[['sails','boatparts','provisions'],['planks','cloth','preserves']],outcomes:['A lasting sailing pavilion welcomes the coastal crews.','A coastal expedition pavilion welcomes curious travellers.'],art:'regatta'},
+ {id:'wintermarket',title:'The winter gathering',partner:'sofia',branches:['Shared table','Makers’ market'],items:[['furniture','preserves','bread'],['cloth','jars','tiles']],outcomes:['A sheltered communal table brings the coast together.','A covered makers’ arcade gives the town a new meeting place.'],art:'wintermarket'}
+];
+// The branch changes how the fleet is used, not merely the final building picture.
+// Existing cargo/ferry prices and durations remain authoritative.
+const PROJECT_TRANSPORT={
+ restoration:[['cargo','passengers'],['cargo','cargo']],exhibition:[['cargo','passengers'],['passengers','cargo']],
+ seawall:[['cargo','cargo'],['cargo','cargo']],belltower:[['passengers','passengers'],['cargo','passengers']],
+ garden:[['cargo','passengers'],['passengers','passengers']],school:[['passengers','passengers'],['cargo','passengers']],
+ regatta:[['passengers','cargo'],['passengers','passengers']],wintermarket:[['passengers','passengers'],['cargo','passengers']]
+};
+const PROJECT_CREWS={restoration:['Supply the landing crews','Welcome the first visiting families'],exhibition:['Bring the shipwrights together','Welcome the exhibition’s guests'],seawall:['Bring back stoneworking supplies','Supply the island work crew'],belltower:['Welcome the neighbourhood gathering','Bring the market makers'],garden:['Supply the keeper’s planting work','Welcome the coastal garden visitors'],school:['Bring the teaching crews','Welcome the first students'],regatta:['Welcome the sailing crews','Prepare the coastal gathering'],wintermarket:['Welcome the shared-table guests','Bring the winter-market makers']};
+function projectMissions(c,id){const p=c.projects[id];if(!p)return [];return ['quarry','island'].map((route,i)=>({route,passengers:PROJECT_TRANSPORT[id][p.branch][i]==='passengers',complete:p.routes.includes(route),title:PROJECT_CREWS[id][i]}));}
+function projectTripMatches(c,id,route,passengers){return projectMissions(c,id).some(m=>m.route===route&&m.passengers===!!passengers);}
+const THEMES=[
+ {title:'Repair the spring landing',partner:'matteo',items:['planks','tiles'],event:'The first visiting makers',choices:['Equip a workshop','Prepare their shared table'],alternatives:['cloth','bread']},
+ {title:'A summer by the water',partner:'sofia',items:['bread','preserves'],event:'A place for the visitors',choices:['Welcome families','Welcome sailing crews'],alternatives:['furniture','sails']},
+ {title:'Keep the autumn harvest',partner:'lucia',items:['preserves','oil'],event:'The harvest exchange',choices:['Share the pantry','Demonstrate local crafts'],alternatives:['jars','cloth']},
+ {title:'Warm rooms for winter',partner:'nico',items:['cloth','furniture'],event:'A winter meeting place',choices:['Set a shared table','Open the makers’ hall'],alternatives:['bread','tiles']}
+];
+function theme(o){if(o.theme===null)return THEMES[o.season%4];const d=PROJECTS.find(p=>p.id===o.theme);return {partner:d.partner,title:d.title+' · visiting neighbours',event:d.title+' · the next gathering',choices:['Host a practical workshop','Host a shared gathering']};}
+const copy=x=>JSON.parse(JSON.stringify(x));
+const keys=(x,w)=>x&&typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).sort().join()===w.split(',').sort().join();
+const integer=(n,max=1000000)=>Number.isSafeInteger(n)&&n>=0&&n<=max;
+const note=(s,t)=>{s.log.unshift(t);s.log=s.log.slice(0,5);};
+function freshChronicle(){return {pin:null,started:false,elapsed:0,serial:0,offers:[],partners:Object.fromEntries(Object.keys(PARTNERS).map(k=>[k,0])),projects:{},standing:0,ledger:[],reservations:{},partnerWork:{},specialist:null,festivalTickets:null,coast:'harbour',townName:'Porto Lume',awning:'terracotta',city:Y.freshCity()};}
+function enableFestival(c,f){if(f.stage===4&&!c.festivalTickets)c.festivalTickets={next:f.orders+1,slots:[0,1].map(i=>({epoch:f.orders,template:(f.orders*2+i)%4}))};}
+function canMake(s,item){return ['wood','stone'].includes(item)||Object.entries(E.RECIPES).some(([k,r])=>r.output[item]&&E.unlocked(s,k));}
+function size(s){const n=new Set(Object.entries(E.RECIPES).filter(([k])=>E.unlocked(s,k)).map(([,r])=>r.station)).size;return n>=12?18:n>=7?12:6;}
+function offer(s,c,kind){
+ const season=Math.floor(c.elapsed/1200),seasonTheme=THEMES[season%4],completed=PROJECTS.filter(d=>c.projects[d.id]?.stage===4),followup=kind===2&&completed.length&&c.serial%2===0?completed[c.serial%completed.length]:null;
+ const preferred=followup?(c.projects[followup.id].branch===0?['furniture','bread']:['boatparts','cloth']):kind===0?seasonTheme.items:seasonTheme.alternatives;
+ return {id:'request-'+(++c.serial),kind,season,theme:followup?.id||null,size:size(s),items:preferred.map(i=>c.coast==='rocky'&&kind===0?'stone':c.coast==='marsh'&&kind===0?(canMake(s,'preserves')?'preserves':'bread'):canMake(s,i)?i:'bread'),accepted:false,choice:null,boats:[],eligible:[],routes:[]};
+}
+function refill(s,c){for(let kind=0;kind<3;kind++)if(!c.offers.some(o=>o.kind===kind))c.offers.push(offer(s,c,kind));}
+function remember(s,c,title,body){c.ledger.unshift({id:'memory-'+(++c.serial),title,body,seconds:s.seconds,season:Math.floor(c.elapsed/1200)});c.ledger=c.ledger.slice(0,32);}
+function partner(o){return o.kind===1?'ada':theme(o).partner;}
+function requestCost(o){if(o.kind===1)return {};if(o.kind===2)return o.choice===null?{}:{[o.items[o.choice]]:o.size};return Object.fromEntries([...new Set(o.items)].map(i=>[i,o.size]));}
+function requestTitle(o){return o.kind===1?'Bring the coast together':o.kind===2?theme(o).event:theme(o).title;}
+function projectCost(c,id){const p=c.projects[id],d=PROJECTS.find(d=>d.id===id);if(!p||p.stage>=4||p.stage===2)return {};const i=p.stage===3?2:p.stage;return {[d.items[p.branch][i]]:[12,24,36][i]};}
+function goalCost(c,goal,f=null,s=null){if(!c)return null;if(/^city:[0-2]$/.test(goal))return Y.unlocked(c)?Y.CARGO:null;if(goal.startsWith('native-festival:')){return f?F.offers(s,f,c.festivalTickets).find(o=>'native-festival:'+JSON.stringify([o.fn,o.args])===goal)?.cost||null:null;}const o=c.offers.find(o=>'year:'+o.id===goal);if(o?.accepted)return requestCost(o);if(goal.startsWith('partner:')){const[,id,stage]=goal.split(':');if(Object.hasOwn(PARTNERS,id)&&(c.partnerWork[id]||0)===Number(stage)&&Number(stage)<4&&c.partners[id]>=[1,3,6,15][Number(stage)])return partnerCost(c,id,Number(stage));return null;}if(goal.startsWith('chronicle:')){const [,id,stage]=goal.split(':');if(c.projects[id]?.stage===Number(stage))return projectCost(c,id);}return null;}
+function goalTitle(c,goal){const o=c?.offers.find(o=>'year:'+o.id===goal);return o?requestTitle(o):goal.startsWith('partner:')?(PARTNERS[goal.split(':')[1]]?.name+' · personal request'):PROJECTS.find(p=>goal.startsWith('chronicle:'+p.id+':'))?.title||'Harbour project';}
+function holding(c,goal,item){return c.reservations[goal]?.[item]||0;}
+function affordable(s,c,goal,cost){return Object.entries(cost).every(([k,n])=>E.available(s,k)+holding(c,goal,k)>=n);}
+function pay(s,c,goal,cost){if(!affordable(s,c,goal,cost))return false;for(const [k,n]of Object.entries(cost)){const held=holding(c,goal,k),free=n-held;if(k==='coins')s.coins-=free;else s.stock[k]-=free;}delete c.reservations[goal];return true;}
+function reserve(s,c,goal,f=null){const cost=goalCost(c,goal,f,s);if(!cost||!Object.keys(cost).length)return false;const held=c.reservations[goal]||{};let changed=false;for(const[k,n]of Object.entries(cost)){const take=Math.min(n-(held[k]||0),Math.max(0,E.available(s,k)));if(take>0){held[k]=(held[k]||0)+take;if(k==='coins')s.coins-=take;else s.stock[k]-=take;changed=true;}}if(changed)c.reservations[goal]=held;return changed;}
+function release(s,c,goal){const held=c.reservations[goal];if(!held)return false;for(const[k,n]of Object.entries(held))if((k==='coins'?s.coins:s.stock[k])+n>1e9)return false;for(const[k,n]of Object.entries(held)){if(k==='coins')s.coins+=n;else s.stock[k]+=n;}delete c.reservations[goal];return true;}
+function exportTown(s,c){const next=copy(s);if(c)for(const goal of Object.keys(c.reservations))if(!release(next,copy(c),goal))throw Error('Release reserved native supplies before exporting this town.');return c?Y.browserRefund(next,c):next;}
+function planTown(s,c,goal){const next=copy(s);for(const [item,n]of Object.entries(c?.reservations[goal]||{})){if(item==='coins')next.coins+=n;else next.stock[item]+=n;}return next;}
+const PARTNER_ITEMS={matteo:'tiles',lucia:'boatparts',sofia:'preserves',nico:'furniture',ada:'sails'};
+function partnerCost(c,id,stage){return {[PARTNER_ITEMS[id]]:[6,6,18,36][stage]};}
+function actions(s,c,f){
+ if(!c?.started)return [...(f.stage===4?[{fn:'chronicleBegin',args:[],title:'Begin the harbour year',cost:{},reason:''}]:[]),...Object.keys(c?.reservations||{}).map(goal=>({fn:'chronicleRelease',args:[goal],title:'Release reserved festival supplies',cost:{},reason:''}))];
+ const out=Y.actions(s,c);
+ for(const o of c.offers){const goal='year:'+o.id;
+  if(!o.accepted)out.push({fn:'chronicleAccept',args:[o.id],title:'Accept · '+requestTitle(o),cost:{},reason:''});
+  else if(o.kind===2&&o.choice===null)for(let i=0;i<2;i++)out.push({fn:'chronicleChoose',args:[o.id,i],title:theme(o).choices[i],cost:{},reason:''});
+  else out.push({fn:'chronicleDeliver',args:[o.id],title:o.kind===1?'Welcome both crews':'Contribute · '+requestTitle(o),cost:requestCost(o),goal,reason:o.kind===1?'Complete a passenger service with two different boats after accepting this request.':'Prepare the finished supplies.'});
+ }
+ const done=PROJECTS.filter(d=>c.projects[d.id]?.stage===4).length;
+ for(const d of PROJECTS.slice(0,Math.min(PROJECTS.length,done+2))){const p=c.projects[d.id];
+  if(!p){for(let branch=0;branch<2;branch++)out.push({fn:'chronicleProject',args:[d.id,branch],title:'Choose · '+d.branches[branch],cost:{},reason:['seawall','belltower','school'].includes(d.id)&&c.standing<1?'Share bread with a built household to earn town standing. Open Neighbourhood if you need a home.':'Finish the current chronicle project first.'});}
+  else if(p.stage<4)out.push({fn:'chronicleBuild',args:[d.id,p.stage],title:['Lay the foundations','Equip the place','Welcome both crews','Open '+d.title.toLowerCase()][p.stage],cost:projectCost(c,d.id),goal:'chronicle:'+d.id+':'+p.stage,reason:p.stage===2?'Complete the two listed project missions using different boats after this stage begins. Cargo and passenger work count only for their assigned coast.':'Make the finished supplies for this stage.'});
+ }
+ if(households(s)>0)out.push({fn:'chronicleHouseholds',args:[c.standing],title:'Supply the neighbourhood table',cost:{bread:6*households(s)},goal:null,reason:'Share bread with the households actually living here. Each delivery earns town standing.'});
+ for(const[id,d]of Object.entries(PARTNERS)){
+  const stage=c.partnerWork[id]||0,threshold=[1,3,6,15][stage];
+  if(stage<4&&c.partners[id]>=threshold)out.push({fn:'chroniclePartner',args:[id,stage],title:[d.name+' · a first commission',d.name+' · a trusted-price commission',d.name+' · equip a specialist',d.name+' · a personal place'][stage],cost:partnerCost(c,id,stage),goal:'partner:'+id+':'+stage,reason:'Prepare the finished supplies for this personal request.'});
+  if(stage>=3&&c.specialist!==id)out.push({fn:'chronicleSpecialist',args:[id],title:'Ask '+d.name+' to guide your next choice',cost:{},reason:''});
+ }
+ if(c.specialist)for(const o of c.offers)if(o.accepted&&o.kind===2&&o.choice!==null&&!Object.keys(c.reservations['year:'+o.id]||{}).length)out.push({fn:'chronicleAdvice',args:[o.id,o.choice],title:PARTNERS[c.specialist].name+' · reconsider this gathering',cost:{},reason:''});
+ for(const goal of Object.keys(c.reservations))out.push({fn:'chronicleRelease',args:[goal],title:'Release · '+goalTitle(c,goal),cost:{},reason:''});
+ return out;
+}
+function households(s){return s.neighbourhood.plots.reduce((n,p)=>n+(p?.type==='home'&&!p.left?1+(p.level||0):0),0);}
+function mutate(s,c,f,fn,args){
+ if(fn==='chronicleBegin'){if(c.started||f.stage!==4)return false;c.started=true;enableFestival(c,f);refill(s,c);note(s,'The harbour year begins · choose a request or a lasting project');return true;}
+ if(fn==='chronicleRelease')return release(s,c,args[0]);
+ if(!c.started)return false;
+ if(fn.startsWith('chronicleCity')){if(['chronicleCitySail','chronicleCityExplore'].includes(fn)){const goal='city:'+args[0];for(const[k,n]of Object.entries(c.reservations[goal]||{}))s.stock[k]+=n;delete c.reservations[goal];}const ok=Y.mutate(s,c,fn,args);if(ok&&['chronicleCityDeliver','chronicleCityChoose'].includes(fn))remember(s,c,'The city and the coast',s.log[0]);return ok;}
+ if(fn==='chroniclePartner'){
+  const[id,stage]=args;if(!Object.hasOwn(PARTNERS,id)||stage!==(c.partnerWork[id]||0)||stage>=4||c.partners[id]<[1,3,6,15][stage]||!pay(s,c,'partner:'+id+':'+stage,partnerCost(c,id,stage)))return false;
+  c.partnerWork[id]=stage+1;remember(s,c,PARTNERS[id].name+' · '+['a first commission','a trusted partnership','a specialist for the town','a personal place'][stage],stage===1?'Your trusted-price commission used six goods instead of the usual twelve.':stage===2?'You can assign this specialist to reopen an unreserved visitor choice.':stage===3?'A personal painted detail now belongs to your town.':'A new relationship has begun.');note(s,PARTNERS[id].name+' remembers this work · relationship reward saved');return true;
+ }
+ if(fn==='chronicleSpecialist'){const id=args[0];if((c.partnerWork[id]||0)<3||c.specialist===id)return false;c.specialist=id;note(s,PARTNERS[id].name+' is advising your town · visitor choices can be reconsidered before reserving or contributing');return true;}
+ if(fn==='chronicleAdvice'){const o=c.offers.find(o=>o.id===args[0]);if(!c.specialist||!o?.accepted||o.kind!==2||o.choice!==args[1]||o.choice===null||Object.keys(c.reservations['year:'+o.id]||{}).length)return false;o.choice=null;note(s,PARTNERS[c.specialist].name+' helped you reconsider · choose the gathering you want');return true;}
+ if(fn==='chronicleRelease')return release(s,c,args[0]);
+ if(fn==='chronicleHouseholds'){if(args[0]!==c.standing||c.standing>=1000000||!households(s)||!pay(s,c,'households',{bread:6*households(s)}))return false;c.standing++;note(s,'The neighbourhood table is ready · town standing '+c.standing);return true;}
+ if(fn==='chronicleProject'){
+  const [id,branch]=args,d=PROJECTS.find(p=>p.id===id),done=Object.values(c.projects).filter(p=>p.stage===4).length;
+  if(!d||![0,1].includes(branch)||c.projects[id]||Object.values(c.projects).some(p=>p.stage<4)||PROJECTS.indexOf(d)>=done+2)return false;
+  if(['seawall','belltower','school'].includes(id)&&c.standing<1)return false;
+  c.projects[id]={branch,stage:0,boats:[],eligible:[],routes:[]};c.pin='chronicle:'+id;note(s,d.branches[branch]+' chosen · this branch shapes the finished place');return true;
+ }
+ if(fn==='chronicleBuild'){
+  const [id,stage]=args,p=c.projects[id],d=PROJECTS.find(p=>p.id===id);if(!p||p.stage!==stage||stage>=4||stage===2&&(p.boats.length<2||p.routes.length<2))return false;
+  if(!pay(s,c,'chronicle:'+id+':'+stage,projectCost(c,id)))return false;p.stage++;
+  if(p.stage===4){c.partners[d.partner]=Math.min(1000000,c.partners[d.partner]+1);remember(s,c,d.title,d.outcomes[p.branch]);note(s,d.title+' opened · '+d.outcomes[p.branch]);}else note(s,d.title+' · stage '+(p.stage+1)+' ready');return true;
+ }
+ const o=c.offers.find(o=>o.id===args[0]);if(!o)return false;
+ if(fn==='chronicleAccept'){if(o.accepted)return false;o.accepted=true;c.pin='year:'+o.id;note(s,requestTitle(o)+' accepted · supplies and progress will never expire');return true;}
+ if(!o.accepted)return false;
+ if(fn==='chronicleChoose'){if(o.kind!==2||o.choice!==null||![0,1].includes(args[1]))return false;o.choice=args[1];note(s,theme(o).choices[o.choice]+' chosen · contribute the supplies when ready');return true;}
+ if(fn!=='chronicleDeliver'||o.kind===2&&o.choice===null||o.kind===1&&(o.boats.length<2||c.coast==='windy'&&o.routes.length<2)||!pay(s,c,'year:'+o.id,requestCost(o)))return false;
+ const who=partner(o);c.partners[who]=Math.min(1000000,c.partners[who]+1);remember(s,c,requestTitle(o),PARTNERS[who].name+' remembers your help'+(o.choice!==null?' · '+theme(o).choices[o.choice]:''));
+ c.offers=c.offers.filter(p=>p!==o);refill(s,c);note(s,PARTNERS[who].name+' · Thank you. This is what makes a harbour feel like home.');return true;
+}
+// Only explicitly dispatched trips after acceptance qualify. Recalled and already-running trips cannot count.
+function departure(c,fn,args){if(!c?.started)return;const slot=args[0];if(!Number.isInteger(slot))return;
+ const cargo=fn==='startVoyage',passenger=fn==='startFerryService',cancel=fn==='cancelVoyage';
+ if(!cargo&&!passenger&&!cancel)return;
+ for(const o of c.offers)if(o.accepted&&o.kind===1){o.eligible=o.eligible.filter(n=>n!==slot);if(passenger)o.eligible.push(slot);}
+ for(const[id,p]of Object.entries(c.projects))if(p.stage===2){p.eligible=p.eligible.filter(n=>n!==slot);if((cargo||passenger)&&projectTripMatches(c,id,args[1],passenger))p.eligible.push(slot);}
+}
+function tick(s,c,before,elapsed){if(!c?.started||elapsed<=0)return;Y.tick(s,c,elapsed);const old=Math.floor(c.elapsed/1200);c.elapsed=Math.min(1200*1000000-1,c.elapsed+elapsed);
+ for(let slot=0;slot<before.length;slot++){const trip=before[slot];if(!trip||trip.left>elapsed)continue;
+  for(const o of c.offers)if(o.accepted&&o.kind===1&&o.eligible.includes(slot)&&trip.ferry){if(!o.boats.includes(slot))o.boats.push(slot);if(!o.routes.includes(trip.route))o.routes.push(trip.route);o.eligible=o.eligible.filter(n=>n!==slot);}
+  for(const[id,p]of Object.entries(c.projects))if(p.stage===2&&p.eligible.includes(slot)&&projectTripMatches(c,id,trip.route,trip.ferry)){if(!p.boats.includes(slot))p.boats.push(slot);if(!p.routes.includes(trip.route))p.routes.push(trip.route);p.eligible=p.eligible.filter(n=>n!==slot);}
+ }
+ if(Math.floor(c.elapsed/1200)!==old){c.offers=c.offers.filter(o=>o.accepted);refill(s,c);note(s,SEASONS[Math.floor(c.elapsed/1200)%4]+' begins · accepted work is safe; unaccepted opportunities have changed');}
+}
+function restore(s,f,raw){
+ const bad=()=>{throw Error('Invalid native chronicle. Your original save has not been changed.');};
+ if(!keys(raw,'pin,started,elapsed,serial,offers,partners,projects,standing,ledger,reservations,partnerWork,specialist,festivalTickets,coast,townName,awning,city'))bad();const c=copy(raw);
+ if(!['harbour','rocky','marsh','windy'].includes(c.coast)||typeof c.townName!=='string'||c.townName.trim()!==c.townName||c.townName.length<1||c.townName.length>40||/[\x00-\x1f\x7f]/.test(c.townName)||!['terracotta','teal','cream'].includes(c.awning))bad();
+ if(c.pin!==null&&(typeof c.pin!=='string'||c.pin.length>80||! /^(direction:(industry|coast|community)|year:request-\d+|chronicle:[a-z]+|festival|guide)$/.test(c.pin)))bad();
+ if(typeof c.started!=='boolean'||!Number.isFinite(c.elapsed)||c.elapsed<0||c.elapsed>=1200*1000000||!integer(c.serial,100000000)||!integer(c.standing)||c.started&&f.stage!==4)bad();
+ if(!keys(c.partners,Object.keys(PARTNERS).join())||Object.values(c.partners).some(n=>!integer(n)))bad();
+ if(!Array.isArray(c.offers)||c.offers.length>3||new Set(c.offers.map(o=>o.kind)).size!==c.offers.length||new Set(c.offers.map(o=>o.id)).size!==c.offers.length)bad();
+ const slots=a=>Array.isArray(a)&&a.length<=3&&new Set(a).size===a.length&&a.every(n=>integer(n,2));
+ for(const o of c.offers){if(!keys(o,'id,kind,season,theme,size,items,accepted,choice,boats,eligible,routes')||!/^request-[1-9]\d*$/.test(o.id)||Number(o.id.slice(8))>c.serial||(o.theme!==null&&(!PROJECTS.some(p=>p.id===o.theme)||c.projects[o.theme]?.stage!==4))||!integer(o.kind,2)||!integer(o.season,Math.floor(c.elapsed/1200))||![6,12,18].includes(o.size)||!Array.isArray(o.items)||o.items.length!==2||o.items.some(i=>!Object.hasOwn(E.ITEMS,i))||typeof o.accepted!=='boolean'||![null,0,1].includes(o.choice)||!slots(o.boats)||!slots(o.eligible)||!Array.isArray(o.routes)||new Set(o.routes).size!==o.routes.length||o.routes.some(r=>!['quarry','island'].includes(r))||!o.accepted&&(o.choice!==null||o.boats.length||o.eligible.length||o.routes.length)||o.kind!==1&&(o.boats.length||o.eligible.length||o.routes.length)||o.kind!==2&&o.choice!==null)bad();}
+ if(!c.partnerWork||typeof c.partnerWork!=='object'||Array.isArray(c.partnerWork)||Object.entries(c.partnerWork).some(([id,n])=>!Object.hasOwn(PARTNERS,id)||!integer(n,4)||n===0||c.partners[id]<[1,3,6,15][n-1])||c.specialist!==null&&(!Object.hasOwn(PARTNERS,c.specialist)||(c.partnerWork[c.specialist]||0)<3))bad();
+ if(!c.projects||typeof c.projects!=='object'||Array.isArray(c.projects)||Object.keys(c.projects).length>8)bad();
+ for(const[id,p]of Object.entries(c.projects)){if(!PROJECTS.some(d=>d.id===id)||!keys(p,'branch,stage,boats,eligible,routes')||![0,1].includes(p.branch)||!integer(p.stage,4)||!slots(p.boats)||!slots(p.eligible)||!Array.isArray(p.routes)||new Set(p.routes).size!==p.routes.length||p.routes.some(r=>!['quarry','island'].includes(r))||p.stage<2&&(p.boats.length||p.routes.length||p.eligible.length)||p.stage>2&&(p.boats.length<2||p.routes.length<2))bad();}
+ if(Object.values(c.projects).filter(p=>p.stage<4).length>1)bad();
+ if(!Array.isArray(c.ledger)||c.ledger.length>32)bad();for(const m of c.ledger)if(!keys(m,'id,title,body,seconds,season')||['id','title','body'].some(k=>typeof m[k]!=='string'||m[k].length>300)||!Number.isFinite(m.seconds)||m.seconds<0||m.seconds>s.seconds||!integer(m.season,Math.floor(c.elapsed/1200)))bad();
+ if(!c.reservations||typeof c.reservations!=='object'||Array.isArray(c.reservations)||Object.keys(c.reservations).length>16)bad();
+ for(const[goal,held]of Object.entries(c.reservations)){const cost=goalCost(c,goal,f,s);if(!cost||!held||typeof held!=='object'||Array.isArray(held)||!Object.keys(held).length)bad();for(const[k,n]of Object.entries(held))if(!integer(n,1000)||n===0||n>(cost[k]||0)||(s.stock[k]||0)+n>1e9)bad();}
+ if(c.festivalTickets){const t=c.festivalTickets;if(f.stage!==4||!keys(t,'next,slots')||!integer(t.next,1000001)||!Array.isArray(t.slots)||t.slots.length!==2||t.slots.some(p=>!keys(p,'epoch,template')||!integer(p.epoch,t.next-1)||!integer(p.template,3)))bad();}
+ if(!c.started&&(c.elapsed||c.serial||c.offers.length||Object.keys(c.projects).length||c.standing||c.ledger.length||Object.values(c.partners).some(Boolean)||Object.keys(c.reservations).some(g=>!g.startsWith('native-festival:'))||Object.keys(c.partnerWork).length||c.specialist!==null))bad();
+ if(c.started&&c.offers.length!==3)bad();Y.restore(s,c);return c;
+}
+function view(s,c,f){const live=c||freshChronicle(),season=Math.floor(live.elapsed/1200);return {city:Y.view(live),coast:live.coast,townName:live.townName,awning:live.awning,started:live.started,unlocked:f.stage===4,pin:live.pin,season:SEASONS[season%4],year:Math.floor(season/4)+1,remaining:1200-live.elapsed%1200,standing:live.standing,households:households(s),
+ offers:live.offers.map(o=>({id:o.id,title:requestTitle(o),partner:PARTNERS[partner(o)].name,body:o.kind===1?(live.coast==='windy'?'Complete passenger services with two different boats, returning from both shores.':'Choose two different boats and complete a passenger service with each.'):o.kind===2?'Choose the visitors you want to welcome. Your choice determines the supplies you contribute.':'Finished supplies help a named neighbour. Stock already reserved for another project stays protected.',accepted:o.accepted,kind:o.kind,boats:o.boats.length,choice:o.choice===null?null:theme(o).choices[o.choice],goal:'year:'+o.id,cost:requestCost(o)})),
+ partners:Object.entries(PARTNERS).map(([id,d])=>({id,...d,requests:live.partners[id],work:live.partnerWork[id]||0,assigned:live.specialist===id,level:STEPS.filter(n=>live.partners[id]>=n).length,next:STEPS.find(n=>live.partners[id]<n)||null})),
+ projects:PROJECTS.slice(0,Math.min(8,Object.values(live.projects).filter(p=>p.stage===4).length+2)).map(d=>{const p=live.projects[d.id];return {id:d.id,title:d.title,partner:PARTNERS[d.partner].name,branches:d.branches,outcomes:d.outcomes,art:d.art,stage:p?.stage??-1,branch:p?.branch??-1,boats:p?.boats.length||0,routes:p?.routes.length||0,usedBoats:p?.boats||[],missions:projectMissions(live,d.id),transport:PROJECT_TRANSPORT[d.id],goal:p?'chronicle:'+d.id+':'+p.stage:null,materials:d.items,needsStanding:['seawall','belltower','school'].includes(d.id)&&live.standing<1};}),memories:live.ledger};}
+
+Object.assign(exports,{SEASONS,PARTNERS,STEPS,PROJECTS,PROJECT_TRANSPORT,projectMissions,freshChronicle,enableFestival,canMake,projectCost,goalCost,goalTitle,reserve,release,exportTown,planTown,PARTNER_ITEMS,partnerCost,actions,households,mutate,departure,tick,restore,view});
+},
+"native/city-port.js":function(exports,require){
+// Native city voyages occupy real shared-engine boats without extending browser route schemas.
+const E=require("dist/engine.js");
+const CARGO={provisions:6,cloth:6,wine:6};
+const EXPEDITIONS=[['Chart the sheltered coves','Study the city potteries'],['Invite the coastal navigators','Invite the master ceramicists']];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const note=(s,t)=>{s.log.unshift(t);s.log=s.log.slice(0,5);};
+function freshCity(){return {serial:0,voyages:[null,null,null],glaze:0,ceramics:0,job:null,chapter:0,choices:[],explored:[]};}
+function unlocked(c){return c.projects.school?.stage===4;}
+function eligible(s,c,slot){const b=s.fleet.boats[slot];return unlocked(c)&&b?.type==='coaster'&&b.upgrade==='cargo'&&!b.trip&&!c.city.voyages[slot];}
+function spend(s,cost){if(!E.canAfford(s,cost))return false;for(const[k,n]of Object.entries(cost)){if(k==='coins')s.coins-=n;else s.stock[k]-=n;}return true;}
+function voyageReason(s,c,slot){
+ const b=s.fleet.boats[slot];
+ if(!b)return 'Add a coaster to this berth, then fit Expanded hold.';
+ if(b.trip||c.city.voyages[slot])return 'This boat is at sea. Choose another berth or wait for its return.';
+ if(b.type!=='coaster')return 'Rebuild this cutter as a coaster below, or choose a coaster in another berth.';
+ if(b.upgrade!=='cargo')return 'Fit Expanded hold in Boat upgrades & recall below.';
+ const missing=Object.entries(CARGO).filter(([k,n])=>E.available(s,k)+(c.reservations['city:'+slot]?.[k]||0)<n);
+ return missing.length?'Prepare city cargo: '+missing.map(([k,n])=>(E.ITEMS[k]?.name||k)+' '+Math.min(n,E.available(s,k)+(c.reservations['city:'+slot]?.[k]||0))+'/'+n).join(' · ')+'. Use Plan supplies to make the remainder.':'';
+}
+function actions(s,c){
+ if(!unlocked(c))return [];const y=c.city,out=[];
+ for(let slot=0;slot<3;slot++){
+  if(s.fleet.boats[slot]?.type==='cutter')out.push({fn:'chronicleCityRefit',args:[slot,y.serial],category:'Fleet',title:'Berth '+(slot+1)+' · rebuild cutter as coaster',cost:E.FLEET_BOATS.coaster.cost,reason:'The boat must be idle. Rebuilding uses the existing coaster purchase cost and retains installed equipment.',destructive:true});
+  out.push({fn:'chronicleCitySail',args:[slot,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · City port · 240s · return with 6 glaze',cost:CARGO,reason:voyageReason(s,c,slot)||'The city storehouse is full. Decorate or contribute ceramics before another import.'});
+  if(y.voyages[slot])out.push({fn:'chronicleCityRecall',args:[slot,y.voyages[slot].epoch],category:'Fleet',title:'Recall city voyage · berth '+(slot+1),cost:{},reason:'',destructive:true});
+  const stage=y.chapter-1;
+  if(stage>=0&&stage<2&&y.choices.length>stage&&!y.explored.includes(stage))out.push({fn:'chronicleCityExplore',args:[slot,stage,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · '+EXPEDITIONS[stage][y.choices[stage]]+' · 240s',cost:CARGO,reason:'Choose an idle coaster with Expanded hold and prepare its city cargo. Only one crew can undertake this expedition.'});
+ }
+ out.push({fn:'chronicleCityCraft',args:[y.serial],title:'Decorate ceramics · 2 glaze + 2 jars → 2 ceramics · 30s',cost:{jars:2},reason:'Needs 2 imported glaze, 2 finished jars and a free decorating bench.'});
+ if(y.chapter<3)out.push({fn:'chronicleCityDeliver',args:[y.chapter],title:['Furnish the city gallery','A gift for the coastal visitors','The Porto Lume collection'][y.chapter]+' · '+[6,12,18][y.chapter]+' ceramics',cost:{},reason:y.chapter>0&&!y.explored.includes(y.chapter-1)?'Complete your chosen expedition before this collection.':'Decorate enough ceramics to complete this collection.'});
+ if(y.chapter>0&&y.chapter<=2&&y.choices.length<y.chapter)for(let choice=0;choice<2;choice++)out.push({fn:'chronicleCityChoose',args:[y.chapter-1,choice],title:EXPEDITIONS[y.chapter-1][choice],cost:{},reason:''});
+ return out;
+}
+function mutate(s,c,fn,args){
+ if(!unlocked(c))return false;const y=c.city;
+ if(fn==='chronicleCityRefit'){const[slot,epoch]=args,b=s.fleet.boats[slot];if(epoch!==y.serial||b?.type!=='cutter'||b.trip||y.voyages[slot]||!spend(s,E.FLEET_BOATS.coaster.cost))return false;b.type='coaster';b.repeat=null;y.serial++;note(s,'Coaster rebuilt in berth '+(slot+1)+' · equipment retained');return true;}
+ if(fn==='chronicleCitySail'||fn==='chronicleCityExplore'){
+  const slot=args[0],expedition=fn==='chronicleCityExplore'?args[1]:null,epoch=fn==='chronicleCityExplore'?args[2]:args[1];
+  if(!Number.isInteger(slot)||slot<0||slot>2||epoch!==y.serial||!eligible(s,c,slot)||y.glaze+6*(1+y.voyages.filter(Boolean).length)>1000000)return false;
+  if(expedition!==null&&(expedition!==y.chapter-1||expedition>1||y.choices.length<=expedition||y.explored.includes(expedition)||y.voyages.some(v=>v?.expedition===expedition)))return false;
+  if(!spend(s,CARGO))return false;s.fleet.boats[slot].repeat=null;
+  y.voyages[slot]={epoch:y.serial++,left:240,expedition};note(s,(expedition===null?'City trading voyage':EXPEDITIONS[expedition][y.choices[expedition]])+' departed · berth '+(slot+1));return true;
+ }
+ if(fn==='chronicleCityRecall'){
+  const[slot,epoch]=args,v=y.voyages[slot];if(!v||v.epoch!==epoch||Object.entries(CARGO).some(([k,n])=>s.stock[k]+n>1e9))return false;
+  for(const[k,n]of Object.entries(CARGO))s.stock[k]+=n;y.voyages[slot]=null;note(s,'City voyage recalled · cargo returned; no expedition progress awarded');return true;
+ }
+ if(fn==='chronicleCityCraft'){
+  if(args[0]!==y.serial||y.job||y.glaze<2||y.ceramics+2>1000000||!E.unlocked(s,'jars')||!spend(s,{jars:2}))return false;
+  y.glaze-=2;y.job={left:30};y.serial++;note(s,'Decorating ceramics · 30 game seconds');return true;
+ }
+ if(fn==='chronicleCityDeliver'){
+  const stage=args[0];if(stage!==y.chapter||stage>2||y.ceramics<[6,12,18][stage]||stage>0&&!y.explored.includes(stage-1))return false;
+  y.ceramics-=[6,12,18][stage];y.chapter++;note(s,stage===2?'The Porto Lume collection is complete · a lasting city partnership':'The city collection is delivered · choose your next coastal expedition');return true;
+ }
+ if(fn==='chronicleCityChoose'){
+  const[stage,choice]=args;if(![0,1].includes(stage)||stage!==y.chapter-1||y.choices.length!==stage||![0,1].includes(choice))return false;
+  y.choices.push(choice);note(s,EXPEDITIONS[stage][choice]+' chosen · assign a coaster in Fleet');return true;
+ }
+ return false;
+}
+function tick(s,c,elapsed){const y=c.city;for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;v.left=Math.max(0,v.left-elapsed);if(v.left===0){y.glaze+=6;if(v.expedition!==null&&!y.explored.includes(v.expedition))y.explored.push(v.expedition);y.voyages[slot]=null;note(s,'City crew returned · 6 glaze'+(v.expedition!==null?' · expedition completed':''));}}
+ if(y.job){y.job.left=Math.max(0,y.job.left-elapsed);if(y.job.left===0){y.ceramics+=2;y.job=null;note(s,'Decorated ceramics complete · +2 ceramics');}}
+}
+function browserRefund(s,c){const next=clone(s);for(const v of c.city.voyages)if(v)for(const[k,n]of Object.entries(CARGO)){if(next.stock[k]+n>1e9)throw Error('Recall city voyages before exporting this town.');next.stock[k]+=n;}if(c.city.job){if(next.stock.jars+2>1e9)throw Error('Finish the decorating bench before exporting.');next.stock.jars+=2;}return next;}
+function restore(s,c){
+ const y=c.city,bad=()=>{throw Error('Invalid city-port progress.');},int=(n,max=1000000)=>Number.isSafeInteger(n)&&n>=0&&n<=max;
+ if(!y||typeof y!=='object'||Array.isArray(y)||Object.keys(y).sort().join()!=='ceramics,chapter,choices,explored,glaze,job,serial,voyages'||!int(y.serial,100000000)||!int(y.glaze)||!int(y.ceramics)||!int(y.chapter,3)||!Array.isArray(y.voyages)||y.voyages.length!==3||!Array.isArray(y.choices)||y.choices.length>2||y.choices.length>y.chapter||y.choices.some(n=>![0,1].includes(n))||!Array.isArray(y.explored)||new Set(y.explored).size!==y.explored.length||y.explored.some(n=>!int(n,1)||n>=y.choices.length))bad();
+ if(y.chapter>=2&&!y.explored.includes(0)||y.chapter===3&&!y.explored.includes(1))bad();
+ for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;const b=s.fleet.boats[slot];if(Object.keys(v).sort().join()!=='epoch,expedition,left'||!int(v.epoch,y.serial-1)||!Number.isFinite(v.left)||v.left<=0||v.left>240||v.expedition!==null&&(!int(v.expedition,1)||v.expedition!==y.chapter-1||v.expedition>=y.choices.length||y.explored.includes(v.expedition))||b?.type!=='coaster'||b.upgrade!=='cargo'||b.trip||b.repeat)bad();}
+ const expeditions=y.voyages.filter(v=>v?.expedition!==null&&v?.expedition!==undefined).map(v=>v.expedition);if(new Set(expeditions).size!==expeditions.length||y.glaze+6*y.voyages.filter(Boolean).length>1000000)bad();
+ if(y.job&&(typeof y.job!=='object'||Array.isArray(y.job)||Object.keys(y.job).join()!=='left'||!Number.isFinite(y.job.left)||y.job.left<=0||y.job.left>30||y.ceramics+2>1000000))bad();
+ if(!unlocked(c)&&JSON.stringify(y)!==JSON.stringify(freshCity()))bad();return y;
+}
+function view(c){return {unlocked:unlocked(c),glaze:c.city.glaze,ceramics:c.city.ceramics,chapter:c.city.chapter,jobLeft:c.city.job?.left||0,choices:c.city.choices.map((choice,stage)=>EXPEDITIONS[stage][choice]),explored:c.city.explored,activeVoyages:c.city.voyages.filter(Boolean).length};}
+function boats(s,c){return s.fleet.boats.map((b,i)=>b&&c?.city.voyages[i]?{...b,trip:{route:'city',duration:240,left:c.city.voyages[i].left,ferry:false}}:b);}
+
+Object.assign(exports,{CARGO,EXPEDITIONS,freshCity,unlocked,actions,mutate,tick,browserRefund,restore,view,boats});
 },
 };const cache={};function require(id){if(cache[id])return cache[id];const e={};cache[id]=e;factories[id](e,require);return e;}globalThis.Harbour=require("native/bridge.js");})();
