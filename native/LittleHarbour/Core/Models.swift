@@ -200,6 +200,7 @@ extension HarbourAction {
         if name == "chronicleBegin" { return "Begin the year" }
         if name == "chronicleAccept" { return "Accept request" }
         if name == "chronicleChoose" || name == "chronicleProject" { return "Choose this path" }
+        if name == "chronicleBuild" && args.count > 1 && args[1] as? Int == 2 || name == "chronicleDeliver" && title == "Welcome both crews" { return "Welcome crews" }
         if name == "chronicleDeliver" || name == "chronicleBuild" || name == "chroniclePartner" || name == "chronicleHouseholds" { return "Contribute & continue" }
         if name == "chronicleSpecialist" { return "Assign adviser" }
         if name == "chronicleAdvice" { return "Reconsider choice" }

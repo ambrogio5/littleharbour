@@ -72,7 +72,8 @@ import SwiftUI
     // Presentation anchors align fixed coastal landmarks to the painted shore.
     // Saved neighbourhood plots and all economic coordinates remain untouched.
     func mapPosition(_ entity: WorldEntity) -> CGPoint {
-        let shore: [String: CGPoint] = ["pier": CGPoint(x: 1150, y: 2320), "fishing": CGPoint(x: 530, y: 2120), "ferry": CGPoint(x: 1400, y: 2060), "lighthouse": CGPoint(x: 1510, y: 1780)]
+        let shore: [String: CGPoint] = ["pier": CGPoint(x: 1150, y: 2320), "fishing": CGPoint(x: 530, y: 2120), "ferry": CGPoint(x: 1400, y: 2060), "lighthouse": CGPoint(x: 1510, y: 1780),
+            "chronicle-belltower": CGPoint(x: 500, y: 1900), "chronicle-regatta": CGPoint(x: 960, y: 1950)]
         let p = shore[entity.id] ?? CGPoint(x: entity.x, y: entity.y)
         return CGPoint(x: p.x, y: 2700 - p.y)
     }

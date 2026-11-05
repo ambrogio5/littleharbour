@@ -21,7 +21,7 @@ struct GoalsPanel: View {
                         Spacer()
                         Button { store.pin(nil) } label: { Image(systemName: "pin.slash").frame(width: 44, height: 44) }.accessibilityLabel("Unpin goal")
                     }
-                    Button("Continue my next step") { store.nextPinnedStep() }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).accessibilityIdentifier("continue-goal")
+                    Button("Continue my next step") { store.nextPinnedStep() }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("continue-goal")
                 }
                 if !c.started {
                     Image(uiImage: HarbourArtwork.image("square-upgraded")).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: 130).accessibilityHidden(true)
@@ -99,7 +99,10 @@ struct GoalsPanel: View {
             Text(r.title).font(.system(.headline, design: .serif))
             if let choice = r.choice { Text(choice).font(.subheadline.bold()) }
             Text(r.body).font(.caption).fixedSize(horizontal: false, vertical: true)
-            if r.accepted && r.kind == 1 { Text("\(r.boats) / 2 different boats have returned").font(.subheadline.bold()) }
+            if r.accepted && r.kind == 1 {
+                Text("\(r.boats) / 2 different boats have returned").font(.subheadline.bold())
+                if (store.snapshot?.boats.compactMap { $0 }.count ?? 0) < 2 { Text("You need a second boat. Choose an empty berth in Fleet to add one.").font(.caption) }
+            }
             ForEach(controls("chronicleAdvice", r.id)) { ManagementAction(action: $0) }
             ForEach(controls(r.accepted ? (r.kind == 2 && r.choice == nil ? "chronicleChoose" : "chronicleDeliver") : "chronicleAccept", r.id)) { ManagementAction(action: $0) }
             if r.accepted {
@@ -127,7 +130,10 @@ struct GoalsPanel: View {
                     Text("Pietra Cove: \(p.transport[i][0]) · Olive Island: \(p.transport[i][1]) · two different boats").font(.caption2).foregroundStyle(HarbourTheme.muted)
                     if let action = controls("chronicleProject", p.id).first(where: { $0.invocation?.1.last as? Int == i }) { ManagementAction(action: action) }
                 }
-                if p.needsStanding { Text("First share a meal with a built household to earn town standing.").font(.caption) }
+                if p.needsStanding {
+                    Text("First share a meal with a built household to earn town standing.").font(.caption)
+                    Button("Open neighbourhood") { store.navigate("Neighbourhood") }.frame(minHeight: 44)
+                }
             } else {
                 Text(p.branches[p.branch]).font(.subheadline.bold())
                 ProgressView(value: Double(p.stage), total: 4)

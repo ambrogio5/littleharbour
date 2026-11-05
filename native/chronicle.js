@@ -73,7 +73,7 @@ export function actions(s,c,f){
  }
  const done=PROJECTS.filter(d=>c.projects[d.id]?.stage===4).length;
  for(const d of PROJECTS.slice(0,Math.min(PROJECTS.length,done+2))){const p=c.projects[d.id];
-  if(!p){for(let branch=0;branch<2;branch++)out.push({fn:'chronicleProject',args:[d.id,branch],title:'Choose · '+d.branches[branch],cost:{},reason:'Finish the current chronicle project first.'});}
+  if(!p){for(let branch=0;branch<2;branch++)out.push({fn:'chronicleProject',args:[d.id,branch],title:'Choose · '+d.branches[branch],cost:{},reason:['seawall','belltower','school'].includes(d.id)&&c.standing<1?'Share bread with a built household to earn town standing. Open Neighbourhood if you need a home.':'Finish the current chronicle project first.'});}
   else if(p.stage<4)out.push({fn:'chronicleBuild',args:[d.id,p.stage],title:['Lay the foundations','Equip the place','Welcome both crews','Open '+d.title.toLowerCase()][p.stage],cost:projectCost(c,d.id),goal:'chronicle:'+d.id+':'+p.stage,reason:p.stage===2?'Complete the two listed project missions using different boats after this stage begins. Cargo and passenger work count only for their assigned coast.':'Make the finished supplies for this stage.'});
  }
  if(households(s)>0)out.push({fn:'chronicleHouseholds',args:[c.standing],title:'Supply the neighbourhood table',cost:{bread:6*households(s)},goal:null,reason:'Share bread with the households actually living here. Each delivery earns town standing.'});

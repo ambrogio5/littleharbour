@@ -35,9 +35,12 @@ import XCTest
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "city-ready", withExtension: "json")), encoding: .utf8)
         app.launch()
+        XCTAssertTrue(app.buttons["fit-town"].waitForExistence(timeout: 20)); app.buttons["fit-town"].tap()
+        let coast = XCTAttachment(screenshot: app.screenshot()); coast.name = "Completed civic coast"; coast.lifetime = .keepAlways; add(coast)
         XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["map-goals"].tap()
         let horizon = app.segmentedControls["goal-horizon"]
         XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["Projects"].tap()
+        let projects = XCTAttachment(screenshot: app.screenshot()); projects.name = "City partnership after the civic projects"; projects.lifetime = .keepAlways; add(projects)
         let choose = app.buttons["choose-city-boat"]
         XCTAssertTrue(reveal(choose, in: app)); choose.tap()
         let mission = app.segmentedControls["mission-type"]

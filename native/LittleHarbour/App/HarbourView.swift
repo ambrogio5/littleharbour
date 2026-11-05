@@ -284,7 +284,7 @@ struct InspectorView: View {
                     if let s = store.snapshot {
                         if let title = store.pinnedTitle, store.category != "Goals" {
                             HStack(alignment: .center, spacing: 8) {
-                                Button { store.navigate("Goals") } label: { Label(title, systemImage: "pin.fill").font(.caption.bold()).multilineTextAlignment(.leading) }.accessibilityIdentifier("pinned-goal")
+                                Button { store.navigate("Goals") } label: { Label(title, systemImage: "pin.fill").font(.caption.bold()).multilineTextAlignment(.leading).frame(minHeight: 44) }.accessibilityIdentifier("pinned-goal")
                                 Spacer(minLength: 0)
                                 Button("Next step") { store.nextPinnedStep() }.font(.caption.bold()).frame(minHeight: 44).accessibilityIdentifier("pinned-next-step")
                             }.padding(.horizontal, 10).background(HarbourTheme.sea.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
