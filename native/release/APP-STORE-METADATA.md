@@ -1,6 +1,6 @@
 # Little Harbour — release metadata draft
 
-Candidate: **1.0.0 (13)**.
+Candidate: **1.0.0 (15)**. Local QA build; not uploaded or accepted for release.
 
 Build 13 reclaims unused bottom space for the map and activity pages while retaining home-gesture clearance and full-size touch targets.
 
@@ -73,9 +73,7 @@ Keep an exported copy before testing recovery. Towns stay on this device; there 
 
 Use the checked-in Xcode project and a Release archive with the owner’s final bundle identifier and team. Do not upload the isolated `Harbour QA` identity as the production app. Complete the physical-device matrix and remaining submission checks in `../docs/RELEASE.md`; do not label simulator evidence as device certification.
 
-Apple’s current requirements page states Xcode 26 or later with iOS/iPadOS 26 SDKs or later for uploads from 28 April 2026. The local Xcode 27.1 build exceeds that SDK floor; confirm the chosen Xcode release is accepted by App Store Connect when uploading. Check the current requirements again immediately before submission:
-https://developer.apple.com/news/upcoming-requirements/
-https://developer.apple.com/app-store/review/guidelines/
+Apple’s current requirements page states Xcode 26 or later with iOS/iPadOS 26 SDKs or later for uploads from 28 April 2026. This was rechecked on 5 November 2026 against [Apple’s requirements](https://developer.apple.com/news/upcoming-requirements/). That page also lists iOS 13 or later as the deployment-target minimum since 9 September 2026; this app targets iOS 17. The local archive uses Xcode 27.2, but acceptance of that particular Xcode release by App Store Connect has not been verified. CI’s Xcode 16.4 build is compatibility evidence, not an eligible submission archive. Recheck requirements and the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) immediately before the owner-controlled upload.
 
 App privacy draft: Data Not Collected, based on this binary’s offline implementation. No tracking or advertising identifiers. Confirm against the final signed archive and any added SDKs. Privacy manifest required reasons: system uptime for active-time intervals; UserDefaults for app-only settings. Encryption setting currently declares no non-exempt encryption. Confirm the final product’s questionnaire answers with the owner.
 
