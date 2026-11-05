@@ -29,6 +29,10 @@ Release target: **free App Store download**, confirmed by the owner on 1 Novembe
 - Price: **Free**. No advertising, in-app purchases, subscriptions or paid unlocks are included.
 - Territories, final age-rating questionnaire, copyright owner, review contact and trader status: remaining owner decisions; do not infer these from the source repository.
 
+## Build 15 candidate
+
+Adds persistent goals, an optional four-season harbour year, five partner ladders, eight branching civic projects, separate coast saves, and Porto Grande voyages importing glaze for decorated ceramics. The new native envelope 4 is intentionally richer than browser exports. See the expansion verification record before distribution; final device and human acceptance are not implied by this draft.
+
 ## Description
 
 Make a little harbour your own.
@@ -36,6 +40,8 @@ Make a little harbour your own.
 Begin with a wheat field, a stone mill and a bakery beside a Mediterranean bay. Turn harvests into cargo, earn the supplies for your first workshop, and choose how your town will grow.
 
 Follow five chapters from the working quay to a living coastline, then bring the coast together for a harbour festival. Restore the waterfront, open a market, plant inland terraces and build a fleet. Furnish homes, support your residents’ plans and welcome the first passenger ferry. Choose a food fair or craft exhibition, bring visitors from both shores and earn lasting courtyard decorations.
+
+After the festival, begin a harbour year of optional requests and lasting projects. Help familiar neighbours, reserve supplies for a chosen goal, and decide how eight civic places will grow. Open a city partnership with your own coaster, bring home glaze and make decorated ceramics. Create a separate coast when you want a fresh town while keeping the original.
 
 Every building has its place in a layered, painted town. Pan across the hillside, pinch to explore the coast, and tap a site to see its work. Native controls adapt to iPhone and iPad, with building lists and zoom buttons as alternatives to map gestures.
 
@@ -72,3 +78,5 @@ https://developer.apple.com/news/upcoming-requirements/
 https://developer.apple.com/app-store/review/guidelines/
 
 App privacy draft: Data Not Collected, based on this binary’s offline implementation. No tracking or advertising identifiers. Confirm against the final signed archive and any added SDKs. Privacy manifest required reasons: system uptime for active-time intervals; UserDefaults for app-only settings. Encryption setting currently declares no non-exempt encryption. Confirm the final product’s questionnaire answers with the owner.
+
+Build-15 acceptance: keep a goal while browsing; reserve supplies while automation runs; finish both boats’ visitor requests; pause/reload at every civic stage; recall and complete city voyages; craft ceramics; switch separate coasts and verify the original town remains intact. Browser exports deliberately omit native progression: retain a native backup.

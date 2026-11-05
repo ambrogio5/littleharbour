@@ -1,6 +1,81 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testCoastLibraryCreatesSeparateTownAndRestoresOriginalAcrossRelaunch() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing", "--coast-library-testing"]
+        app.launchEnvironment["LH_TEST_LIBRARY"] = UUID().uuidString
+        app.launch()
+        func openLibrary() {
+            XCTAssertTrue(app.buttons["Settings and saves"].waitForExistence(timeout: 20)); app.buttons["Settings and saves"].tap()
+            let library = app.buttons["coast-library"]
+            for _ in 0..<6 { if library.exists && library.isHittable { break }; app.swipeUp() }
+            XCTAssertTrue(library.waitForExistence(timeout: 5)); library.tap()
+            XCTAssertTrue(app.textFields["town-name-editor"].waitForExistence(timeout: 5))
+        }
+        openLibrary()
+        XCTAssertEqual(app.textFields["town-name-editor"].value as? String, "Porto Lume")
+        let create = app.buttons["create-coast"]
+        for _ in 0..<8 { if create.exists && create.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(create.isHittable); create.tap()
+        for _ in 0..<8 { if app.textFields["town-name-editor"].isHittable { break }; app.swipeDown() }
+        XCTAssertEqual(app.textFields["town-name-editor"].value as? String, "A new harbour")
+        let original = app.buttons["coast-original"]
+        XCTAssertTrue(original.waitForExistence(timeout: 5)); original.tap()
+        XCTAssertEqual(app.textFields["town-name-editor"].value as? String, "Porto Lume")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Separate coast and preserved original"; shot.lifetime = .keepAlways; add(shot)
+        app.terminate(); app.launch(); openLibrary()
+        XCTAssertEqual(app.textFields["town-name-editor"].value as? String, "Porto Lume")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "A new harbour")).firstMatch.exists)
+    }
+
+    func testCityPartnershipOpensTheSelectedBoatCityMission() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "city-ready", withExtension: "json")), encoding: .utf8)
+        app.launch()
+        XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["map-goals"].tap()
+        let horizon = app.segmentedControls["goal-horizon"]
+        XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["Projects"].tap()
+        let choose = app.buttons["choose-city-boat"]
+        XCTAssertTrue(reveal(choose, in: app)); choose.tap()
+        let mission = app.segmentedControls["mission-type"]
+        XCTAssertTrue(reveal(mission, in: app)); XCTAssertTrue(mission.buttons["City"].isSelected)
+        XCTAssertTrue(app.staticTexts["Porto Grande · city port"].exists)
+        XCTAssertFalse(app.staticTexts["voyage-status"].exists, "Choosing the city mission must not spend cargo or launch a boat")
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "City partnership and individual boat mission"; shot.lifetime = .keepAlways; add(shot)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(reveal(app.buttons["boat-selector-1"], in: app)); app.buttons["boat-selector-1"].tap()
+        XCTAssertTrue(reveal(mission, in: app)); XCTAssertTrue(mission.buttons["City"].isSelected)
+    }
+
+    func testHarbourYearGoalRemainsPinnedAcrossBoatBrowsingAndRotation() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap()
+        let goals = app.buttons["town-goals"]; XCTAssertTrue(revealTownActivity(goals, in: app)); goals.tap()
+        let begin = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Begin the harbour year")).firstMatch
+        XCTAssertTrue(reveal(begin, in: app)); begin.tap()
+        let accept = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Accept · Repair the spring landing")).firstMatch
+        XCTAssertTrue(reveal(accept, in: app)); let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: accept); XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed); accept.tap()
+        let continueGoal = app.buttons["continue-goal"]
+        XCTAssertTrue(reveal(continueGoal, in: app))
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() }
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
+        XCTAssertTrue(app.buttons["pinned-goal"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["pinned-goal"].label.contains("Repair the spring landing"))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 10))
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); attachment.name = "Harbour year with retained goal in landscape"; attachment.lifetime = .keepAlways; add(attachment)
+        app.buttons["map-goals"].tap()
+        XCTAssertTrue(reveal(app.buttons["continue-goal"], in: app))
+        XCTAssertTrue(app.staticTexts["Choose what matters today"].exists)
+    }
+
     func testAdvancedWorkshopsMarketAndThirdBoatRemainReachable() throws {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
@@ -58,7 +133,7 @@ import XCTest
     private func revealTownActivity(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         let bar = app.navigationBars["Town activities"]
         guard bar.waitForExistence(timeout: 5) else { return false }
-        let list = app.collectionViews.firstMatch.exists ? app.collectionViews.firstMatch : app.tables.firstMatch.exists ? app.tables.firstMatch : app.scrollViews.firstMatch
+        let list = app.scrollViews["town-activity-grid"]
         guard list.waitForExistence(timeout: 5) else { return false }
         for _ in 0..<20 {
             let frame = list.frame, window = app.windows.firstMatch.frame
@@ -179,7 +254,7 @@ import XCTest
     func testFestivalPreparationThemeAndPassengerNavigation() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-ready", withExtension: "json")), encoding: .utf8)
-        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["town-festival"], in: app)); app.buttons["town-festival"].tap()
         func tapAction(_ identifier: String) {
             let button = app.buttons[identifier]
             // The previous action's four-second feedback inset changes scroll
@@ -205,7 +280,7 @@ import XCTest
     func testFestivalOpeningShowsRequestsJournalAndCourtyardReward() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json")), encoding: .utf8)
-        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["town-festival"], in: app)); app.buttons["town-festival"].tap()
         let open = app.buttons["action-[\"festivalCelebrate\",[\"food\"]]"]
         XCTAssertTrue(reveal(open, in: app), "The opening action must not sit beneath the Production/Trade/Build inset")
         XCTAssertTrue(open.isEnabled); open.tap()
@@ -232,7 +307,7 @@ import XCTest
         }
         let map = XCTAttachment(screenshot: app.screenshot()); map.name = "Decorated festival courtyard"; map.lifetime = .keepAlways; add(map)
         app.buttons["Town"].tap()
-        XCTAssertTrue(app.buttons["Town journal"].waitForExistence(timeout: 5)); app.buttons["Town journal"].tap()
+        XCTAssertTrue(revealTownActivity(app.buttons["Town journal"], in: app)); app.buttons["Town journal"].tap()
         XCTAssertTrue(app.staticTexts["The first harbour festival"].waitForExistence(timeout: 5))
         let journal = XCTAttachment(screenshot: app.screenshot()); journal.name = "Story journal memories"; journal.lifetime = .keepAlways; add(journal)
     }
@@ -241,7 +316,7 @@ import XCTest
         app.launchArguments = ["--ui-testing", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json")), encoding: .utf8)
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
-        app.buttons["Town"].tap(); app.buttons["town-festival"].tap()
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["town-festival"], in: app)); app.buttons["town-festival"].tap()
         let open = app.buttons["action-[\"festivalCelebrate\",[\"food\"]]"]
         XCTAssertTrue(reveal(open, in: app)); open.tap()
         let close = app.buttons["Dismiss chapter celebration"]
@@ -324,7 +399,7 @@ import XCTest
         app.launch()
         XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
-        app.buttons["Town"].tap(); app.buttons["Ferry"].tap()
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["Ferry"], in: app)); app.buttons["Ferry"].tap()
         XCTAssertTrue(app.staticTexts["Ferry"].firstMatch.waitForExistence(timeout: 5))
         let service = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Pietra Cove passenger service")).firstMatch
         // A developed town's inventory can push the service below the visible inspector.
@@ -397,7 +472,7 @@ import XCTest
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Town"].tap()
         let activities = XCTAttachment(screenshot: app.screenshot()); activities.name = "Painted town activities"; activities.lifetime = .keepAlways; add(activities)
-        let journal = app.buttons["Town journal"]; XCTAssertTrue(journal.waitForExistence(timeout: 5)); journal.tap()
+        let journal = app.buttons["Town journal"]; XCTAssertTrue(revealTownActivity(journal, in: app)); journal.tap()
         XCTAssertTrue(app.staticTexts["Town activity"].waitForExistence(timeout: 5))
     }
 
@@ -501,7 +576,7 @@ import XCTest
         XCTAssertLessThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 16, "The dock should reclaim the spare bottom strip")
         XCTAssertGreaterThanOrEqual(app.windows.firstMatch.frame.maxY - dockFrame.maxY, 10, "Keep the home gesture clear")
         app.buttons["fit-town"].tap()
-        app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
         let boat = app.buttons["boat-selector-1"]
         XCTAssertTrue(boat.waitForExistence(timeout: 5)); boat.tap()
         XCTAssertFalse(app.staticTexts["voyage-status"].exists, "Selecting a boat only previews missions")
@@ -519,7 +594,7 @@ import XCTest
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
-        app.buttons["Town"].tap(); app.buttons["town-ambitions"].tap()
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["town-ambitions"], in: app)); app.buttons["town-ambitions"].tap()
         XCTAssertTrue(app.staticTexts["Choose what your harbour becomes"].waitForExistence(timeout: 5))
         let goals = XCTAttachment(screenshot: app.screenshot()); goals.name = "Three optional town ambitions"; goals.lifetime = .keepAlways; add(goals)
         let industry = app.buttons["direction-industry"]
@@ -539,7 +614,7 @@ import XCTest
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: fixture, encoding: .utf8)
         app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20))
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
-        app.buttons["Town"].tap(); app.buttons["Fleet"].tap()
+        app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
         let boat = app.buttons["boat-selector-1"]
         XCTAssertTrue(boat.waitForExistence(timeout: 5)); boat.tap()
         XCTAssertTrue(boat.isSelected, "The whole boat card must select its berth")

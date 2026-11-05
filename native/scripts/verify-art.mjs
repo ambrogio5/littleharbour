@@ -47,3 +47,24 @@ const surround=fs.readFileSync(new URL('terrain-surround.png',base));
 if(surround.readUInt32BE(16)!==landscape.width||surround.readUInt32BE(20)!==landscape.height)throw Error('Landscape geometry changed');
 if(crypto.createHash('sha256').update(surround).digest('hex')!==landscape.outputHashes['terrain-surround'])throw Error('Landscape texture changed');
 console.log('Verified extended Mediterranean terrain and both outpainting sources.');
+
+const chronicle=JSON.parse(fs.readFileSync(new URL('chronicle-manifest.json',base),'utf8'));
+const chronicleSources=JSON.parse(fs.readFileSync(new URL('chronicle-source-manifest.json',base),'utf8'));
+for(const[file,hash]of Object.entries(chronicleSources))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Chronicle source changed: '+file);
+if(Object.keys(chronicle).length!==24)throw Error('Expected 8 landmarks with two branches and construction');
+for(const[file,hash]of Object.entries(chronicle)){
+ const png=fs.readFileSync(new URL(file,base));
+ if(png.readUInt32BE(16)!==384||png.readUInt32BE(20)!==384||png[25]!==6)throw Error('Chronicle art must be 384px RGBA: '+file);
+ if(crypto.createHash('sha256').update(png).digest('hex')!==hash)throw Error('Chronicle art changed: '+file);
+}
+console.log('Verified 24 painted chronicle branch and construction textures.');
+const advanced=JSON.parse(fs.readFileSync(new URL('advanced-manifest.json',base),'utf8'));
+for(const[file,hash]of Object.entries(advanced.hashes))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Advanced workshop source changed: '+file);
+const {ADVANCED_STATIONS}=await import('../../dist/engine.js');
+if(JSON.stringify(Object.keys(advanced.outputHashes).sort())!==JSON.stringify(Object.keys(ADVANCED_STATIONS).map(k=>'advanced-'+k+'.png').sort()))throw Error('Advanced artwork must cover every real workshop');
+for(const[file,hash]of Object.entries(advanced.outputHashes)){
+ const png=fs.readFileSync(new URL(file,base));
+ if(png.readUInt32BE(16)!==384||png.readUInt32BE(20)!==384||png[25]!==6)throw Error('Advanced workshop must be 384px RGBA: '+file);
+ if(crypto.createHash('sha256').update(png).digest('hex')!==hash)throw Error('Advanced workshop art changed: '+file);
+}
+console.log('Verified 12 advanced workshop textures and their generated source.');

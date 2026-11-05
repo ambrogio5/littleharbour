@@ -12,11 +12,14 @@ struct WorldEntity: Decodable, Identifiable {
     let level: Int
     let ripe: Bool?
     let tab, select: String?
+    let artwork: String?
     var displayLabel: String {
         guard id.hasPrefix("plot"), stage != "unbuilt" else { return label }
         return ["home": "Town house", "carpenter": "Carpenter", "weaver": "Weaving studio", "sailmaker": "Sail loft", "square": "Public square", "flaxgarden": "Flax garden"][kind] ?? label
     }
     var texture: String {
+        if let artwork, stage == "built" { return artwork }
+        if id.hasPrefix("chronicle-") { return stage == "unbuilt" ? "home-unbuilt" : stage == "building" ? id + "-construction" : id + (level == 2 ? "-alternate" : "") }
         let type: String
         switch id {
         case "specialist": type = "specialist"
@@ -29,6 +32,7 @@ struct WorldEntity: Decodable, Identifiable {
         return type + "-" + phase
     }
     var category: String {
+        if tab == "goals" { return "Goals" }
         if tab == "festival" { return "Festival" }
         if id == "pier" { return stage == "unbuilt" ? "Build" : "Trade" }
         if id == "waterfront" { return "Waterfront" }
@@ -122,6 +126,7 @@ struct HarbourStory: Decodable {
 struct MarketState: Decodable, Identifiable { let id, name: String; let plot: Int; let demand: Int? }
 struct AdvancedRefit: Decodable { let tier, epoch: Int; let mode: String }
 struct HarbourSnapshot: Decodable {
+    let chronicle: ChronicleState
     let markets: [MarketState]
     let advancedRefits: [String: AdvancedRefit]
     let legacyBrowserAvailable: Bool
@@ -157,6 +162,7 @@ struct ProjectPlan: Decodable {
     struct Requirement: Decodable, Identifiable {
         let item: String
         let required, available, incoming, missing: Int
+        let reserved: Int?
         var id: String { item }
     }
     struct Recipe: Decodable, Identifiable {
@@ -168,7 +174,7 @@ struct ProjectPlan: Decodable {
             ["field":"Grow wheat", "mill":"Mill flour", "bakery":"Bake bread", "press":"Press olive oil", "saw":"Saw planks", "fittings":"Make boat fittings", "orchard0":"Harvest upper orchard", "garden0":"Harvest upper garden", "orchard1":"Harvest lower orchard", "garden1":"Harvest lower garden"][key] ?? key.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression).capitalized
         }
     }
-    struct Blocker: Decodable { let message: String }
+    struct Blocker: Decodable { let message: String; let kind: String? }
     let title: String
     let ready: Bool
     let requirements: [Requirement]
@@ -186,6 +192,18 @@ extension HarbourAction {
     }
     var verb: String {
         guard let (name, args) = invocation else { return "Continue" }
+        if name == "chronicleCitySail" || name == "chronicleCityExplore" { return "Set sail" }
+        if name == "chronicleCityRecall" { return "Recall & refund cargo" }
+        if name == "chronicleCityCraft" { return "Decorate ceramics" }
+        if name == "chronicleCityDeliver" { return "Contribute ceramics" }
+        if name == "chronicleCityChoose" { return "Choose expedition" }
+        if name == "chronicleBegin" { return "Begin the year" }
+        if name == "chronicleAccept" { return "Accept request" }
+        if name == "chronicleChoose" || name == "chronicleProject" { return "Choose this path" }
+        if name == "chronicleDeliver" || name == "chronicleBuild" || name == "chroniclePartner" || name == "chronicleHouseholds" { return "Contribute & continue" }
+        if name == "chronicleSpecialist" { return "Assign adviser" }
+        if name == "chronicleAdvice" { return "Reconsider choice" }
+        if name == "chronicleRelease" { return "Return supplies" }
         if name == "installAdvancedRefit" { return args.count > 2 && args[2] as? String == "original" ? "Restore setup" : "Install profile" }
         if name == "switchMarketBusiness" { return "Switch business" }
         if name == "buildThirdBerth" { return "Open berth" }
@@ -291,4 +309,51 @@ struct VesselPose {
         return .init(position: CGPoint(x: 1630 + excursion * dx, y: Double(600 - slot * 240) + excursion * distance),
                      heading: atan2(distance, dx) + (trip.outward ? 0 : .pi))
     }
+}
+
+struct ChronicleState: Decodable {
+    struct City: Decodable {
+        let unlocked: Bool
+        let glaze, ceramics, chapter, activeVoyages: Int
+        let jobLeft: Double
+        let choices: [String]
+        let explored: [Int]
+    }
+    let city: City
+    struct Request: Decodable, Identifiable {
+        let id, title, partner, body, goal: String
+        let accepted: Bool
+        let kind, boats: Int
+        let choice: String?
+        let cost: [String: Int]
+    }
+    struct Partner: Decodable, Identifiable {
+        let id, name, role, line: String
+        let requests, level, work: Int
+        let assigned: Bool
+        let next: Int?
+    }
+    struct Project: Decodable, Identifiable {
+        let id, title, partner, art: String
+        let branches, outcomes: [String]
+        let materials: [[String]]
+        let stage, branch, boats, routes: Int
+        let goal: String?
+        let needsStanding: Bool
+    }
+    struct Memory: Decodable, Identifiable {
+        let id, title, body: String
+        let seconds: Double
+        let season: Int
+    }
+    let coast, townName, awning: String
+    let started, unlocked: Bool
+    let pin: String?
+    let season: String
+    let year, standing, households: Int
+    let remaining: Double
+    let offers: [Request]
+    let partners: [Partner]
+    let projects: [Project]
+    let memories: [Memory]
 }

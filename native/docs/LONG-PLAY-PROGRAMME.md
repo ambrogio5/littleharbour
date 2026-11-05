@@ -1,6 +1,6 @@
 # Long-play programme — implementation ledger
 
-The owner's 3 November 2026 prompt replaces the earlier roadmap order. It does not mean all proposals are implemented. Each increment needs its own design note, agreement on numbers, reviewable PR against `codex/native-ios`, automated evidence and human pacing feedback before advancing. No merges, force pushes, browser deployments or App Store submissions are authorized by this programme.
+The owner's 3 November 2026 prompt replaces the earlier roadmap order. It does not mean all proposals are implemented. The initial prompt required a design note and separate PR per increment. On 5 November the owner approved one integrated expansion PR for increments 2–7, with separate review sections and evidence. Approved values and implementation differences are recorded in [the expansion note](HARBOUR-YEAR-EXPANSION.md). Human pacing was deferred by the owner and is still unverified. No merges, force pushes, browser deployments or App Store submissions are authorized by this programme.
 
 ## Existing foundation
 
@@ -13,12 +13,12 @@ PRs 13 → 14 remain the foundation/native stack. PRs 15, 16 and 17 target `code
 | Increment | Deliverable and explicit boundary | Current status |
 | --- | --- | --- |
 | 1. Economy and sinks | Shared rebalance, 12 workshop refit families, third market plot and third berth. Shared schema 14 migration and browser compatibility. | [Approved values implemented](LONG-PLAY-ECONOMY.md); automated verification and QA build 14. Human pacing deferred by the owner. |
-| 2. Harbour year | Four seasons, approximately 20 simulated minutes each at 1×; 2–3 save-sized requests; one choice event per season; pause-on-exit; tint/decor static under Reduce Motion. | Unimplemented. Design costs, sizing, winter travel penalty and event alternatives before coding. |
-| 3. Partners | Existing four people plus ferry captain; five earned relationship steps: commission, discount, second choice, site cosmetic, personal project. | Names/Elena voice foundation exists; ladders, captain and seasonal request voice unimplemented. May ship with increment 2. |
-| 4. Civic life | Save-sized household needs, town standing, school/bell tower/sea wall access. | Unimplemented. Derive household capacity from actual homes/furnishings; current `residents` is a proposal counter, not a population census. |
-| 5. Chronicle | Eight projects, two visible at a time; branching choice, two distinct boats, permanent painted result; each targets two satisfying 15–20-minute sessions. | Unimplemented. Eight separately tuned deliveries, listed below. Session target is unverified. |
-| 6. New coasts | Multiple slots with current town selected by default; rocky/marsh/windy layouts and one modifier; cross-town memories/partners album. | Unimplemented. Slot-level backup/recovery and album semantics require design; never migrate by replacing the owner's town. |
-| 7. City port | Coaster plus hull refit, 3–5-minute voyages, unique imports and one new production chain; shared save/export support. | Deferred. Do not design its numeric proposal until increments 1–5 are enjoyable in human play. |
+| 2. Harbour year | Four seasons, approximately 20 simulated minutes each at 1×; 2–3 save-sized requests; one choice event per season; pause-on-exit; tint/decor static under Reduce Motion. | Implemented: four 20-minute seasons, three stable optional offers, frozen 6/12/18 supply sizes, accepted work retained, two-boat visitor requests, branch choices and seasonal decoration. No winter travel penalty; it was not approved. |
+| 3. Partners | Existing four people plus ferry captain; five earned relationship steps: commission, discount, second choice, site cosmetic, personal project. | Implemented: five named partners, five earned thresholds, four personal supply commissions, cheaper trusted commission, assigned adviser that reopens unpaid choices, cosmetic recognition. Adviser replaces the originally proposed second simultaneous commission; no price multiplier. |
+| 4. Civic life | Save-sized household needs, town standing, school/bell tower/sea wall access. | Implemented: actual homes/furnishings determine household places; bread contributions earn standing that gates the corresponding civic projects. |
+| 5. Chronicle | Eight projects, two visible at a time; branching choice, two distinct boats, permanent painted result; each targets two satisfying 15–20-minute sessions. | All eight playable with two branches, real materials, both coastal routes using different boats, reservations, persistent memories and 24 finished/construction textures. Earned paths replay in Node and JavaScriptCore. Session enjoyment and 15–20-minute target remain unverified. |
+| 6. New coasts | Multiple slots with current town selected by default; rocky/marsh/windy layouts and one modifier; cross-town memories/partners album. | Implemented: up to 16 isolated towns, validated atomic library, individual recovery histories, original town retained, three request modifiers and cross-town memory album. Coast scenery uses variants of the existing map, not three independently authored terrain layouts; the album does not transfer partner rewards. |
+| 7. City port | Coaster plus Expanded hold, four-minute voyages, glaze and ceramics; native envelope 4, explicit lossy browser export/refund boundary. | Implemented under the separately approved native-only boundary: Expanded hold coaster, four-minute voyages, glaze imports, ceramics crafting, three collections and two chosen expeditions. Human pacing remains pending; this is not evidence of enjoyable balance. |
 
 Season content: spring planks/tiles for Pietra Cove; summer passengers/bread; autumn preserves/oil/wine; winter cloth/furniture and slower island crossings. Events offer alternatives (repair a quay or accept temporary loading friction; one-time ship trade; market fair). No destructive storm, lost town, deadlines, energy or paid acceleration. Winter and event travel effects require a validated native dispatch modifier; do not rewrite the shared catalog in increments 2–5 or multiply a running trip again after reload. Reserve and Plan supplies appear for every seasonal goal; Elena routes to the actual bottleneck.
 
@@ -26,7 +26,7 @@ Chronicle order: **coastal restoration → shipwright's exhibition → sea wall 
 
 ## Carry forward every presentation proposal
 
-These remain work to do, not features claimed complete by the story or spacing PRs:
+The historical presentation list below is retained for traceability. Current expansion delivery and remaining art/UI gaps are recorded in HARBOUR-YEAR-EXPANSION.md; this table is not a claim that all proposals shipped.
 
 | Proposal from the whole-game review | Delivery point |
 | --- | --- |
@@ -45,7 +45,7 @@ These remain work to do, not features claimed complete by the story or spacing P
 | Evening terrain palette and warm windows | After ground pass; current dark mode is interface/scene tint, not a finished night scene. |
 | Dated journal memories | Increment 5 chronicle for newly recorded events; historical unknown dates remain explicitly undated. |
 
-Before finished art, present a coherent reference comparison using the existing Mediterranean whole-map direction: terrain plus individual plot/construction/built/upgraded layers, shared light and scale. Do not substitute a flattened illustration for interactive buildings. SpriteKit world, SwiftUI controls and JavaScriptCore remain the architecture; no WebView or downloaded engine. No finished art is generated by this proposal commit.
+Before finished art, present a coherent reference comparison using the existing Mediterranean whole-map direction: terrain plus individual plot/construction/built/upgraded layers, shared light and scale. Do not substitute a flattened illustration for interactive buildings. SpriteKit world, SwiftUI controls and JavaScriptCore remain the architecture; no WebView or downloaded engine. The expansion adds separately layered painted project art; it does not replace the playable map with a flattened image.
 
 ## One extension and explicit release gates
 

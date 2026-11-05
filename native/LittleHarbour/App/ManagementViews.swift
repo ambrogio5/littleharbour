@@ -18,6 +18,9 @@ struct WorkshopRefitPanel: View {
             }
             if refits.contains(where: { $0.invocation?.0 == "installAdvancedRefit" && $0.invocation?.1.first as? String == station }) {
                 Text("\(name(station)) · advanced profiles").font(.headline)
+                if tier == 3 {
+                    Image(uiImage: HarbourArtwork.image("advanced-" + station)).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: 110).accessibilityHidden(true)
+                }
                 Picker("Refit tier", selection: $tier) {
                     if (store.snapshot?.advancedRefits[station]?.tier ?? 2) <= 2 { Text("Tier 2").tag(2) }
                     Text("Tier 3").tag(3)
@@ -187,6 +190,7 @@ struct FleetPanel: View {
     private var slot: Int { store.selectedBerth }
     private func matching(_ name: String) -> [HarbourAction] { actions.filter { $0.matches(name, boat: slot) } }
     private var mission: HarbourAction? {
+        if mode == "City" { return matching("chronicleCitySail").first }
         if mode == "Passengers" { return matching("startFerryService").first { $0.invocation?.1[1] as? String == route } }
         if mode == "Circuit" { return matching("startCircuit").first { action in
             guard let stops = action.invocation?.1[1] as? [[String: Any]], stops.count == 2 else { return false }
@@ -235,6 +239,12 @@ struct FleetPanel: View {
                     missionPicker
                     if let mission { ManagementAction(action: mission) }
                     else { Text(mode == "Passengers" ? "Finish the ferry terminal to carry passengers." : "This mission is not unlocked yet. Continue the coastal projects with Elena.").font(.caption) }
+                    if mode == "City" {
+                        Text("The city needs a coaster with Expanded hold. Its voyage takes four game minutes and returns with imported glaze for the decorating bench.").font(.caption)
+                        ForEach(matching("chronicleCityRefit")) { ManagementAction(action: $0) }
+                        ForEach(matching("chronicleCityExplore")) { ManagementAction(action: $0) }
+                    }
+                    ForEach(matching("chronicleCityRecall")) { ManagementAction(action: $0) }
                     repeatControls(boat)
                     DisclosureGroup("Boat upgrades & recall") {
                         ForEach(actions.filter { $0.boatSlot == slot && ["installBoatUpgrade", "refitBoatSails", "cancelVoyage"].contains($0.invocation?.0 ?? "") }) { ManagementAction(action: $0) }
@@ -246,6 +256,7 @@ struct FleetPanel: View {
                 }
             }.onAppear { configureSelection() }.onChange(of: store.category) { _, _ in configureSelection() }
                 .onChange(of: store.guidanceFocus) { _, _ in configureSelection() }
+                .onChange(of: store.preferredFleetMission) { _, _ in configureSelection() }
         }
     }
     private var missionPicker: some View {
@@ -253,11 +264,13 @@ struct FleetPanel: View {
             Text("PLAN THIS BOAT’S MISSION").font(.caption2.bold()).foregroundStyle(HarbourTheme.muted)
             Picker("Mission type", selection: $mode) {
                 Text("Cargo").tag("Cargo"); Text("Circuit").tag("Circuit"); Text("Ferry").tag("Passengers")
+                if store.snapshot?.chronicle.city.unlocked == true { Text("City").tag("City") }
             }.pickerStyle(.segmented).accessibilityIdentifier("mission-type")
-            if mode != "Circuit" {
+            if mode == "City" { Text("Porto Grande · city port").font(.subheadline.bold()) }
+            else if mode != "Circuit" {
                 Picker("Destination", selection: $route) { Text("Pietra Cove").tag("quarry"); Text("Olive Island").tag("island") }.pickerStyle(.segmented).accessibilityIdentifier("mission-destination")
             } else { Text("Pietra Cove → Olive Island → home").font(.caption) }
-            if mode != "Passengers" {
+            if mode != "Passengers" && mode != "City" {
                 tierPicker(mode == "Circuit" ? "Pietra cargo" : "Cargo size", selection: $tier)
                 if mode == "Circuit" { tierPicker("Island cargo", selection: $islandTier) }
             }
@@ -280,8 +293,9 @@ struct FleetPanel: View {
             }
         }.padding(12).background(HarbourTheme.sea.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
-    private func destination(_ key: String) -> String { key == "quarry" ? "Pietra Cove" : key == "island" ? "Olive Island" : key.capitalized }
+    private func destination(_ key: String) -> String { key == "city" ? "Porto Grande" : key == "quarry" ? "Pietra Cove" : key == "island" ? "Olive Island" : key.capitalized }
     private func configureSelection() {
+        if store.preferredFleetMission == "City", store.snapshot?.chronicle.city.unlocked == true { mode = "City"; return }
         mode = store.category == "Ferry" ? "Passengers" : store.category == "Circuits" ? "Circuit" : "Cargo"
         let ids = store.guidanceFocus ? store.snapshot?.guidance.choices : store.snapshot?.directions.first { $0.id == store.directionFocus }?.choices
         if actions.contains(where: { (ids ?? []).contains($0.id) && $0.invocation?.0 == "buildThirdBerth" }) { store.selectedBerth = 2; return }
@@ -351,7 +365,7 @@ struct FestivalPanel: View {
                         Button("Elena · help with the next step") { store.followGuidance() }.frame(minHeight: 44).accessibilityIdentifier("festival-help")
                     } else {
                         Text("\(f.orders) festival requests fulfilled").font(.caption).accessibilityIdentifier("festival-orders")
-                        Text("Choose one request. Completing it refreshes both offers; previewing them spends nothing.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                        Text("Choose a request, then plan or reserve its supplies. Previewing spends nothing.").font(.caption).foregroundStyle(HarbourTheme.muted)
                     }
                 }
             }.padding(12).background(HarbourTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 16))

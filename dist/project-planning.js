@@ -5,8 +5,8 @@ const queuedStock=s=>Object.fromEntries(Object.keys(s.stock).map(item=>[item,inc
 
 // Planning never changes town state. Allocate all final requirements before any
 // upstream input so, for example, cloth promised to a home cannot also feed sails.
-function analyseProject(s,goal){
- const cost=goalCost(s,goal),empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
+function analyseProject(s,goal,explicitCost,explicitTitle){
+ const cost=explicitCost===undefined?goalCost(s,goal):explicitCost,empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
  if(!cost)return {plan:empty,spendable:{}};
  const incoming=queuedStock(s),pool={},spendable={},requirements=[],recipes=[],recipeIndex=new Map(),blockers=[];
  for(const item of ['coins',...Object.keys(s.stock)]){spendable[item]=Math.max(0,available(s,item));pool[item]=spendable[item]+(incoming[item]||0);}
@@ -46,18 +46,22 @@ function analyseProject(s,goal){
   slots[r.station]-=r.queueable;for(const [k,n]of Object.entries(d.cost))simulation[k]-=n*r.queueable;
  }
  const stations={};for(const r of recipes){stations[r.station]??={station:r.station,seconds:0,batches:0};stations[r.station].seconds+=r.seconds;stations[r.station].batches+=r.batches;}
- const plan={goal,title:goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
+ const plan={goal,title:explicitTitle??goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
  return {plan,spendable};
 }
 export function projectPlan(s,goal){return analyseProject(s,goal).plan;}
 
 // One pass only: finished inputs are usable now; promised output is never spent.
 // Final goods remain physically untouched without silently reserving anything.
-export function queueProject(s,goal){
- const {plan}=analyseProject(s,goal),batches=[];
+export function queueProject(s,goal){return queueCost(s,goal);}
+
+// Explicit-cost plans let native goals share the tested dependency allocator.
+export function costPlan(s,goal,cost,title){return analyseProject(s,goal,cost,title).plan;}
+export function queueCost(s,goal,cost,title){
+ const {plan}=analyseProject(s,goal,cost,title),batches=[];
  if(!plan.valid)return {queued:0,batches,reasons:['That project is no longer available.'],plan};
  for(const recipe of plan.recipes){let count=0;const limit=Math.min(recipe.queueable,maxBatches(s,recipe.key));for(let i=0;i<limit;i++){if(!start(s,recipe.key,true))break;count++;}if(count)batches.push({key:recipe.key,count});}
- const queued=batches.reduce((n,b)=>n+b.count,0),after=projectPlan(s,goal),reasons=after.blockers.map(b=>b.message);
+ const queued=batches.reduce((n,b)=>n+b.count,0),after=costPlan(s,goal,cost,title),reasons=after.blockers.map(b=>b.message);
  if(!queued&&!reasons.length&&!after.ready)reasons.push(after.recipes.length?'Wait for ingredients or free workshop queue space.':'The remaining supplies are already in production.');
  if(after.ready&&!queued)reasons.push('All project supplies are ready.');
  return {queued,batches,reasons,plan:after};

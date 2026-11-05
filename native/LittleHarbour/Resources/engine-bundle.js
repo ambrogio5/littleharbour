@@ -9,13 +9,15 @@ const E=require("dist/engine.js");
 const V=require("dist/lab/evolution.js");
 const {worldEntities}=require("dist/world-model.js");
 const {currentObjective}=require("dist/progression.js");
-const {projectPlan,queueProject}=require("dist/project-planning.js");
+const {projectPlan,queueProject,costPlan,queueCost}=require("dist/project-planning.js");
 const {sampleTown}=require("dist/demo-town.js");
 const {nextStep}=require("native/guidance.js");
 const {directions}=require("native/directions.js");
 const F=require("native/festival.js");
 const S=require("native/story.js");
-let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival();
+const C=require("native/chronicle.js");
+const Y=require("native/city-port.js");
+let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival(), chronicle=null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
 const effects={dispatch:'ship-cargo',dispatchContract:'ship-cargo',dispatchMarket:'ship-cargo',upgrade:'expand-quay',fundFerryStage:'expand-quay',buildNeighbourhood:'fund-festival',deliverResidentsSupplies:'fund-festival',openNeighbourhood:'fund-festival',fundWaterfront:'repair-waterfront',supplyWaterfront:'repair-waterfront',upgradeWorkshops:'train-artisans',invest:'train-artisans',buildMarketBusiness:'train-artisans',buildKiln:'train-artisans',buildTerrace:'restore-grove',inlandAccess:'restore-grove'};
@@ -24,10 +26,11 @@ function mutate(s,fn,args){
  // Browser exports retain a maximum target of 12; new investments require schema 14.
  if(fn==='setTarget'&&args[1]===24){if(!E.setTarget(s,args[0],12))return false;s.log[0]=E.RECIPES[args[0]].name+' · maintain 24 in stock';return true;}
  if(fn==='queueProject')return queueProject(s,...args).queued>0;if(fn==='speed'){if(![0,1,3].includes(args[0]))return false;s.speed=args[0];return true;}return E[fn](s,...args);}
-function registry(s,f=festival){
+function registry(s,f=festival,c=chronicle){
  const out=[];
  function add(category,title,fn,args=[],cost=null,reason='',goal=null,destructive=false){
   let enabled=false;try{const copy=clone(s),before=JSON.stringify(copy);enabled=!!mutate(copy,fn,args)&&JSON.stringify(copy)!==before;}catch{}
+  if(c?.city.voyages[args[0]]&&['startVoyage','startFerryService','startCircuit','setRepeatVoyage','installBoatUpgrade','refitBoatSails','cancelVoyage'].includes(fn)){enabled=false;reason='This boat is on a city voyage. Wait for its return or recall that voyage.';}
   out.push({id:JSON.stringify([fn,args]),category,title,fn,args,partner:S.partner(fn,args),detail:costText(cost),enabled,reason:enabled?'':typeof reason==='string'&&reason?reason:'Gather the required supplies, finish earlier work, or free a queue slot.',goal,destructive,cost:cost||{}});
  }
  add('Production','Harvest & replant','harvestReplant',[],null,'Wait for the wheat to ripen.');
@@ -112,9 +115,15 @@ function registry(s,f=festival){
  }
  if(s.ferry.stage<3){const f=s.ferry,d=E.FERRY_STAGES[f.stage];if(!f.funded)add('Ferry','Fund '+d.name,'fundFerryStage',[f.stage],d.cost,E.ferryFundingBlocker(s),'ferryfund:'+f.stage);else add('Ferry',`Supply ${d.name} · ${f.delivered+1}/3`,'deliverFerrySupplies',[f.stage,f.delivered],d.supplies,E.ferryDeliveryBlocker(s),`ferry:${f.stage}:${f.delivered}`);}
  for(const id of Object.keys(s.reservations))add('Reservations','Release '+(E.goalTitle(s,id)||id),'releaseReservation',[id]);
- for(const offer of F.offers(s,f)){
-  const copy=clone(s), progress=clone(f), enabled=F.mutateFestival(copy,progress,offer.fn,offer.args);
-  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Festival',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason||'Prepare the finished supplies or release reservations held for other projects.',goal:null,destructive:false});
+ for(const offer of F.offers(s,f,c?.festivalTickets)){
+  const copy=clone(s), progress=clone(f), history=c?clone(c):null,goal='native-festival:'+JSON.stringify([offer.fn,offer.args]);
+  for(const[k,n]of Object.entries(history?.reservations[goal]||{})){if(k==='coins')copy.coins+=n;else copy.stock[k]+=n;}
+  const enabled=F.mutateFestival(copy,progress,offer.fn,offer.args,history?.festivalTickets);
+  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Festival',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason||'Prepare the finished supplies or release reservations held for other projects.',goal:Object.keys(offer.cost).length?goal:null,destructive:false});
+ }
+ for(const offer of C.actions(s,c,f)){
+  const enabled=C.mutate(clone(s),clone(c||C.freshChronicle()),f,offer.fn,offer.args);
+  out.push({id:JSON.stringify([offer.fn,offer.args]),category:'Goals',...offer,detail:costText(offer.cost),enabled,reason:enabled?'':offer.reason,goal:offer.goal||null,destructive:offer.destructive||false});
  }
  return out;
 }
@@ -125,39 +134,49 @@ function checkedStockTargets(s,raw){
  return Object.fromEntries(entries);
 }
 function load(raw){
- const input=JSON.parse(raw);let next,evo,targets={},progress=F.freshFestival();
+ const input=JSON.parse(raw);let next,evo,targets={},progress=F.freshFestival(),history=null;
  if(input&&Object.hasOwn(input,'nativeVersion')){
-  if(![1,2,3].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
+  if(![1,2,3,4].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
   next=E.parseSave(JSON.stringify(input.town));evo=V.restoreEvolution(JSON.stringify(input.evolution));
   if(input.nativeVersion>=2)targets=checkedStockTargets(next,input.stockTargets);
   else if(Object.hasOwn(input,'stockTargets'))throw Error('Native stock targets require save version 2.');
-  if(input.nativeVersion===3)progress=F.restoreFestival(next,input.festival);
+  if(input.nativeVersion>=3){if(input.nativeVersion===4&&JSON.stringify(input.festival)===JSON.stringify(F.freshFestival()))progress=F.freshFestival();else progress=F.restoreFestival(next,input.festival);}
   else if(Object.hasOwn(input,'festival'))throw Error('Festival progress requires native save version 3.');
+  if(input.nativeVersion===4)history=C.restore(next,progress,input.chronicle);
+  else if(Object.hasOwn(input,'chronicle'))throw Error('Chronicle progress requires native save version 4.');
  }else{next=E.parseSave(raw);evo=V.createEvolution();}
- town=next;evolution=evo;stockTargets=targets;festival=progress;return true;
+ town=next;evolution=evo;stockTargets=targets;festival=progress;chronicle=history;return true;
 }
 function save(){
  const extended=Object.keys(stockTargets).length>0;
- return JSON.stringify({nativeVersion:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((extended||festival.stage>0)?{stockTargets}:{}),...(festival.stage>0?{festival}:{} )});
+ return JSON.stringify({nativeVersion:chronicle?4:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((chronicle||extended||festival.stage>0)?{stockTargets}:{}),...((chronicle||festival.stage>0)?{festival}:{}),...(chronicle?{chronicle}:{})});
 }
-function browserSave(){return JSON.stringify(town);}
-function legacyBrowserSave(){return E.legacyBrowserSave(town);}
-function reset(sample=false){town=sample?sampleTown():E.fresh();evolution=V.createEvolution();stockTargets={};festival=F.freshFestival();return true;}
+function browserSave(){return JSON.stringify(C.exportTown(town,chronicle));}
+function legacyBrowserSave(){return E.legacyBrowserSave(C.exportTown(town,chronicle));}
+function reset(sample=false){town=sample?sampleTown():E.fresh();evolution=V.createEvolution();stockTargets={};festival=F.freshFestival();chronicle=null;return true;}
 function tick(dt){
  // Apply native caps only during the synchronous engine step. Production costs,
  // queues, reservations and target accounting are all the original engine logic.
- const before=town.fleet.boats.map(b=>b?.trip?clone(b.trip):null);
+ const before=town.fleet.boats.map(b=>b?.trip?clone(b.trip):null),seconds=town.seconds;
  for(const key of Object.keys(stockTargets))town.targets[key]=24;
  try{E.tick(town,dt);}finally{for(const key of Object.keys(stockTargets))town.targets[key]=12;}
  F.recordArrivals(town,festival,before);
+ C.tick(town,chronicle,before,town.seconds-seconds);
  return true;
 }
 function speed(value){if(![0,1,3].includes(value))throw Error('Invalid speed');town.speed=value;return true;}
 function act(id){
  const action=registry(town).find(a=>a.id===id);if(!action||!action.enabled)return false;
  // Work on a transaction copy: reject invalid results before changing the live town.
- const next=clone(town),progress=clone(festival);
- const changed=action.fn.startsWith('festival')?F.mutateFestival(next,progress,action.fn,action.args):mutate(next,action.fn,action.args);if(!changed)return false;
+ const next=clone(town),progress=clone(festival),history=chronicle?clone(chronicle):null;
+ const nextChronicle=action.fn==='chronicleBegin'?(history||C.freshChronicle()):history;
+ if(action.fn.startsWith('festival')&&nextChronicle){
+  for(const[k,n]of Object.entries(nextChronicle.reservations[action.goal]||{})){if(k==='coins')next.coins+=n;else next.stock[k]+=n;}
+  delete nextChronicle.reservations[action.goal];
+  // Theme changes return any previous theme's unspent reserved supplies.
+  if(action.fn==='festivalChoose')for(const g of Object.keys(nextChronicle.reservations))if(g.startsWith('native-festival:')){if(!C.release(next,nextChronicle,g))return false;}
+ }
+ const changed=action.fn.startsWith('chronicle')?C.mutate(next,nextChronicle,progress,action.fn,action.args):action.fn.startsWith('festival')?F.mutateFestival(next,progress,action.fn,action.args,nextChronicle?.festivalTickets):mutate(next,action.fn,action.args);if(!changed)return false;
  const validated=E.parseSave(JSON.stringify(next));let nextEvolution=evolution;
  let effect=effects[action.fn];if(action.fn==='build')effect=action.args[0]==='olive'?'restore-grove':'expand-quay';if(action.fn==='specialise')effect=action.args[0]==='estate'?'restore-grove':'train-artisans';if(action.fn==='setTownFocus')effect=action.args[0]==='trade'?'ship-cargo':action.args[0]==='builders'?'train-artisans':'fund-festival';
  if(effect)nextEvolution=V.applyChoice(evolution,effect);
@@ -166,18 +185,40 @@ function act(id){
  if(action.fn==='setTarget'){if(action.args[1]===24)targets[action.args[0]]=24;else delete targets[action.args[0]];}
  for(const key of Object.keys(targets))if(validated.targets[key]!==12||!E.unlocked(validated,key))delete targets[key];
  if(progress.stage>0)F.restoreFestival(validated,progress);
- town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;return true;
+ if(nextChronicle)C.enableFestival(nextChronicle,progress);
+ C.departure(nextChronicle,action.fn,action.args);
+ if(nextChronicle)C.restore(validated,progress,nextChronicle);
+ town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;chronicle=nextChronicle;return true;
 }
 function resolve(option){evolution=V.resolveEvent(evolution,option);return true;}
-function reserve(goal){const next=clone(town);if(!E.reserveFor(next,goal))return false;town=E.parseSave(JSON.stringify(next));return true;}
-function plan(goal){return JSON.stringify(S.presentation(projectPlan(town,goal)));}
-function queuePlan(goal){const next=clone(town),result=queueProject(next,goal);town=E.parseSave(JSON.stringify(next));return result.queued;}
+function newCoast(coast,name){
+ if(!['rocky','marsh','windy'].includes(coast))return false;
+ const next=E.fresh(),history=C.freshChronicle();history.coast=coast;history.townName=name.trim();
+ C.restore(next,F.freshFestival(),history);reset();chronicle=history;return true;
+}
+function identity(name,awning){const history=clone(chronicle||C.freshChronicle());history.townName=name.trim();history.awning=awning;C.restore(town,festival,history);chronicle=history;return true;}
+function pin(goal){
+ if(goal!==null&&!['guide','festival',...directions(town,registry(town)).map(d=>'direction:'+d.id),...(chronicle?.offers.map(o=>'year:'+o.id)||[]),...Object.keys(chronicle?.projects||{}).map(id=>'chronicle:'+id)].includes(goal))return false;
+ const next=clone(chronicle||C.freshChronicle());next.pin=goal;C.enableFestival(next,festival);chronicle=C.restore(town,festival,next);return true;
+}
+function reserve(goal){const next=clone(town),history=chronicle?clone(chronicle):goal.startsWith('native-festival:')?C.freshChronicle():null;if(history)C.enableFestival(history,festival);const ok=C.goalCost(history,goal,festival,next)?C.reserve(next,history,goal,festival):E.reserveFor(next,goal);if(!ok)return false;const validated=E.parseSave(JSON.stringify(next));if(history)C.restore(validated,festival,history);town=validated;chronicle=history;return true;}
+function plan(goal){const cost=C.goalCost(chronicle,goal,festival,town),p=cost?costPlan(C.planTown(town,chronicle,goal),goal,cost,(registry(town).find(a=>a.goal===goal)?.title||C.goalTitle(chronicle,goal))):projectPlan(town,goal);for(const r of p.requirements)r.reserved=chronicle?.reservations[goal]?.[r.item]||town.reservations[goal]?.[r.item]||0;return JSON.stringify(S.presentation(p));}
+function queuePlan(goal){const next=clone(town),cost=C.goalCost(chronicle,goal,festival,town),held=chronicle?.reservations[goal]||{};const result=cost?queueCost(next,goal,Object.fromEntries(Object.entries(cost).map(([k,n])=>[k,n-(held[k]||0)])),(registry(town).find(a=>a.goal===goal)?.title||C.goalTitle(chronicle,goal))):queueProject(next,goal);town=E.parseSave(JSON.stringify(next));return result.queued;}
 function snapshot(){
  const entities=worldEntities(town).filter(e=>e.id!=='specialist').map(e=>{if(e.id==='mill'||e.id==='bakery'||e.id==='fishing')e.level=town.refits[e.id]?2:e.level;const rank=town.advancedRefits[e.select||e.kind]?.tier;if(rank&&e.stage==='built')e.level=rank;return e;});
  for(const [id,x,y,label]of [['boatyard',1080,1390,'Boatyard'],['estate',790,790,'Vineyard & cellar']])entities.push({id,x,y,zone:id==='estate'?'inland':'market',kind:id,label,select:id,stage:town.specialists.includes(id)?(E.underConstruction(town,id)?'building':'built'):'unbuilt',level:town.specialists.includes(id)?1:0});
- for(const e of entities){const rank=e.id==='kiln'?Math.max(town.advancedRefits.kiln?.tier||0,town.advancedRefits.preserving?.tier||0):town.advancedRefits[e.select||e.kind]?.tier;if(rank&&e.stage==='built')e.level=rank;}
+ for(const e of entities){
+  const station=e.id==='kiln'?(town.advancedRefits.preserving?.tier===3&&town.advancedRefits.kiln?.tier!==3?'preserving':'kiln'):Object.hasOwn(E.ADVANCED_STATIONS,e.id)?e.id:e.select||e.kind;
+  const rank=town.advancedRefits[station]?.tier;
+  if(rank&&e.stage==='built'){e.level=rank;if(rank===3)e.artwork='advanced-'+station;}
+ }
+ if(chronicle?.started){
+  const locations=[[300,1750],[780,1720],[1220,2460],[350,2440],[1230,1730],[200,590],[830,2470],[900,1020]];
+  for(const p of C.view(town,chronicle,festival).projects){const i=C.PROJECTS.findIndex(d=>d.id===p.id),[x,y]=locations[i];entities.push({id:'chronicle-'+p.id,x,y,zone:'harbour',kind:'chronicle-'+p.id,label:p.title,tab:'goals',stage:p.stage<=0?'unbuilt':p.stage<4?'building':'built',level:p.branch+1});}
+ }
  const actions=registry(town),baseObjective=currentObjective(town),festivalView=F.festivalView(town,festival);
  if(festivalView.unlocked){const court=entities.find(e=>e.id==='courtyard');court.tab='festival';court.label='Festival courtyard';}
+ if(chronicle?.festivalTickets&&festival.stage===4)festivalView.body='Choose between two festival requests. Completing one keeps the other offer and its reserved supplies. Your courtyard stays decorated.';
  const objective=festivalView.unlocked?{...baseObjective,chapter:6,chapterName:'Harbour festival',title:festivalView.title,description:festivalView.body,target:'festival',complete:festival.stage===4}:baseObjective;
  let guidance;
  if(festivalView.unlocked&&festival.stage<4){
@@ -193,10 +234,10 @@ function snapshot(){
   const item=Object.keys(r.output)[0],target=stockTargets[key]||town.targets[key]||0,stock=town.stock[item]||0,incoming=E.incoming(town,item);
   return [key,{station:r.station,target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
  }));
- return JSON.stringify(S.presentation({story:S.story(town,evolution,festival,objective,guidance),festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:town.fleet.boats}));
+ return JSON.stringify(S.presentation({chronicle:C.view(town,chronicle,festival),story:{...S.story(town,evolution,festival,objective,guidance),townName:chronicle?.townName||S.TOWN_NAME},festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:Y.boats(town,chronicle)}));
 }
 
-Object.assign(exports,{load,save,browserSave,legacyBrowserSave,reset,tick,speed,act,resolve,reserve,plan,queuePlan,snapshot});
+Object.assign(exports,{load,save,browserSave,legacyBrowserSave,reset,tick,speed,act,resolve,newCoast,identity,pin,reserve,plan,queuePlan,snapshot});
 },
 "dist/engine.js":function(exports,require){
 const {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES,ADVANCED_STATIONS,ADVANCED_REFITS,MARKET_SWITCH_COST,THIRD_BERTH_COST}=require("dist/catalog.js");
@@ -1181,8 +1222,8 @@ const queuedStock=s=>Object.fromEntries(Object.keys(s.stock).map(item=>[item,inc
 
 // Planning never changes town state. Allocate all final requirements before any
 // upstream input so, for example, cloth promised to a home cannot also feed sails.
-function analyseProject(s,goal){
- const cost=goalCost(s,goal),empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
+function analyseProject(s,goal,explicitCost,explicitTitle){
+ const cost=explicitCost===undefined?goalCost(s,goal):explicitCost,empty={goal,title:'Unavailable project',valid:false,ready:false,requirements:[],recipes:[],blockers:[],bottlenecks:[],queueable:0};
  if(!cost)return {plan:empty,spendable:{}};
  const incoming=queuedStock(s),pool={},spendable={},requirements=[],recipes=[],recipeIndex=new Map(),blockers=[];
  for(const item of ['coins',...Object.keys(s.stock)]){spendable[item]=Math.max(0,available(s,item));pool[item]=spendable[item]+(incoming[item]||0);}
@@ -1222,24 +1263,28 @@ function analyseProject(s,goal){
   slots[r.station]-=r.queueable;for(const [k,n]of Object.entries(d.cost))simulation[k]-=n*r.queueable;
  }
  const stations={};for(const r of recipes){stations[r.station]??={station:r.station,seconds:0,batches:0};stations[r.station].seconds+=r.seconds;stations[r.station].batches+=r.batches;}
- const plan={goal,title:goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
+ const plan={goal,title:explicitTitle??goalTitle(s,goal),valid:true,ready:requirements.every(r=>r.available>=r.required),requirements,recipes,blockers,bottlenecks:Object.values(stations).sort((a,b)=>b.seconds-a.seconds),queueable:recipes.reduce((n,r)=>n+r.queueable,0)};
  return {plan,spendable};
 }
 function projectPlan(s,goal){return analyseProject(s,goal).plan;}
 
 // One pass only: finished inputs are usable now; promised output is never spent.
 // Final goods remain physically untouched without silently reserving anything.
-function queueProject(s,goal){
- const {plan}=analyseProject(s,goal),batches=[];
+function queueProject(s,goal){return queueCost(s,goal);}
+
+// Explicit-cost plans let native goals share the tested dependency allocator.
+function costPlan(s,goal,cost,title){return analyseProject(s,goal,cost,title).plan;}
+function queueCost(s,goal,cost,title){
+ const {plan}=analyseProject(s,goal,cost,title),batches=[];
  if(!plan.valid)return {queued:0,batches,reasons:['That project is no longer available.'],plan};
  for(const recipe of plan.recipes){let count=0;const limit=Math.min(recipe.queueable,maxBatches(s,recipe.key));for(let i=0;i<limit;i++){if(!start(s,recipe.key,true))break;count++;}if(count)batches.push({key:recipe.key,count});}
- const queued=batches.reduce((n,b)=>n+b.count,0),after=projectPlan(s,goal),reasons=after.blockers.map(b=>b.message);
+ const queued=batches.reduce((n,b)=>n+b.count,0),after=costPlan(s,goal,cost,title),reasons=after.blockers.map(b=>b.message);
  if(!queued&&!reasons.length&&!after.ready)reasons.push(after.recipes.length?'Wait for ingredients or free workshop queue space.':'The remaining supplies are already in production.');
  if(after.ready&&!queued)reasons.push('All project supplies are ready.');
  return {queued,batches,reasons,plan:after};
 }
 
-Object.assign(exports,{projectPlan,queueProject});
+Object.assign(exports,{projectPlan,queueProject,costPlan,queueCost});
 },
 "dist/demo-town.js":function(exports,require){
 const {fresh,parseSave}=require("dist/engine.js");
@@ -1447,7 +1492,7 @@ function restoreFestival(s,raw){
  return {stage,choice,baselineRuns,visits:{quarry:visits.quarry,island:visits.island},orders};
 }
 function note(s,message){s.log.unshift(message);s.log=s.log.slice(0,5);}
-function offers(s,f){
+function offers(s,f,tickets=null){
  if(!available(s,f))return [];
  if(f.stage===0)return [{fn:'festivalPrepare',args:[],title:'Prepare the festival courtyard',cost:PREPARATION}];
  if(f.stage===1)return [
@@ -1455,11 +1500,11 @@ function offers(s,f){
   {fn:'festivalSupply',args:[f.choice],title:f.choice==='food'?'Stock the food fair':'Supply the craft exhibition',cost:SUPPLIES[f.choice]}
  ];
  if(f.stage===3)return [{fn:'festivalCelebrate',args:[f.choice],title:'Open the harbour festival',cost:FINALE[f.choice]}];
- if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
+ if(f.stage===4&&f.orders<1000000)return [0,1].map(index=>{const request=REQUESTS[tickets?tickets.slots[index].template:(f.orders*2+index)%REQUESTS.length];return {fn:'festivalOrder',args:[tickets?tickets.slots[index].epoch:f.orders,index],title:request.name+' · '+request.coins+' coins',cost:request.cost,reward:request.coins};});
  return [];
 }
-function mutateFestival(s,f,fn,args){
- const action=offers(s,f).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
+function mutateFestival(s,f,fn,args,tickets=null){
+ const action=offers(s,f,tickets).find(a=>a.fn===fn&&JSON.stringify(a.args)===JSON.stringify(args));
  if(!action||Object.entries(action.cost).some(([item,n])=>E.available(s,item)<n))return false;
  if(fn==='festivalChoose'&&f.choice===args[0])return false;
  if(action.reward&&s.coins+action.reward>1e9)return false;
@@ -1469,7 +1514,7 @@ function mutateFestival(s,f,fn,args){
  if(fn==='festivalChoose')f.choice=args[0];
  if(fn==='festivalSupply'){f.stage=2;f.baselineRuns=s.ferry.runs;}
  if(fn==='festivalCelebrate')f.stage=4;
- if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;}
+ if(fn==='festivalOrder'){f.orders++;s.coins+=action.reward;if(tickets){const epoch=tickets.next++;tickets.slots[args[1]]={epoch,template:(epoch*2+args[1])%REQUESTS.length};}}
  note(s,fn==='festivalCelebrate'?'The harbour festival is open · courtyard decorations and festival requests unlocked':action.title+' · saved');
  return true;
 }
@@ -1576,5 +1621,238 @@ function story(s,e,f,o,g){
 }
 
 Object.assign(exports,{TOWN_NAME,OPENINGS,COMPLETIONS,FESTIVAL_LINES,WAITING_LINES,SMALL_MOMENTS,displayText,presentation,partner,story});
+},
+"native/chronicle.js":function(exports,require){
+// Native-only harbour year. No wall-clock catch-up, random rewards or browser mutations.
+const E=require("dist/engine.js");
+const F=require("native/festival.js");
+const Y=require("native/city-port.js");
+const SEASONS=['Spring','Summer','Autumn','Winter'];
+const PARTNERS={matteo:{name:'Matteo',role:'Mason of Pietra Cove',line:'A landing should belong to the people who use it.'},lucia:{name:'Lucia',role:'Chandler of Olive Island',line:'Give a good craftsperson a reason to try something new.'},sofia:{name:'Sofia',role:'Market steward',line:'A visiting family needs more than a full storehouse.'},nico:{name:'Nico',role:'Neighbourhood organiser',line:'Let us make a place we will still enjoy next year.'},ada:{name:'Captain Ada',role:'Ferry captain',line:'Two boats can connect people as well as move cargo.'}};
+const STEPS=[1,3,6,10,15];
+const PROJECTS=[
+ {id:'restoration',title:'A coast for everyone',partner:'matteo',branches:['Public waterfront','Working landing'],items:[['tiles','furniture','cloth'],['planks','boatparts','sails']],outcomes:['A shaded promenade welcomes visiting families.','A restored landing hosts travelling craftspeople.'],art:'restoration'},
+ {id:'exhibition',title:'The shipwright’s exhibition',partner:'lucia',branches:['Living workshop','Seafaring collection'],items:[['planks','boatparts','cloth'],['sails','furniture','jars']],outcomes:['Artisans demonstrate their craft beside the boats.','Coastal keepsakes have a permanent home.'],art:'exhibition'},
+ {id:'seawall',title:'The living sea wall',partner:'matteo',branches:['Rock pools','Working steps'],items:[['stone','tiles','jars'],['stone','planks','boatparts']],outcomes:['Tide pools turn the waterfront into a place to explore.','Broad steps connect the workshops to the shore.'],art:'seawall'},
+ {id:'belltower',title:'A bell for Porto Lume',partner:'nico',branches:['Garden square','Market square'],items:[['stone','tiles','furniture'],['planks','tiles','cloth']],outcomes:['A quiet gathering place surrounds the new tower.','A gathering place for visiting makers surrounds the tower.'],art:'belltower'},
+ {id:'garden',title:'The keeper’s garden',partner:'sofia',branches:['Kitchen garden','Coastal sanctuary'],items:[['jars','planks','preserves'],['tiles','jars','cloth']],outcomes:['The keeper shares seasonal recipes with visitors.','A shelter for native coastal plants welcomes explorers.'],art:'garden'},
+ {id:'school',title:'The harbour school',partner:'nico',branches:['Navigation school','Craft school'],items:[['planks','furniture','sails'],['tiles','furniture','cloth']],outcomes:['Ada teaches the next generation to read the coast.','Lucia teaches the next generation to make and mend.'],art:'school'},
+ {id:'regatta',title:'A regatta for the coast',partner:'ada',branches:['Sailing celebration','Coastal discovery'],items:[['sails','boatparts','provisions'],['planks','cloth','preserves']],outcomes:['A lasting sailing pavilion welcomes the coastal crews.','A coastal expedition pavilion welcomes curious travellers.'],art:'regatta'},
+ {id:'wintermarket',title:'The winter gathering',partner:'sofia',branches:['Shared table','Makers’ market'],items:[['furniture','preserves','bread'],['cloth','jars','tiles']],outcomes:['A sheltered communal table brings the coast together.','A covered makers’ arcade gives the town a new meeting place.'],art:'wintermarket'}
+];
+const THEMES=[
+ {title:'Repair the spring landing',partner:'matteo',items:['planks','tiles'],event:'The first visiting makers',choices:['Equip a workshop','Prepare their shared table'],alternatives:['cloth','bread']},
+ {title:'A summer by the water',partner:'sofia',items:['bread','preserves'],event:'A place for the visitors',choices:['Welcome families','Welcome sailing crews'],alternatives:['furniture','sails']},
+ {title:'Keep the autumn harvest',partner:'lucia',items:['preserves','oil'],event:'The harvest exchange',choices:['Share the pantry','Demonstrate local crafts'],alternatives:['jars','cloth']},
+ {title:'Warm rooms for winter',partner:'nico',items:['cloth','furniture'],event:'A winter meeting place',choices:['Set a shared table','Open the makers’ hall'],alternatives:['bread','tiles']}
+];
+function theme(o){if(o.theme===null)return THEMES[o.season%4];const d=PROJECTS.find(p=>p.id===o.theme);return {partner:d.partner,title:d.title+' · visiting neighbours',event:d.title+' · the next gathering',choices:['Host a practical workshop','Host a shared gathering']};}
+const copy=x=>JSON.parse(JSON.stringify(x));
+const keys=(x,w)=>x&&typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).sort().join()===w.split(',').sort().join();
+const integer=(n,max=1000000)=>Number.isSafeInteger(n)&&n>=0&&n<=max;
+const note=(s,t)=>{s.log.unshift(t);s.log=s.log.slice(0,5);};
+function freshChronicle(){return {pin:null,started:false,elapsed:0,serial:0,offers:[],partners:Object.fromEntries(Object.keys(PARTNERS).map(k=>[k,0])),projects:{},standing:0,ledger:[],reservations:{},partnerWork:{},specialist:null,festivalTickets:null,coast:'harbour',townName:'Porto Lume',awning:'terracotta',city:Y.freshCity()};}
+function enableFestival(c,f){if(f.stage===4&&!c.festivalTickets)c.festivalTickets={next:f.orders+1,slots:[0,1].map(i=>({epoch:f.orders,template:(f.orders*2+i)%4}))};}
+function canMake(s,item){return ['wood','stone'].includes(item)||Object.entries(E.RECIPES).some(([k,r])=>r.output[item]&&E.unlocked(s,k));}
+function size(s){const n=new Set(Object.entries(E.RECIPES).filter(([k])=>E.unlocked(s,k)).map(([,r])=>r.station)).size;return n>=12?18:n>=7?12:6;}
+function offer(s,c,kind){
+ const season=Math.floor(c.elapsed/1200),seasonTheme=THEMES[season%4],completed=PROJECTS.filter(d=>c.projects[d.id]?.stage===4),followup=kind===2&&completed.length&&c.serial%2===0?completed[c.serial%completed.length]:null;
+ const preferred=followup?(c.projects[followup.id].branch===0?['furniture','bread']:['boatparts','cloth']):kind===0?seasonTheme.items:seasonTheme.alternatives;
+ return {id:'request-'+(++c.serial),kind,season,theme:followup?.id||null,size:size(s),items:preferred.map(i=>c.coast==='rocky'&&kind===0?'stone':c.coast==='marsh'&&kind===0?(canMake(s,'preserves')?'preserves':'bread'):canMake(s,i)?i:'bread'),accepted:false,choice:null,boats:[],eligible:[],routes:[]};
+}
+function refill(s,c){for(let kind=0;kind<3;kind++)if(!c.offers.some(o=>o.kind===kind))c.offers.push(offer(s,c,kind));}
+function remember(s,c,title,body){c.ledger.unshift({id:'memory-'+(++c.serial),title,body,seconds:s.seconds,season:Math.floor(c.elapsed/1200)});c.ledger=c.ledger.slice(0,32);}
+function partner(o){return o.kind===1?'ada':theme(o).partner;}
+function requestCost(o){if(o.kind===1)return {};if(o.kind===2)return o.choice===null?{}:{[o.items[o.choice]]:o.size};return Object.fromEntries([...new Set(o.items)].map(i=>[i,o.size]));}
+function requestTitle(o){return o.kind===1?'Bring the coast together':o.kind===2?theme(o).event:theme(o).title;}
+function projectCost(c,id){const p=c.projects[id],d=PROJECTS.find(d=>d.id===id);if(!p||p.stage>=4||p.stage===2)return {};const i=p.stage===3?2:p.stage;return {[d.items[p.branch][i]]:[12,24,36][i]};}
+function goalCost(c,goal,f=null,s=null){if(!c)return null;if(/^city:[0-2]$/.test(goal))return Y.unlocked(c)?Y.CARGO:null;if(goal.startsWith('native-festival:')){return f?F.offers(s,f,c.festivalTickets).find(o=>'native-festival:'+JSON.stringify([o.fn,o.args])===goal)?.cost||null:null;}const o=c.offers.find(o=>'year:'+o.id===goal);if(o?.accepted)return requestCost(o);if(goal.startsWith('partner:')){const[,id,stage]=goal.split(':');if(Object.hasOwn(PARTNERS,id)&&(c.partnerWork[id]||0)===Number(stage)&&Number(stage)<4&&c.partners[id]>=[1,3,6,15][Number(stage)])return partnerCost(c,id,Number(stage));return null;}if(goal.startsWith('chronicle:')){const [,id,stage]=goal.split(':');if(c.projects[id]?.stage===Number(stage))return projectCost(c,id);}return null;}
+function goalTitle(c,goal){const o=c?.offers.find(o=>'year:'+o.id===goal);return o?requestTitle(o):goal.startsWith('partner:')?(PARTNERS[goal.split(':')[1]]?.name+' · personal request'):PROJECTS.find(p=>goal.startsWith('chronicle:'+p.id+':'))?.title||'Harbour project';}
+function holding(c,goal,item){return c.reservations[goal]?.[item]||0;}
+function affordable(s,c,goal,cost){return Object.entries(cost).every(([k,n])=>E.available(s,k)+holding(c,goal,k)>=n);}
+function pay(s,c,goal,cost){if(!affordable(s,c,goal,cost))return false;for(const [k,n]of Object.entries(cost)){const held=holding(c,goal,k),free=n-held;if(k==='coins')s.coins-=free;else s.stock[k]-=free;}delete c.reservations[goal];return true;}
+function reserve(s,c,goal,f=null){const cost=goalCost(c,goal,f,s);if(!cost||!Object.keys(cost).length)return false;const held=c.reservations[goal]||{};let changed=false;for(const[k,n]of Object.entries(cost)){const take=Math.min(n-(held[k]||0),Math.max(0,E.available(s,k)));if(take>0){held[k]=(held[k]||0)+take;if(k==='coins')s.coins-=take;else s.stock[k]-=take;changed=true;}}if(changed)c.reservations[goal]=held;return changed;}
+function release(s,c,goal){const held=c.reservations[goal];if(!held)return false;for(const[k,n]of Object.entries(held))if((k==='coins'?s.coins:s.stock[k])+n>1e9)return false;for(const[k,n]of Object.entries(held)){if(k==='coins')s.coins+=n;else s.stock[k]+=n;}delete c.reservations[goal];return true;}
+function exportTown(s,c){const next=copy(s);if(c)for(const goal of Object.keys(c.reservations))if(!release(next,copy(c),goal))throw Error('Release reserved native supplies before exporting this town.');return c?Y.browserRefund(next,c):next;}
+function planTown(s,c,goal){const next=copy(s);for(const [item,n]of Object.entries(c?.reservations[goal]||{})){if(item==='coins')next.coins+=n;else next.stock[item]+=n;}return next;}
+const PARTNER_ITEMS={matteo:'tiles',lucia:'boatparts',sofia:'preserves',nico:'furniture',ada:'sails'};
+function partnerCost(c,id,stage){return {[PARTNER_ITEMS[id]]:[6,6,18,36][stage]};}
+function actions(s,c,f){
+ if(!c?.started)return [...(f.stage===4?[{fn:'chronicleBegin',args:[],title:'Begin the harbour year',cost:{},reason:''}]:[]),...Object.keys(c?.reservations||{}).map(goal=>({fn:'chronicleRelease',args:[goal],title:'Release reserved festival supplies',cost:{},reason:''}))];
+ const out=Y.actions(s,c);
+ for(const o of c.offers){const goal='year:'+o.id;
+  if(!o.accepted)out.push({fn:'chronicleAccept',args:[o.id],title:'Accept · '+requestTitle(o),cost:{},reason:''});
+  else if(o.kind===2&&o.choice===null)for(let i=0;i<2;i++)out.push({fn:'chronicleChoose',args:[o.id,i],title:theme(o).choices[i],cost:{},reason:''});
+  else out.push({fn:'chronicleDeliver',args:[o.id],title:o.kind===1?'Welcome both crews':'Contribute · '+requestTitle(o),cost:requestCost(o),goal,reason:o.kind===1?'Complete a passenger service with two different boats after accepting this request.':'Prepare the finished supplies.'});
+ }
+ const done=PROJECTS.filter(d=>c.projects[d.id]?.stage===4).length;
+ for(const d of PROJECTS.slice(0,Math.min(PROJECTS.length,done+2))){const p=c.projects[d.id];
+  if(!p){for(let branch=0;branch<2;branch++)out.push({fn:'chronicleProject',args:[d.id,branch],title:'Choose · '+d.branches[branch],cost:{},reason:'Finish the current chronicle project first.'});}
+  else if(p.stage<4)out.push({fn:'chronicleBuild',args:[d.id,p.stage],title:['Lay the foundations','Equip the place','Welcome both crews','Open '+d.title.toLowerCase()][p.stage],cost:projectCost(c,d.id),goal:'chronicle:'+d.id+':'+p.stage,reason:p.stage===2?'Complete a cargo voyage from each coast using two different boats after this stage begins.':'Make the finished supplies for this stage.'});
+ }
+ if(households(s)>0)out.push({fn:'chronicleHouseholds',args:[c.standing],title:'Supply the neighbourhood table',cost:{bread:6*households(s)},goal:null,reason:'Share bread with the households actually living here. Each delivery earns town standing.'});
+ for(const[id,d]of Object.entries(PARTNERS)){
+  const stage=c.partnerWork[id]||0,threshold=[1,3,6,15][stage];
+  if(stage<4&&c.partners[id]>=threshold)out.push({fn:'chroniclePartner',args:[id,stage],title:[d.name+' · a first commission',d.name+' · a trusted-price commission',d.name+' · equip a specialist',d.name+' · a personal place'][stage],cost:partnerCost(c,id,stage),goal:'partner:'+id+':'+stage,reason:'Prepare the finished supplies for this personal request.'});
+  if(stage>=3&&c.specialist!==id)out.push({fn:'chronicleSpecialist',args:[id],title:'Ask '+d.name+' to guide your next choice',cost:{},reason:''});
+ }
+ if(c.specialist)for(const o of c.offers)if(o.accepted&&o.kind===2&&o.choice!==null&&!Object.keys(c.reservations['year:'+o.id]||{}).length)out.push({fn:'chronicleAdvice',args:[o.id,o.choice],title:PARTNERS[c.specialist].name+' · reconsider this gathering',cost:{},reason:''});
+ for(const goal of Object.keys(c.reservations))out.push({fn:'chronicleRelease',args:[goal],title:'Release · '+goalTitle(c,goal),cost:{},reason:''});
+ return out;
+}
+function households(s){return s.neighbourhood.plots.reduce((n,p)=>n+(p?.type==='home'&&!p.left?1+(p.level||0):0),0);}
+function mutate(s,c,f,fn,args){
+ if(fn==='chronicleBegin'){if(c.started||f.stage!==4)return false;c.started=true;enableFestival(c,f);refill(s,c);note(s,'The harbour year begins · choose a request or a lasting project');return true;}
+ if(fn==='chronicleRelease')return release(s,c,args[0]);
+ if(!c.started)return false;
+ if(fn.startsWith('chronicleCity')){if(['chronicleCitySail','chronicleCityExplore'].includes(fn)){const goal='city:'+args[0];for(const[k,n]of Object.entries(c.reservations[goal]||{}))s.stock[k]+=n;delete c.reservations[goal];}const ok=Y.mutate(s,c,fn,args);if(ok&&['chronicleCityDeliver','chronicleCityChoose'].includes(fn))remember(s,c,'The city and the coast',s.log[0]);return ok;}
+ if(fn==='chroniclePartner'){
+  const[id,stage]=args;if(!Object.hasOwn(PARTNERS,id)||stage!==(c.partnerWork[id]||0)||stage>=4||c.partners[id]<[1,3,6,15][stage]||!pay(s,c,'partner:'+id+':'+stage,partnerCost(c,id,stage)))return false;
+  c.partnerWork[id]=stage+1;remember(s,c,PARTNERS[id].name+' · '+['a first commission','a trusted partnership','a specialist for the town','a personal place'][stage],stage===1?'Your trusted-price commission used six goods instead of the usual twelve.':stage===2?'You can assign this specialist to reopen an unreserved visitor choice.':stage===3?'A personal painted detail now belongs to your town.':'A new relationship has begun.');note(s,PARTNERS[id].name+' remembers this work · relationship reward saved');return true;
+ }
+ if(fn==='chronicleSpecialist'){const id=args[0];if((c.partnerWork[id]||0)<3||c.specialist===id)return false;c.specialist=id;note(s,PARTNERS[id].name+' is advising your town · visitor choices can be reconsidered before reserving or contributing');return true;}
+ if(fn==='chronicleAdvice'){const o=c.offers.find(o=>o.id===args[0]);if(!c.specialist||!o?.accepted||o.kind!==2||o.choice!==args[1]||o.choice===null||Object.keys(c.reservations['year:'+o.id]||{}).length)return false;o.choice=null;note(s,PARTNERS[c.specialist].name+' helped you reconsider · choose the gathering you want');return true;}
+ if(fn==='chronicleRelease')return release(s,c,args[0]);
+ if(fn==='chronicleHouseholds'){if(args[0]!==c.standing||c.standing>=1000000||!households(s)||!pay(s,c,'households',{bread:6*households(s)}))return false;c.standing++;note(s,'The neighbourhood table is ready · town standing '+c.standing);return true;}
+ if(fn==='chronicleProject'){
+  const [id,branch]=args,d=PROJECTS.find(p=>p.id===id),done=Object.values(c.projects).filter(p=>p.stage===4).length;
+  if(!d||![0,1].includes(branch)||c.projects[id]||Object.values(c.projects).some(p=>p.stage<4)||PROJECTS.indexOf(d)>=done+2)return false;
+  if(['seawall','belltower','school'].includes(id)&&c.standing<1)return false;
+  c.projects[id]={branch,stage:0,boats:[],eligible:[],routes:[]};c.pin='chronicle:'+id;note(s,d.branches[branch]+' chosen · this branch shapes the finished place');return true;
+ }
+ if(fn==='chronicleBuild'){
+  const [id,stage]=args,p=c.projects[id],d=PROJECTS.find(p=>p.id===id);if(!p||p.stage!==stage||stage>=4||stage===2&&(p.boats.length<2||p.routes.length<2))return false;
+  if(!pay(s,c,'chronicle:'+id+':'+stage,projectCost(c,id)))return false;p.stage++;
+  if(p.stage===4){c.partners[d.partner]=Math.min(1000000,c.partners[d.partner]+1);remember(s,c,d.title,d.outcomes[p.branch]);note(s,d.title+' opened · '+d.outcomes[p.branch]);}else note(s,d.title+' · stage '+(p.stage+1)+' ready');return true;
+ }
+ const o=c.offers.find(o=>o.id===args[0]);if(!o)return false;
+ if(fn==='chronicleAccept'){if(o.accepted)return false;o.accepted=true;c.pin='year:'+o.id;note(s,requestTitle(o)+' accepted · supplies and progress will never expire');return true;}
+ if(!o.accepted)return false;
+ if(fn==='chronicleChoose'){if(o.kind!==2||o.choice!==null||![0,1].includes(args[1]))return false;o.choice=args[1];note(s,theme(o).choices[o.choice]+' chosen · contribute the supplies when ready');return true;}
+ if(fn!=='chronicleDeliver'||o.kind===2&&o.choice===null||o.kind===1&&(o.boats.length<2||c.coast==='windy'&&o.routes.length<2)||!pay(s,c,'year:'+o.id,requestCost(o)))return false;
+ const who=partner(o);c.partners[who]=Math.min(1000000,c.partners[who]+1);remember(s,c,requestTitle(o),PARTNERS[who].name+' remembers your help'+(o.choice!==null?' · '+theme(o).choices[o.choice]:''));
+ c.offers=c.offers.filter(p=>p!==o);refill(s,c);note(s,PARTNERS[who].name+' · Thank you. This is what makes a harbour feel like home.');return true;
+}
+// Only explicitly dispatched trips after acceptance qualify. Recalled and already-running trips cannot count.
+function departure(c,fn,args){if(!c?.started)return;const slot=args[0];if(!Number.isInteger(slot))return;
+ const cargo=fn==='startVoyage',passenger=fn==='startFerryService',cancel=fn==='cancelVoyage';
+ if(!cargo&&!passenger&&!cancel)return;
+ for(const o of c.offers)if(o.accepted&&o.kind===1){o.eligible=o.eligible.filter(n=>n!==slot);if(passenger)o.eligible.push(slot);}
+ for(const p of Object.values(c.projects))if(p.stage===2){p.eligible=p.eligible.filter(n=>n!==slot);if(cargo)p.eligible.push(slot);}
+}
+function tick(s,c,before,elapsed){if(!c?.started||elapsed<=0)return;Y.tick(s,c,elapsed);const old=Math.floor(c.elapsed/1200);c.elapsed=Math.min(1200*1000000-1,c.elapsed+elapsed);
+ for(let slot=0;slot<before.length;slot++){const trip=before[slot];if(!trip||trip.left>elapsed)continue;
+  for(const o of c.offers)if(o.accepted&&o.kind===1&&o.eligible.includes(slot)&&trip.ferry){if(!o.boats.includes(slot))o.boats.push(slot);if(!o.routes.includes(trip.route))o.routes.push(trip.route);o.eligible=o.eligible.filter(n=>n!==slot);}
+  for(const p of Object.values(c.projects))if(p.stage===2&&p.eligible.includes(slot)&&!trip.ferry&&['quarry','island'].includes(trip.route)){if(!p.boats.includes(slot))p.boats.push(slot);if(!p.routes.includes(trip.route))p.routes.push(trip.route);p.eligible=p.eligible.filter(n=>n!==slot);}
+ }
+ if(Math.floor(c.elapsed/1200)!==old){c.offers=c.offers.filter(o=>o.accepted);refill(s,c);note(s,SEASONS[Math.floor(c.elapsed/1200)%4]+' begins · accepted work is safe; unaccepted opportunities have changed');}
+}
+function restore(s,f,raw){
+ const bad=()=>{throw Error('Invalid native chronicle. Your original save has not been changed.');};
+ if(!keys(raw,'pin,started,elapsed,serial,offers,partners,projects,standing,ledger,reservations,partnerWork,specialist,festivalTickets,coast,townName,awning,city'))bad();const c=copy(raw);
+ if(!['harbour','rocky','marsh','windy'].includes(c.coast)||typeof c.townName!=='string'||c.townName.trim()!==c.townName||c.townName.length<1||c.townName.length>40||/[\x00-\x1f\x7f]/.test(c.townName)||!['terracotta','teal','cream'].includes(c.awning))bad();
+ if(c.pin!==null&&(typeof c.pin!=='string'||c.pin.length>80||! /^(direction:(industry|coast|community)|year:request-\d+|chronicle:[a-z]+|festival|guide)$/.test(c.pin)))bad();
+ if(typeof c.started!=='boolean'||!Number.isFinite(c.elapsed)||c.elapsed<0||c.elapsed>=1200*1000000||!integer(c.serial,100000000)||!integer(c.standing)||c.started&&f.stage!==4)bad();
+ if(!keys(c.partners,Object.keys(PARTNERS).join())||Object.values(c.partners).some(n=>!integer(n)))bad();
+ if(!Array.isArray(c.offers)||c.offers.length>3||new Set(c.offers.map(o=>o.kind)).size!==c.offers.length||new Set(c.offers.map(o=>o.id)).size!==c.offers.length)bad();
+ const slots=a=>Array.isArray(a)&&a.length<=3&&new Set(a).size===a.length&&a.every(n=>integer(n,2));
+ for(const o of c.offers){if(!keys(o,'id,kind,season,theme,size,items,accepted,choice,boats,eligible,routes')||!/^request-[1-9]\d*$/.test(o.id)||Number(o.id.slice(8))>c.serial||(o.theme!==null&&(!PROJECTS.some(p=>p.id===o.theme)||c.projects[o.theme]?.stage!==4))||!integer(o.kind,2)||!integer(o.season,Math.floor(c.elapsed/1200))||![6,12,18].includes(o.size)||!Array.isArray(o.items)||o.items.length!==2||o.items.some(i=>!Object.hasOwn(E.ITEMS,i))||typeof o.accepted!=='boolean'||![null,0,1].includes(o.choice)||!slots(o.boats)||!slots(o.eligible)||!Array.isArray(o.routes)||new Set(o.routes).size!==o.routes.length||o.routes.some(r=>!['quarry','island'].includes(r))||!o.accepted&&(o.choice!==null||o.boats.length||o.eligible.length||o.routes.length)||o.kind!==1&&(o.boats.length||o.eligible.length||o.routes.length)||o.kind!==2&&o.choice!==null)bad();}
+ if(!c.partnerWork||typeof c.partnerWork!=='object'||Array.isArray(c.partnerWork)||Object.entries(c.partnerWork).some(([id,n])=>!Object.hasOwn(PARTNERS,id)||!integer(n,4)||n===0||c.partners[id]<[1,3,6,15][n-1])||c.specialist!==null&&(!Object.hasOwn(PARTNERS,c.specialist)||(c.partnerWork[c.specialist]||0)<3))bad();
+ if(!c.projects||typeof c.projects!=='object'||Array.isArray(c.projects)||Object.keys(c.projects).length>8)bad();
+ for(const[id,p]of Object.entries(c.projects)){if(!PROJECTS.some(d=>d.id===id)||!keys(p,'branch,stage,boats,eligible,routes')||![0,1].includes(p.branch)||!integer(p.stage,4)||!slots(p.boats)||!slots(p.eligible)||!Array.isArray(p.routes)||new Set(p.routes).size!==p.routes.length||p.routes.some(r=>!['quarry','island'].includes(r))||p.stage<2&&(p.boats.length||p.routes.length||p.eligible.length)||p.stage>2&&(p.boats.length<2||p.routes.length<2))bad();}
+ if(Object.values(c.projects).filter(p=>p.stage<4).length>1)bad();
+ if(!Array.isArray(c.ledger)||c.ledger.length>32)bad();for(const m of c.ledger)if(!keys(m,'id,title,body,seconds,season')||['id','title','body'].some(k=>typeof m[k]!=='string'||m[k].length>300)||!Number.isFinite(m.seconds)||m.seconds<0||m.seconds>s.seconds||!integer(m.season,Math.floor(c.elapsed/1200)))bad();
+ if(!c.reservations||typeof c.reservations!=='object'||Array.isArray(c.reservations)||Object.keys(c.reservations).length>16)bad();
+ for(const[goal,held]of Object.entries(c.reservations)){const cost=goalCost(c,goal,f,s);if(!cost||!held||typeof held!=='object'||Array.isArray(held)||!Object.keys(held).length)bad();for(const[k,n]of Object.entries(held))if(!integer(n,1000)||n===0||n>(cost[k]||0)||(s.stock[k]||0)+n>1e9)bad();}
+ if(c.festivalTickets){const t=c.festivalTickets;if(f.stage!==4||!keys(t,'next,slots')||!integer(t.next,1000001)||!Array.isArray(t.slots)||t.slots.length!==2||t.slots.some(p=>!keys(p,'epoch,template')||!integer(p.epoch,t.next-1)||!integer(p.template,3)))bad();}
+ if(!c.started&&(c.elapsed||c.serial||c.offers.length||Object.keys(c.projects).length||c.standing||c.ledger.length||Object.values(c.partners).some(Boolean)||Object.keys(c.reservations).some(g=>!g.startsWith('native-festival:'))||Object.keys(c.partnerWork).length||c.specialist!==null))bad();
+ if(c.started&&c.offers.length!==3)bad();Y.restore(s,c);return c;
+}
+function view(s,c,f){const live=c||freshChronicle(),season=Math.floor(live.elapsed/1200);return {city:Y.view(live),coast:live.coast,townName:live.townName,awning:live.awning,started:live.started,unlocked:f.stage===4,pin:live.pin,season:SEASONS[season%4],year:Math.floor(season/4)+1,remaining:1200-live.elapsed%1200,standing:live.standing,households:households(s),
+ offers:live.offers.map(o=>({id:o.id,title:requestTitle(o),partner:PARTNERS[partner(o)].name,body:o.kind===1?(live.coast==='windy'?'Complete passenger services with two different boats, returning from both shores.':'Choose two different boats and complete a passenger service with each.'):o.kind===2?'Choose the visitors you want to welcome. Your choice determines the supplies you contribute.':'Finished supplies help a named neighbour. Stock already reserved for another project stays protected.',accepted:o.accepted,kind:o.kind,boats:o.boats.length,choice:o.choice===null?null:theme(o).choices[o.choice],goal:'year:'+o.id,cost:requestCost(o)})),
+ partners:Object.entries(PARTNERS).map(([id,d])=>({id,...d,requests:live.partners[id],work:live.partnerWork[id]||0,assigned:live.specialist===id,level:STEPS.filter(n=>live.partners[id]>=n).length,next:STEPS.find(n=>live.partners[id]<n)||null})),
+ projects:PROJECTS.slice(0,Math.min(8,Object.values(live.projects).filter(p=>p.stage===4).length+2)).map(d=>{const p=live.projects[d.id];return {id:d.id,title:d.title,partner:PARTNERS[d.partner].name,branches:d.branches,outcomes:d.outcomes,art:d.art,stage:p?.stage??-1,branch:p?.branch??-1,boats:p?.boats.length||0,routes:p?.routes.length||0,goal:p?'chronicle:'+d.id+':'+p.stage:null,materials:d.items,needsStanding:['seawall','belltower','school'].includes(d.id)&&live.standing<1};}),memories:live.ledger};}
+
+Object.assign(exports,{SEASONS,PARTNERS,STEPS,PROJECTS,freshChronicle,enableFestival,canMake,projectCost,goalCost,goalTitle,reserve,release,exportTown,planTown,PARTNER_ITEMS,partnerCost,actions,households,mutate,departure,tick,restore,view});
+},
+"native/city-port.js":function(exports,require){
+// Native city voyages occupy real shared-engine boats without extending browser route schemas.
+const E=require("dist/engine.js");
+const CARGO={provisions:6,cloth:6,wine:6};
+const EXPEDITIONS=[['Chart the sheltered coves','Study the city potteries'],['Invite the coastal navigators','Invite the master ceramicists']];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const note=(s,t)=>{s.log.unshift(t);s.log=s.log.slice(0,5);};
+function freshCity(){return {serial:0,voyages:[null,null,null],glaze:0,ceramics:0,job:null,chapter:0,choices:[],explored:[]};}
+function unlocked(c){return c.projects.school?.stage===4;}
+function eligible(s,c,slot){const b=s.fleet.boats[slot];return unlocked(c)&&b?.type==='coaster'&&b.upgrade==='cargo'&&!b.trip&&!c.city.voyages[slot];}
+function spend(s,cost){if(!E.canAfford(s,cost))return false;for(const[k,n]of Object.entries(cost)){if(k==='coins')s.coins-=n;else s.stock[k]-=n;}return true;}
+function voyageReason(s,c,slot){
+ const b=s.fleet.boats[slot];
+ if(!b)return 'Add a coaster to this berth, then fit Expanded hold.';
+ if(b.trip||c.city.voyages[slot])return 'This boat is at sea. Choose another berth or wait for its return.';
+ if(b.type!=='coaster')return 'Rebuild this cutter as a coaster below, or choose a coaster in another berth.';
+ if(b.upgrade!=='cargo')return 'Fit Expanded hold in Boat upgrades & recall below.';
+ const missing=Object.entries(CARGO).filter(([k,n])=>E.available(s,k)+(c.reservations['city:'+slot]?.[k]||0)<n);
+ return missing.length?'Prepare city cargo: '+missing.map(([k,n])=>(E.ITEMS[k]?.name||k)+' '+Math.min(n,E.available(s,k)+(c.reservations['city:'+slot]?.[k]||0))+'/'+n).join(' · ')+'. Use Plan supplies to make the remainder.':'';
+}
+function actions(s,c){
+ if(!unlocked(c))return [];const y=c.city,out=[];
+ for(let slot=0;slot<3;slot++){
+  if(s.fleet.boats[slot]?.type==='cutter')out.push({fn:'chronicleCityRefit',args:[slot,y.serial],category:'Fleet',title:'Berth '+(slot+1)+' · rebuild cutter as coaster',cost:E.FLEET_BOATS.coaster.cost,reason:'The boat must be idle. Rebuilding uses the existing coaster purchase cost and retains installed equipment.',destructive:true});
+  out.push({fn:'chronicleCitySail',args:[slot,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · City port · 240s · return with 6 glaze',cost:CARGO,reason:voyageReason(s,c,slot)||'The city storehouse is full. Decorate or contribute ceramics before another import.'});
+  if(y.voyages[slot])out.push({fn:'chronicleCityRecall',args:[slot,y.voyages[slot].epoch],category:'Fleet',title:'Recall city voyage · berth '+(slot+1),cost:{},reason:'',destructive:true});
+  const stage=y.chapter-1;
+  if(stage>=0&&stage<2&&y.choices.length>stage&&!y.explored.includes(stage))out.push({fn:'chronicleCityExplore',args:[slot,stage,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · '+EXPEDITIONS[stage][y.choices[stage]]+' · 240s',cost:CARGO,reason:'Choose an idle coaster with Expanded hold and prepare its city cargo. Only one crew can undertake this expedition.'});
+ }
+ out.push({fn:'chronicleCityCraft',args:[y.serial],title:'Decorate ceramics · 2 glaze + 2 jars → 2 ceramics · 30s',cost:{jars:2},reason:'Needs 2 imported glaze, 2 finished jars and a free decorating bench.'});
+ if(y.chapter<3)out.push({fn:'chronicleCityDeliver',args:[y.chapter],title:['Furnish the city gallery','A gift for the coastal visitors','The Porto Lume collection'][y.chapter]+' · '+[6,12,18][y.chapter]+' ceramics',cost:{},reason:y.chapter>0&&!y.explored.includes(y.chapter-1)?'Complete your chosen expedition before this collection.':'Decorate enough ceramics to complete this collection.'});
+ if(y.chapter>0&&y.chapter<=2&&y.choices.length<y.chapter)for(let choice=0;choice<2;choice++)out.push({fn:'chronicleCityChoose',args:[y.chapter-1,choice],title:EXPEDITIONS[y.chapter-1][choice],cost:{},reason:''});
+ return out;
+}
+function mutate(s,c,fn,args){
+ if(!unlocked(c))return false;const y=c.city;
+ if(fn==='chronicleCityRefit'){const[slot,epoch]=args,b=s.fleet.boats[slot];if(epoch!==y.serial||b?.type!=='cutter'||b.trip||y.voyages[slot]||!spend(s,E.FLEET_BOATS.coaster.cost))return false;b.type='coaster';b.repeat=null;y.serial++;note(s,'Coaster rebuilt in berth '+(slot+1)+' · equipment retained');return true;}
+ if(fn==='chronicleCitySail'||fn==='chronicleCityExplore'){
+  const slot=args[0],expedition=fn==='chronicleCityExplore'?args[1]:null,epoch=fn==='chronicleCityExplore'?args[2]:args[1];
+  if(!Number.isInteger(slot)||slot<0||slot>2||epoch!==y.serial||!eligible(s,c,slot)||y.glaze+6*(1+y.voyages.filter(Boolean).length)>1000000)return false;
+  if(expedition!==null&&(expedition!==y.chapter-1||expedition>1||y.choices.length<=expedition||y.explored.includes(expedition)||y.voyages.some(v=>v?.expedition===expedition)))return false;
+  if(!spend(s,CARGO))return false;s.fleet.boats[slot].repeat=null;
+  y.voyages[slot]={epoch:y.serial++,left:240,expedition};note(s,(expedition===null?'City trading voyage':EXPEDITIONS[expedition][y.choices[expedition]])+' departed · berth '+(slot+1));return true;
+ }
+ if(fn==='chronicleCityRecall'){
+  const[slot,epoch]=args,v=y.voyages[slot];if(!v||v.epoch!==epoch||Object.entries(CARGO).some(([k,n])=>s.stock[k]+n>1e9))return false;
+  for(const[k,n]of Object.entries(CARGO))s.stock[k]+=n;y.voyages[slot]=null;note(s,'City voyage recalled · cargo returned; no expedition progress awarded');return true;
+ }
+ if(fn==='chronicleCityCraft'){
+  if(args[0]!==y.serial||y.job||y.glaze<2||y.ceramics+2>1000000||!E.unlocked(s,'jars')||!spend(s,{jars:2}))return false;
+  y.glaze-=2;y.job={left:30};y.serial++;note(s,'Decorating ceramics · 30 game seconds');return true;
+ }
+ if(fn==='chronicleCityDeliver'){
+  const stage=args[0];if(stage!==y.chapter||stage>2||y.ceramics<[6,12,18][stage]||stage>0&&!y.explored.includes(stage-1))return false;
+  y.ceramics-=[6,12,18][stage];y.chapter++;note(s,stage===2?'The Porto Lume collection is complete · a lasting city partnership':'The city collection is delivered · choose your next coastal expedition');return true;
+ }
+ if(fn==='chronicleCityChoose'){
+  const[stage,choice]=args;if(![0,1].includes(stage)||stage!==y.chapter-1||y.choices.length!==stage||![0,1].includes(choice))return false;
+  y.choices.push(choice);note(s,EXPEDITIONS[stage][choice]+' chosen · assign a coaster in Fleet');return true;
+ }
+ return false;
+}
+function tick(s,c,elapsed){const y=c.city;for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;v.left=Math.max(0,v.left-elapsed);if(v.left===0){y.glaze+=6;if(v.expedition!==null&&!y.explored.includes(v.expedition))y.explored.push(v.expedition);y.voyages[slot]=null;note(s,'City crew returned · 6 glaze'+(v.expedition!==null?' · expedition completed':''));}}
+ if(y.job){y.job.left=Math.max(0,y.job.left-elapsed);if(y.job.left===0){y.ceramics+=2;y.job=null;note(s,'Decorated ceramics complete · +2 ceramics');}}
+}
+function browserRefund(s,c){const next=clone(s);for(const v of c.city.voyages)if(v)for(const[k,n]of Object.entries(CARGO)){if(next.stock[k]+n>1e9)throw Error('Recall city voyages before exporting this town.');next.stock[k]+=n;}if(c.city.job){if(next.stock.jars+2>1e9)throw Error('Finish the decorating bench before exporting.');next.stock.jars+=2;}return next;}
+function restore(s,c){
+ const y=c.city,bad=()=>{throw Error('Invalid city-port progress.');},int=(n,max=1000000)=>Number.isSafeInteger(n)&&n>=0&&n<=max;
+ if(!y||typeof y!=='object'||Array.isArray(y)||Object.keys(y).sort().join()!=='ceramics,chapter,choices,explored,glaze,job,serial,voyages'||!int(y.serial,100000000)||!int(y.glaze)||!int(y.ceramics)||!int(y.chapter,3)||!Array.isArray(y.voyages)||y.voyages.length!==3||!Array.isArray(y.choices)||y.choices.length>2||y.choices.length>y.chapter||y.choices.some(n=>![0,1].includes(n))||!Array.isArray(y.explored)||new Set(y.explored).size!==y.explored.length||y.explored.some(n=>!int(n,1)||n>=y.choices.length))bad();
+ if(y.chapter>=2&&!y.explored.includes(0)||y.chapter===3&&!y.explored.includes(1))bad();
+ for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;const b=s.fleet.boats[slot];if(Object.keys(v).sort().join()!=='epoch,expedition,left'||!int(v.epoch,y.serial-1)||!Number.isFinite(v.left)||v.left<=0||v.left>240||v.expedition!==null&&(!int(v.expedition,1)||v.expedition!==y.chapter-1||v.expedition>=y.choices.length||y.explored.includes(v.expedition))||b?.type!=='coaster'||b.upgrade!=='cargo'||b.trip||b.repeat)bad();}
+ const expeditions=y.voyages.filter(v=>v?.expedition!==null&&v?.expedition!==undefined).map(v=>v.expedition);if(new Set(expeditions).size!==expeditions.length||y.glaze+6*y.voyages.filter(Boolean).length>1000000)bad();
+ if(y.job&&(typeof y.job!=='object'||Array.isArray(y.job)||Object.keys(y.job).join()!=='left'||!Number.isFinite(y.job.left)||y.job.left<=0||y.job.left>30||y.ceramics+2>1000000))bad();
+ if(!unlocked(c)&&JSON.stringify(y)!==JSON.stringify(freshCity()))bad();return y;
+}
+function view(c){return {unlocked:unlocked(c),glaze:c.city.glaze,ceramics:c.city.ceramics,chapter:c.city.chapter,jobLeft:c.city.job?.left||0,choices:c.city.choices.map((choice,stage)=>EXPEDITIONS[stage][choice]),explored:c.city.explored,activeVoyages:c.city.voyages.filter(Boolean).length};}
+function boats(s,c){return s.fleet.boats.map((b,i)=>b&&c?.city.voyages[i]?{...b,trip:{route:'city',duration:240,left:c.city.voyages[i].left,ferry:false}}:b);}
+
+Object.assign(exports,{CARGO,EXPEDITIONS,freshCity,unlocked,actions,mutate,tick,browserRefund,restore,view,boats});
 },
 };const cache={};function require(id){if(cache[id])return cache[id];const e={};cache[id]=e;factories[id](e,require);return e;}globalThis.Harbour=require("native/bridge.js");})();

@@ -22,6 +22,24 @@ import XCTest
             XCTAssertEqual(try repository.original(), paid)
         }
     }
+    func testPinnedGoalSurvivesBrowsingRefreshAndRelaunchWithoutMovingThePanel() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            store.pin("direction:industry")
+            store.followDirection(try XCTUnwrap(store.snapshot?.directions.first { $0.id == "industry" }))
+            store.navigate("Fleet"); store.selectedBerth = 1
+            try store.refresh()
+            XCTAssertEqual(store.category, "Fleet")
+            XCTAssertEqual(store.snapshot?.chronicle.pin, "direction:industry")
+            XCTAssertNotNil(store.pinnedTitle)
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertEqual(reopened.snapshot?.chronicle.pin, "direction:industry")
+            store.nextPinnedStep(); XCTAssertEqual(store.category, "Production")
+            store.category = "Journal"; try store.refresh()
+            XCTAssertEqual(store.category, "Journal", "A status refresh cannot hijack navigation")
+        }
+    }
     private func withStore(_ body: (GameStore, SaveRepository) throws -> Void) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

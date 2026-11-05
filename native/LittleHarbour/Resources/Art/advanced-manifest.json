@@ -1,0 +1,19 @@
+{
+  "hashes" : {
+    "native\/art-source\/advanced-workshops-v1\/atlas.png" : "e1a3750f0f4d70978899354ba18b22e85724dd54250f041f552bb8d72e53d2c5"
+  },
+  "outputHashes" : {
+    "advanced-bakery.png" : "533842e2b1d14276d5fc46a9940d3b433aa4563fbbd1ec06b44153ca08a1a1bc",
+    "advanced-boatyard.png" : "c9c63506c8125f65f255ebb74bdecdc1986001dcaf87e02f08c35a7b61e9b484",
+    "advanced-carpenter.png" : "67a39c7a928d70a541f7c4302f1161687a8f566a2e93f049246ee6b414ca85f5",
+    "advanced-estate.png" : "91046f5b58418dea938fe0b35467d884c03d96ccfa1611251013f44b107b975f",
+    "advanced-fishing.png" : "e80ba063bf2463665986158133af00ca9c14a4b9b00bd3928fe1e12178eb9afe",
+    "advanced-kiln.png" : "8466fe8d1a0d849a94e9fbe25e974bae50408175bb2c7dc00e2b13acf2ecc52c",
+    "advanced-kitchen.png" : "f8b4bd6196104a0d0e550c591c3f51d7416abcaad6b5f20510728d54b94dbaa8",
+    "advanced-mill.png" : "61cfd96705a67653e092385a4e9bcd7016b8254a0537cc93ee8ec3fe44d90e26",
+    "advanced-olive.png" : "254d7b6a8a7de417b1637bdf5899eda291c3c7b46cbbb4a24ee2b5b251edf8bb",
+    "advanced-preserving.png" : "c412c5cfd7e8a170947ce78474aacb5ad8050d06ac989f785f22766829d57405",
+    "advanced-sailmaker.png" : "5ef02921d77ae7adaeba9cb1808d4ed752f3241542d46215926e0d222cbe7ff9",
+    "advanced-weaver.png" : "54166f425f2da10295a1ff69118647bf3898bb34eb3d240cbeec1aac8204015d"
+  }
+}

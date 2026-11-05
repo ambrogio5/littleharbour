@@ -19,6 +19,8 @@ import SwiftUI
     var showLabels = true
     private let textures: NSCache<NSString, SKTexture> = { let c = NSCache<NSString, SKTexture>(); c.totalCostLimit = 48 * 1024 * 1024; return c }()
     private var festivalSignature = ""
+    private var chronicleSignature = ""
+    private let chronicleDecor = SKNode()
     private var activitySignature = ""
     private var entities: [WorldEntity] = []
     private var current: HarbourSnapshot?
@@ -48,7 +50,7 @@ import SwiftUI
         }
         """)
         terrain.anchorPoint = .zero; terrain.position = .zero; terrain.zPosition = -10000; world.addChild(terrain)
-        world.addChild(ornaments)
+        world.addChild(ornaments); world.addChild(chronicleDecor)
         selectionRing.strokeColor = UIColor(red: 1, green: 0.87, blue: 0.55, alpha: 1)
         selectionRing.lineWidth = 4; selectionRing.fillColor = UIColor(red: 1, green: 0.88, blue: 0.58, alpha: 0.15); selectionRing.zPosition = 1; selectionRing.isHidden = true; world.addChild(selectionRing)
     }
@@ -57,6 +59,10 @@ import SwiftUI
         guard !initialFocus else { return }
         viewportPreferences = preferences; viewportKey = key
         restoredViewport = MapViewport.decode(preferences?.data(forKey: key))
+    }
+    func switchCoastViewport(id: String) {
+        persistViewport(); initialFocus = false
+        configureViewport(preferences: viewportPreferences, key: id == "original" ? "mapViewport" : "mapViewport-" + id)
     }
     func persistViewport() {
         guard initialFocus, let preferences = viewportPreferences else { return }
@@ -123,6 +129,7 @@ import SwiftUI
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
         decorateFestival(snapshot.festival)
+        decorateChronicle(snapshot)
         animateActivity(snapshot)
         populateTown(snapshot)
         updateLabels()
@@ -136,6 +143,41 @@ import SwiftUI
                 }
                 restoredViewport = nil
             } else { focus(snapshot.deliveries == 0 ? "inland" : "harbour") }
+        }
+    }
+    private func decorateChronicle(_ snapshot: HarbourSnapshot) {
+        let c = snapshot.chronicle
+        let signature = "\(c.started)-\(c.season)-\(c.coast)-\(c.awning)-\(c.city.chapter)-" + c.partners.map { "\($0.id):\($0.level):\($0.work)" }.joined(separator: ",")
+        guard signature != chronicleSignature else { return }
+        chronicleSignature = signature; chronicleDecor.removeAllChildren()
+        if let bakery = sprites["bakery"] {
+            bakery.color = c.awning == "teal" ? UIColor(red: 0.35, green: 0.78, blue: 0.72, alpha: 1) : UIColor(red: 1, green: 0.93, blue: 0.73, alpha: 1)
+            bakery.colorBlendFactor = c.awning == "terracotta" ? 0 : 0.18
+        }
+        if c.coast != "harbour" {
+            let art = c.coast == "rocky" ? "chronicle-seawall" : c.coast == "marsh" ? "garden-built" : "chronicle-regatta-alternate"
+            for i in 0..<5 {
+                let item = SKSpriteNode(texture: texture(art), size: CGSize(width: 190, height: 190))
+                let y = 300 + i * 390; item.position = CGPoint(x: 80 + i % 2 * 75, y: 2700 - y); item.zPosition = CGFloat(y)
+                chronicleDecor.addChild(item)
+            }
+        }
+        guard c.started else { return }
+        // Existing painted objects provide static seasonal dressing, including under Reduce Motion.
+        let seasonalArt = ["Spring": "garden-built", "Summer": "market-built", "Autumn": "orchard-built", "Winter": "weaver-built"][c.season] ?? "garden-built"
+        let decoration = SKSpriteNode(texture: texture(seasonalArt), size: CGSize(width: 130, height: 130))
+        decoration.position = CGPoint(x: 1310, y: 2700 - 1300); decoration.zPosition = 1300; chronicleDecor.addChild(decoration)
+        if c.city.chapter == 3 {
+            let collection = SKSpriteNode(texture: texture("chronicle-exhibition-alternate"), size: CGSize(width: 140, height: 140))
+            collection.position = CGPoint(x: 1340, y: 2700 - 1540); collection.zPosition = 1540; collection.name = "city-collection"; chronicleDecor.addChild(collection)
+        }
+        let sites = ["matteo": "waterfront", "lucia": "boatyard", "sofia": "courtyard", "nico": "civic", "ada": "ferry"]
+        for partner in c.partners where partner.level >= 4 || partner.work >= 4 {
+            guard let entity = snapshot.entities.first(where: { $0.id == sites[partner.id] }) else { continue }
+            let art = partner.work >= 4 ? "chronicle-garden" : "garden-built"
+            let detail = SKSpriteNode(texture: texture(art), size: CGSize(width: 110, height: 110))
+            let p = mapPosition(entity); detail.position = CGPoint(x: p.x - 105, y: p.y - 60); detail.zPosition = 2700 - p.y + 1
+            detail.name = "partner-" + partner.id; chronicleDecor.addChild(detail)
         }
     }
     private func decorateFestival(_ festival: FestivalState) {
