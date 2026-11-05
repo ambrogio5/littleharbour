@@ -47,6 +47,10 @@ import XCTest
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "City partnership and individual boat mission"; shot.lifetime = .keepAlways; add(shot)
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
+        let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            app.windows.firstMatch.frame.width > app.windows.firstMatch.frame.height && app.buttons.matching(identifier: "boat-selector-1").count == 1 && !app.buttons["toolbar-next-step"].exists
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 10), .completed)
         XCTAssertTrue(reveal(app.buttons["boat-selector-1"], in: app)); app.buttons["boat-selector-1"].tap()
         XCTAssertTrue(reveal(mission, in: app)); XCTAssertTrue(mission.buttons["City"].isSelected)
     }

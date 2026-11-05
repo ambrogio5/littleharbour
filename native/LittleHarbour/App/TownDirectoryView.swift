@@ -25,7 +25,7 @@ struct TownDirectoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     if search.isEmpty {
-                        Text("Choose a place to work, or return to your current goal. Production, Trade and Build are always on the main dock.")
+                        Text(typeSize.isAccessibilitySize ? "Choose an activity." : "Choose a place to work, or return to your current goal. Production, Trade and Build are always on the main dock.")
                             .font(.subheadline).foregroundStyle(HarbourTheme.muted)
                     }
                     group("Your living town", ["Goals", "Fleet", "Festival", "Ambitions", "Journal", "Contracts", "Neighbourhood", "Ferry"])
@@ -57,7 +57,12 @@ struct TownDirectoryView: View {
         }
     }
     @ViewBuilder private func tile(_ category: String) -> some View {
-        if heightClass == .compact {
+        if typeSize.isAccessibilitySize {
+            HStack(alignment: .center, spacing: 10) {
+                Image(uiImage: HarbourArtwork.image(HarbourTheme.artwork(category))).resizable().scaledToFit().frame(width: 44, height: 44).accessibilityHidden(true)
+                Text(title(category)).font(.headline).fixedSize(horizontal: false, vertical: true)
+            }
+        } else if heightClass == .compact {
             HStack(alignment: .center, spacing: 10) {
                 Image(uiImage: HarbourArtwork.image(HarbourTheme.artwork(category))).resizable().scaledToFit().frame(width: 52, height: 52).accessibilityHidden(true)
                 tileText(category)
