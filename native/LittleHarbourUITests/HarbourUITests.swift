@@ -91,16 +91,13 @@ import XCTest
         app.buttons["Town"].tap()
         let refits = app.buttons["Refits"]
         XCTAssertTrue(revealTownActivity(refits, in: app)); refits.tap()
-        let profile = app.segmentedControls["refit-profile"]
-        XCTAssertTrue(profile.waitForExistence(timeout: 10))
-        XCTAssertTrue(reveal(profile, in: app)); XCTAssertTrue(profile.buttons["Yield"].exists)
-        let original = profile.buttons["Original"]
+        let speed = app.buttons["refit-profile-speed"]
+        XCTAssertTrue(speed.waitForExistence(timeout: 10))
+        XCTAssertTrue(reveal(speed, in: app)); XCTAssertTrue(app.buttons["refit-profile-yield"].exists)
+        let original = app.buttons["refit-profile-original"]
         XCTAssertTrue(reveal(original, in: app)); XCTAssertTrue(original.isEnabled)
-        // The iOS 18 failure capture still had Speed selected after tap(). Use
-        // the visible child segment's centre and assert selection before scrolling.
-        let beforeSelection = XCTAttachment(string: profile.debugDescription)
-        beforeSelection.name = "Workshop profile before selection"; beforeSelection.lifetime = .keepAlways; add(beforeSelection)
-        original.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertGreaterThanOrEqual(original.frame.height, 44)
+        original.tap()
         let originalSelected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: original)
         XCTAssertEqual(XCTWaiter.wait(for: [originalSelected], timeout: 5), .completed)
         let restore = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Restore original setup")).firstMatch

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WorkshopRefitPanel: View {
     @EnvironmentObject private var store: GameStore
+    @Environment(\.dynamicTypeSize) private var typeSize
     var fixedStation: String? = nil
     @State private var chosenStation = "mill"
     @State private var tier = 2
@@ -25,10 +26,11 @@ struct WorkshopRefitPanel: View {
                     if (store.snapshot?.advancedRefits[station]?.tier ?? 2) <= 2 { Text("Tier 2").tag(2) }
                     Text("Tier 3").tag(3)
                 }.pickerStyle(.segmented).accessibilityIdentifier("refit-tier")
-                Picker("Workshop profile", selection: $mode) {
-                    Text("Speed").tag("speed"); Text("Yield").tag("yield")
-                    if store.snapshot?.advancedRefits[station]?.tier == tier { Text("Original").tag("original") }
-                }.pickerStyle(.segmented).accessibilityIdentifier("refit-profile")
+                Text("Workshop profile").font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
+                Group {
+                    if typeSize.isAccessibilitySize { VStack(spacing: 8) { profileChoices } }
+                    else { HStack(spacing: 8) { profileChoices } }
+                }.accessibilityElement(children: .contain).accessibilityLabel("Workshop profile")
                 if let action = refits.first(where: { action in
                     guard let (fn, args) = action.invocation, fn == "installAdvancedRefit", args.count == 4 else { return false }
                     return args[0] as? String == station && args[1] as? Int == tier && args[2] as? String == mode
@@ -46,6 +48,20 @@ struct WorkshopRefitPanel: View {
             syncTier()
         }.onChange(of: chosenStation) { _, _ in tier = store.snapshot?.advancedRefits[station]?.tier ?? 2; syncTier() }
             .onChange(of: store.snapshot?.advancedRefits[station]?.tier) { _, _ in syncTier() }
+    }
+    @ViewBuilder private var profileChoices: some View {
+        ForEach(["speed", "yield", "original"].filter { $0 != "original" || store.snapshot?.advancedRefits[station]?.tier == tier }, id: \.self) { choice in
+            Button { mode = choice } label: {
+                Text(choice.capitalized).font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44).padding(.horizontal, 8)
+                    .background(mode == choice ? HarbourTheme.sea.opacity(0.14) : HarbourTheme.surface, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay { RoundedRectangle(cornerRadius: 10).stroke(mode == choice ? HarbourTheme.sea : HarbourTheme.muted.opacity(0.25), lineWidth: mode == choice ? 2 : 1) }
+                    .contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(HarbourTheme.ink)
+                .accessibilityIdentifier("refit-profile-" + choice)
+                .accessibilityAddTraits(mode == choice ? .isSelected : [])
+                .accessibilityHint("Preview this workshop profile. Apply the refit separately below.")
+        }
     }
     private func syncTier() { tier = max(tier, store.snapshot?.advancedRefits[station]?.tier ?? 2); if mode == "original", store.snapshot?.advancedRefits[station]?.tier != tier { mode = "speed" } }
 }
