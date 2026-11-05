@@ -143,12 +143,24 @@ import XCTest
         let list = app.scrollViews["town-activity-grid"]
         guard list.waitForExistence(timeout: 5) else { return false }
         for _ in 0..<20 {
+            guard list.exists, bar.exists else {
+                let lost = XCTAttachment(screenshot: app.screenshot()); lost.name = "Activity grid left during reveal"; lost.lifetime = .keepAlways; add(lost)
+                return false
+            }
             let frame = list.frame, window = app.windows.firstMatch.frame
             let top = max(frame.minY, bar.frame.maxY) + 8, bottom = min(frame.maxY, window.maxY - 34) - 8
-            if element.exists, element.isHittable, element.frame.minY >= top, element.frame.maxY <= bottom { return true }
-            let upward = !element.exists || element.frame.maxY > bottom
-            let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let step = min(300, max(100, (bottom - top) * 0.45))
+            guard bottom - top > 60 else { return false }
+            let target = element.exists ? element.frame : nil
+            if element.exists, element.isHittable, let target, target.minY >= top, target.maxY <= bottom { return true }
+            let upward = target.map { $0.maxY > bottom } ?? true
+            let maximumStep = min(300, (bottom - top) * 0.4)
+            let overrun = target.map { upward ? $0.maxY - bottom : top - $0.minY }
+            let step = overrun.map { min(maximumStep, max(24, $0 + 12)) } ?? maximumStep
+            // A scroll view's reported frame can extend beneath a system sheet bar.
+            // Keep both ends inside the visible intersection instead of dragging from
+            // its unbounded centre, which can activate or dismiss another surface.
+            let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: min(window.maxX - 20, max(window.minX + 20, frame.midX)) - window.minX, dy: (top + bottom) / 2 - window.minY))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: upward ? -step : step)), withVelocity: .default, thenHoldForDuration: 0.3)
         }
         return false
