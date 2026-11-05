@@ -156,11 +156,12 @@ import XCTest
             let maximumStep = min(300, (bottom - top) * 0.4)
             let overrun = target.map { upward ? $0.maxY - bottom : top - $0.minY }
             let step = overrun.map { min(maximumStep, max(24, $0 + 12)) } ?? maximumStep
-            // A scroll view's reported frame can extend beneath a system sheet bar.
-            // Keep both ends inside the visible intersection instead of dragging from
-            // its unbounded centre, which can activate or dismiss another surface.
+            // Keep both ends inside the visible intersection. Start in the grid's
+            // empty 16-point leading inset: an XCTest press-and-drag that begins on
+            // a plain SwiftUI button can activate that button on older iOS instead
+            // of scrolling (the retained CI capture opened Goals during the drag).
             let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
-            let start = origin.withOffset(CGVector(dx: min(window.maxX - 20, max(window.minX + 20, frame.midX)) - window.minX, dy: (top + bottom) / 2 - window.minY))
+            let start = origin.withOffset(CGVector(dx: min(window.maxX - 8, max(window.minX + 8, frame.minX + 8)) - window.minX, dy: (top + bottom) / 2 - window.minY))
             start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: upward ? -step : step)), withVelocity: .default, thenHoldForDuration: 0.3)
         }
         return false
@@ -173,6 +174,24 @@ import XCTest
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         return search
     }
+    func testTownTileDragDoesNotNavigateButDeliberateTapDoes() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        for largeText in [false, true] {
+            app.launchArguments = ["--ui-testing"] + (largeText ? ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] : [])
+            app.launch(); XCTAssertTrue(app.buttons["Town"].waitForExistence(timeout: 20)); app.buttons["Town"].tap()
+            let goal = app.buttons["town-goals"], grid = app.scrollViews["town-activity-grid"]
+            XCTAssertTrue(revealTownActivity(goal, in: app))
+            let start = goal.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -110)), withVelocity: .default, thenHoldForDuration: 0.3)
+            XCTAssertTrue(grid.exists, "Dragging through a tile must keep the activity menu open")
+            XCTAssertTrue(revealTownActivity(goal, in: app)); goal.tap()
+            XCTAssertTrue(app.staticTexts["Goals"].firstMatch.waitForExistence(timeout: 5), "A deliberate tap must still open the chosen activity")
+            XCTAssertFalse(grid.exists, "The chosen activity replaces the menu on both phone and iPad")
+            app.terminate()
+        }
+    }
+
     func testBottomControlsUseAvailableHeight() {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()

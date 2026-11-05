@@ -6,6 +6,7 @@ struct TownDirectoryView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.verticalSizeClass) private var heightClass
     @State private var search = ""
+    @State private var lastDrag: TimeInterval = -.infinity
     let onSelect: (String) -> Void
     private var columns: [GridItem] { [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 280 : heightClass == .compact ? 240 : 150), spacing: 10)] }
     private func available(_ names: [String]) -> [String] {
@@ -35,7 +36,10 @@ struct TownDirectoryView: View {
                         Text("No matching activities. Try boats, market or projects.").font(.subheadline)
                     }
                 }.padding(16)
-            }.accessibilityIdentifier("town-activity-grid").background(HarbourTheme.paper).foregroundStyle(HarbourTheme.ink).tint(HarbourTheme.sea)
+            }.simultaneousGesture(DragGesture(minimumDistance: 8)
+                .onChanged { _ in lastDrag = ProcessInfo.processInfo.systemUptime }
+                .onEnded { _ in lastDrag = ProcessInfo.processInfo.systemUptime })
+                .accessibilityIdentifier("town-activity-grid").background(HarbourTheme.paper).foregroundStyle(HarbourTheme.ink).tint(HarbourTheme.sea)
                 .searchable(text: $search, prompt: "Find an activity")
                 .navigationTitle("Town activities").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
@@ -47,7 +51,12 @@ struct TownDirectoryView: View {
             Text(heading).font(.system(.headline, design: .serif))
             LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                 ForEach(items, id: \.self) { category in
-                    Button { onSelect(category) } label: {
+                    Button {
+                        // Some older SwiftUI versions finish a plain button tap along
+                        // with the enclosing scroll gesture. A drag must never navigate.
+                        guard ProcessInfo.processInfo.systemUptime - lastDrag > 0.2 else { return }
+                        onSelect(category)
+                    } label: {
                         tile(category).frame(maxWidth: .infinity, minHeight: heightClass == .compact ? 64 : 160, alignment: .topLeading)
                             .padding(12).background(HarbourTheme.surface, in: RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(HarbourTheme.sea.opacity(0.15)))
