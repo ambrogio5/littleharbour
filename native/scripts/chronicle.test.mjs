@@ -47,7 +47,9 @@ test('All eight projects and both branches use distinct boats, durable paid stag
  for(const branch of [0,1]){ready();assert(act('chronicleHouseholds',[0]));
   for(const d of C.PROJECTS){assert(act('chronicleProject',[d.id,branch]),d.id);assert(!act('chronicleProject',[d.id,1-branch]));
    for(const stage of [0,1]){assert(act('chronicleBuild',[d.id,stage]));const paid=B.save();assert(!act('chronicleBuild',[d.id,stage]));assert.equal(B.save(),paid);reload();}
-   assert(!act('chronicleBuild',[d.id,2]));for(const[slot,route]of [[0,'quarry'],[1,'quarry'],[0,'island']]){assert(act('startVoyage',[slot,route,1]));tick(180);reload();}
+   assert(!act('chronicleBuild',[d.id,2]));
+   const wrong=C.PROJECT_TRANSPORT[d.id][branch][0]==='passengers'?'startVoyage':'startFerryService';assert(act(wrong,wrong==='startVoyage'?[0,'quarry',1]:[0,'quarry']));tick(180);assert.equal(save().chronicle.projects[d.id].boats.length,0,'Wrong mission type cannot complete a project');reload();
+   for(const[slot,route]of [[0,'quarry'],[1,'quarry'],[0,'island']]){const passenger=C.PROJECT_TRANSPORT[d.id][branch][route==='quarry'?0:1]==='passengers';assert(act(passenger?'startFerryService':'startVoyage',passenger?[slot,route]:[slot,route,1]));tick(180);reload();}
    assert(act('chronicleBuild',[d.id,2]));assert(act('chronicleBuild',[d.id,3]));assert.equal(save().chronicle.projects[d.id].stage,4);reload();
   }
   assert.equal(Object.keys(save().chronicle.projects).length,8);assert.equal(snap().chronicle.memories.filter(m=>C.PROJECTS.some(p=>p.title===m.title)).length,8);

@@ -41,7 +41,7 @@ for(const [index,choice]of ['food','craft'].entries()){
  for(const d of C.PROJECTS)measure(d.title,()=>{
   act('chronicleProject',d.id,index);checkpoint();
   for(const stage of [0,1]){const a=snap().actions.find(a=>a.fn==='chronicleBuild'&&a.args[0]===d.id);fund(a.cost);act('chronicleBuild',d.id,stage);checkpoint();}
-  for(const[slot,route]of [[0,'quarry'],[1,'island']]){const p=E.voyagePlan(state(),slot,route,1);fund(p.cost);act('startVoyage',slot,route,1);checkpoint();run(p.duration);}
+  for(const[slot,route]of [[0,'quarry'],[1,'island']]){const passenger=C.PROJECT_TRANSPORT[d.id][index][slot]==='passengers';const p=passenger?E.ferryPlan(state(),slot,route):E.voyagePlan(state(),slot,route,1);fund(p.cost);if(passenger)act('startFerryService',slot,route);else act('startVoyage',slot,route,1);checkpoint();run(p.duration);}
   act('chronicleBuild',d.id,2);checkpoint();const a=snap().actions.find(a=>a.fn==='chronicleBuild'&&a.args[0]===d.id);fund(a.cost);act('chronicleBuild',d.id,3);checkpoint();
  });
  const expected=JSON.parse(B.save());assert.equal(Object.values(expected.chronicle.projects).filter(p=>p.stage===4).length,8);

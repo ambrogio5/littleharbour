@@ -2,6 +2,26 @@ import XCTest
 @testable import LittleHarbour
 
 @MainActor final class GameStoreTests: XCTestCase {
+    func testProjectMissionSelectsUnusedBoatAndExactRouteWithoutLaunching() throws {
+        try withStore { store, _ in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "city-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            let before = try XCTUnwrap(store.snapshot)
+            let project = try XCTUnwrap(before.chronicle.projects.first { $0.id == "restoration" })
+            let mission = try XCTUnwrap(project.missions.first { $0.route == "island" })
+            XCTAssertTrue(mission.passengers)
+            store.chooseProjectBoat(project, mission: mission)
+            XCTAssertEqual(store.selectedBerth, 2)
+            XCTAssertEqual(store.category, "Ferry")
+            XCTAssertEqual(store.preferredFleetMission, "Passengers")
+            XCTAssertEqual(store.preferredFleetRoute, "island")
+            XCTAssertEqual(store.snapshot?.coins, before.coins)
+            XCTAssertEqual(store.snapshot?.stock, before.stock)
+            XCTAssertTrue(store.snapshot?.boats.allSatisfy { $0?.trip == nil } == true)
+            store.followGuidance()
+            XCTAssertNil(store.preferredFleetMission); XCTAssertNil(store.preferredFleetRoute)
+        }
+    }
     func testChapterCelebrationNeverGatesSavingOrReplaysOnImportAndRelaunch() throws {
         try withStore { store, repository in
             let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "festival-opening", withExtension: "json"))

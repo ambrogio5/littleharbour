@@ -12,6 +12,7 @@ import Combine
     @Published var guidanceFocus = false
     @Published var selectedBerth = 0
     @Published var preferredFleetMission: String?
+    @Published var preferredFleetRoute: String?
     @Published var directionFocus: String?
     @Published private(set) var chapterCelebration: StoryMemory?
     private var knownChapters: Set<String>?
@@ -191,7 +192,10 @@ import Combine
         if let d = s.directions.first(where: { "direction:" + $0.id == pin }) { followDirection(d); return }
         let request = s.chronicle.offers.first { $0.goal == pin }
         let project = s.chronicle.projects.first { "chronicle:" + $0.id == pin }
-        if request?.kind == 1 || project?.stage == 2 {
+        if let project, project.stage == 2, let mission = project.missions.first(where: { !$0.complete }) ?? project.missions.first {
+            chooseProjectBoat(project, mission: mission); return
+        }
+        if request?.kind == 1 {
             selectedBerth = s.boats.indices.first { s.boats[$0] != nil && s.boats[$0]?.trip == nil } ?? selectedBerth
             navigate(request != nil ? "Ferry" : "Fleet"); return
         }
@@ -205,8 +209,17 @@ import Combine
         navigate(direction.category); directionFocus = direction.id
         if let site = direction.siteID { selectedSite = site }
     }
-    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; self.category = category }
+    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; preferredFleetRoute = nil; self.category = category }
     func chooseCityBoat() { navigate("Fleet"); preferredFleetMission = "City" }
-    func followGuidance() { directionFocus = nil; guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
-    func select(_ entity: WorldEntity) { directionFocus = nil; if entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)) { selectedBerth = slot }; guidanceFocus = false; selectedSite = entity.id; category = entity.category }
+    func chooseProjectBoat(_ project: ChronicleState.Project, mission: ChronicleState.Project.Mission) {
+        pin("chronicle:" + project.id)
+        if let boats = snapshot?.boats {
+            selectedBerth = boats.indices.first { boats[$0] != nil && boats[$0]?.trip == nil && !project.usedBoats.contains($0) } ?? selectedBerth
+        }
+        navigate(mission.passengers ? "Ferry" : "Fleet")
+        preferredFleetRoute = mission.route
+        preferredFleetMission = mission.passengers ? "Passengers" : "Cargo"
+    }
+    func followGuidance() { directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
+    func select(_ entity: WorldEntity) { directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; if entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)) { selectedBerth = slot }; guidanceFocus = false; selectedSite = entity.id; category = entity.category }
 }

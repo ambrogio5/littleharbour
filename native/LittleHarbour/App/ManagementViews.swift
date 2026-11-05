@@ -257,6 +257,7 @@ struct FleetPanel: View {
             }.onAppear { configureSelection() }.onChange(of: store.category) { _, _ in configureSelection() }
                 .onChange(of: store.guidanceFocus) { _, _ in configureSelection() }
                 .onChange(of: store.preferredFleetMission) { _, _ in configureSelection() }
+                .onChange(of: store.preferredFleetRoute) { _, _ in configureSelection() }
         }
     }
     private var missionPicker: some View {
@@ -296,6 +297,9 @@ struct FleetPanel: View {
     private func destination(_ key: String) -> String { key == "city" ? "Porto Grande" : key == "quarry" ? "Pietra Cove" : key == "island" ? "Olive Island" : key.capitalized }
     private func configureSelection() {
         if store.preferredFleetMission == "City", store.snapshot?.chronicle.city.unlocked == true { mode = "City"; return }
+        if let destination = store.preferredFleetRoute, let mission = store.preferredFleetMission {
+            route = destination; mode = mission; tier = 1; return
+        }
         mode = store.category == "Ferry" ? "Passengers" : store.category == "Circuits" ? "Circuit" : "Cargo"
         let ids = store.guidanceFocus ? store.snapshot?.guidance.choices : store.snapshot?.directions.first { $0.id == store.directionFocus }?.choices
         if actions.contains(where: { (ids ?? []).contains($0.id) && $0.invocation?.0 == "buildThirdBerth" }) { store.selectedBerth = 2; return }

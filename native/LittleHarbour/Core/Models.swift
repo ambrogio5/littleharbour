@@ -334,9 +334,17 @@ struct ChronicleState: Decodable {
         let next: Int?
     }
     struct Project: Decodable, Identifiable {
+        struct Mission: Decodable, Identifiable {
+            let route, title: String
+            let passengers, complete: Bool
+            var id: String { route }
+        }
         let id, title, partner, art: String
         let branches, outcomes: [String]
         let materials: [[String]]
+        let transport: [[String]]
+        let missions: [Mission]
+        let usedBoats: [Int]
         let stage, branch, boats, routes: Int
         let goal: String?
         let needsStanding: Bool

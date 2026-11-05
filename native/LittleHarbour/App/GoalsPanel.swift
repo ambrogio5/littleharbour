@@ -124,6 +124,7 @@ struct GoalsPanel: View {
                     Text(p.branches[i]).font(.headline)
                     Text(p.outcomes[i]).font(.caption)
                     Text(zip([12, 24, 36], p.materials[i]).map { "\($0.0) \(goodsNames[$0.1] ?? $0.1)" }.joined(separator: " → ")).font(.caption2).foregroundStyle(HarbourTheme.muted)
+                    Text("Pietra Cove: \(p.transport[i][0]) · Olive Island: \(p.transport[i][1]) · two different boats").font(.caption2).foregroundStyle(HarbourTheme.muted)
                     if let action = controls("chronicleProject", p.id).first(where: { $0.invocation?.1.last as? Int == i }) { ManagementAction(action: action) }
                 }
                 if p.needsStanding { Text("First share a meal with a built household to earn town standing.").font(.caption) }
@@ -131,7 +132,16 @@ struct GoalsPanel: View {
                 Text(p.branches[p.branch]).font(.subheadline.bold())
                 ProgressView(value: Double(p.stage), total: 4)
                 Text(["Contribute foundation materials", "Contribute workshop supplies", "Return from both coasts with two different boats", "Contribute the opening supplies", "Open to the town"][p.stage]).font(.caption)
-                if p.stage == 2 { Text("\(p.boats) / 2 boats · \(p.routes) / 2 coasts").font(.caption.bold()) }
+                if p.stage == 2 {
+                    Text("\(p.boats) / 2 boats · \(p.routes) / 2 coasts").font(.caption.bold())
+                    ForEach(p.missions) { mission in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label(mission.title, systemImage: mission.complete ? "checkmark.circle.fill" : mission.passengers ? "person.2" : "shippingbox").font(.subheadline.bold())
+                            Button("Choose boat · \(mission.passengers ? "passengers" : "cargo") · \(mission.route == "quarry" ? "Pietra Cove" : "Olive Island")") { store.chooseProjectBoat(p, mission: mission) }.font(.caption.bold()).frame(minHeight: 44)
+                        }
+                    }
+                    if p.routes == 2 && p.boats < 2 { Text("Both coasts are connected. Use a different boat for either listed mission to complete the crew pairing.").font(.caption) }
+                }
                 ForEach(controls("chronicleBuild", p.id)) { ManagementAction(action: $0) }
                 HStack {
                     Button("Pin project") { store.pin("chronicle:" + p.id) }.frame(minHeight: 44)

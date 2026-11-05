@@ -1640,6 +1640,17 @@ const PROJECTS=[
  {id:'regatta',title:'A regatta for the coast',partner:'ada',branches:['Sailing celebration','Coastal discovery'],items:[['sails','boatparts','provisions'],['planks','cloth','preserves']],outcomes:['A lasting sailing pavilion welcomes the coastal crews.','A coastal expedition pavilion welcomes curious travellers.'],art:'regatta'},
  {id:'wintermarket',title:'The winter gathering',partner:'sofia',branches:['Shared table','Makers’ market'],items:[['furniture','preserves','bread'],['cloth','jars','tiles']],outcomes:['A sheltered communal table brings the coast together.','A covered makers’ arcade gives the town a new meeting place.'],art:'wintermarket'}
 ];
+// The branch changes how the fleet is used, not merely the final building picture.
+// Existing cargo/ferry prices and durations remain authoritative.
+const PROJECT_TRANSPORT={
+ restoration:[['cargo','passengers'],['cargo','cargo']],exhibition:[['cargo','passengers'],['passengers','cargo']],
+ seawall:[['cargo','cargo'],['cargo','cargo']],belltower:[['passengers','passengers'],['cargo','passengers']],
+ garden:[['cargo','passengers'],['passengers','passengers']],school:[['passengers','passengers'],['cargo','passengers']],
+ regatta:[['passengers','cargo'],['passengers','passengers']],wintermarket:[['passengers','passengers'],['cargo','passengers']]
+};
+const PROJECT_CREWS={restoration:['Supply the landing crews','Welcome the first visiting families'],exhibition:['Bring the shipwrights together','Welcome the exhibition’s guests'],seawall:['Bring back stoneworking supplies','Supply the island work crew'],belltower:['Welcome the neighbourhood gathering','Bring the market makers'],garden:['Supply the keeper’s planting work','Welcome the coastal garden visitors'],school:['Bring the teaching crews','Welcome the first students'],regatta:['Welcome the sailing crews','Prepare the coastal gathering'],wintermarket:['Welcome the shared-table guests','Bring the winter-market makers']};
+function projectMissions(c,id){const p=c.projects[id];if(!p)return [];return ['quarry','island'].map((route,i)=>({route,passengers:PROJECT_TRANSPORT[id][p.branch][i]==='passengers',complete:p.routes.includes(route),title:PROJECT_CREWS[id][i]}));}
+function projectTripMatches(c,id,route,passengers){return projectMissions(c,id).some(m=>m.route===route&&m.passengers===!!passengers);}
 const THEMES=[
  {title:'Repair the spring landing',partner:'matteo',items:['planks','tiles'],event:'The first visiting makers',choices:['Equip a workshop','Prepare their shared table'],alternatives:['cloth','bread']},
  {title:'A summer by the water',partner:'sofia',items:['bread','preserves'],event:'A place for the visitors',choices:['Welcome families','Welcome sailing crews'],alternatives:['furniture','sails']},
@@ -1688,7 +1699,7 @@ function actions(s,c,f){
  const done=PROJECTS.filter(d=>c.projects[d.id]?.stage===4).length;
  for(const d of PROJECTS.slice(0,Math.min(PROJECTS.length,done+2))){const p=c.projects[d.id];
   if(!p){for(let branch=0;branch<2;branch++)out.push({fn:'chronicleProject',args:[d.id,branch],title:'Choose · '+d.branches[branch],cost:{},reason:'Finish the current chronicle project first.'});}
-  else if(p.stage<4)out.push({fn:'chronicleBuild',args:[d.id,p.stage],title:['Lay the foundations','Equip the place','Welcome both crews','Open '+d.title.toLowerCase()][p.stage],cost:projectCost(c,d.id),goal:'chronicle:'+d.id+':'+p.stage,reason:p.stage===2?'Complete a cargo voyage from each coast using two different boats after this stage begins.':'Make the finished supplies for this stage.'});
+  else if(p.stage<4)out.push({fn:'chronicleBuild',args:[d.id,p.stage],title:['Lay the foundations','Equip the place','Welcome both crews','Open '+d.title.toLowerCase()][p.stage],cost:projectCost(c,d.id),goal:'chronicle:'+d.id+':'+p.stage,reason:p.stage===2?'Complete the two listed project missions using different boats after this stage begins. Cargo and passenger work count only for their assigned coast.':'Make the finished supplies for this stage.'});
  }
  if(households(s)>0)out.push({fn:'chronicleHouseholds',args:[c.standing],title:'Supply the neighbourhood table',cost:{bread:6*households(s)},goal:null,reason:'Share bread with the households actually living here. Each delivery earns town standing.'});
  for(const[id,d]of Object.entries(PARTNERS)){
@@ -1738,12 +1749,12 @@ function departure(c,fn,args){if(!c?.started)return;const slot=args[0];if(!Numbe
  const cargo=fn==='startVoyage',passenger=fn==='startFerryService',cancel=fn==='cancelVoyage';
  if(!cargo&&!passenger&&!cancel)return;
  for(const o of c.offers)if(o.accepted&&o.kind===1){o.eligible=o.eligible.filter(n=>n!==slot);if(passenger)o.eligible.push(slot);}
- for(const p of Object.values(c.projects))if(p.stage===2){p.eligible=p.eligible.filter(n=>n!==slot);if(cargo)p.eligible.push(slot);}
+ for(const[id,p]of Object.entries(c.projects))if(p.stage===2){p.eligible=p.eligible.filter(n=>n!==slot);if((cargo||passenger)&&projectTripMatches(c,id,args[1],passenger))p.eligible.push(slot);}
 }
 function tick(s,c,before,elapsed){if(!c?.started||elapsed<=0)return;Y.tick(s,c,elapsed);const old=Math.floor(c.elapsed/1200);c.elapsed=Math.min(1200*1000000-1,c.elapsed+elapsed);
  for(let slot=0;slot<before.length;slot++){const trip=before[slot];if(!trip||trip.left>elapsed)continue;
   for(const o of c.offers)if(o.accepted&&o.kind===1&&o.eligible.includes(slot)&&trip.ferry){if(!o.boats.includes(slot))o.boats.push(slot);if(!o.routes.includes(trip.route))o.routes.push(trip.route);o.eligible=o.eligible.filter(n=>n!==slot);}
-  for(const p of Object.values(c.projects))if(p.stage===2&&p.eligible.includes(slot)&&!trip.ferry&&['quarry','island'].includes(trip.route)){if(!p.boats.includes(slot))p.boats.push(slot);if(!p.routes.includes(trip.route))p.routes.push(trip.route);p.eligible=p.eligible.filter(n=>n!==slot);}
+  for(const[id,p]of Object.entries(c.projects))if(p.stage===2&&p.eligible.includes(slot)&&projectTripMatches(c,id,trip.route,trip.ferry)){if(!p.boats.includes(slot))p.boats.push(slot);if(!p.routes.includes(trip.route))p.routes.push(trip.route);p.eligible=p.eligible.filter(n=>n!==slot);}
  }
  if(Math.floor(c.elapsed/1200)!==old){c.offers=c.offers.filter(o=>o.accepted);refill(s,c);note(s,SEASONS[Math.floor(c.elapsed/1200)%4]+' begins · accepted work is safe; unaccepted opportunities have changed');}
 }
@@ -1771,9 +1782,9 @@ function restore(s,f,raw){
 function view(s,c,f){const live=c||freshChronicle(),season=Math.floor(live.elapsed/1200);return {city:Y.view(live),coast:live.coast,townName:live.townName,awning:live.awning,started:live.started,unlocked:f.stage===4,pin:live.pin,season:SEASONS[season%4],year:Math.floor(season/4)+1,remaining:1200-live.elapsed%1200,standing:live.standing,households:households(s),
  offers:live.offers.map(o=>({id:o.id,title:requestTitle(o),partner:PARTNERS[partner(o)].name,body:o.kind===1?(live.coast==='windy'?'Complete passenger services with two different boats, returning from both shores.':'Choose two different boats and complete a passenger service with each.'):o.kind===2?'Choose the visitors you want to welcome. Your choice determines the supplies you contribute.':'Finished supplies help a named neighbour. Stock already reserved for another project stays protected.',accepted:o.accepted,kind:o.kind,boats:o.boats.length,choice:o.choice===null?null:theme(o).choices[o.choice],goal:'year:'+o.id,cost:requestCost(o)})),
  partners:Object.entries(PARTNERS).map(([id,d])=>({id,...d,requests:live.partners[id],work:live.partnerWork[id]||0,assigned:live.specialist===id,level:STEPS.filter(n=>live.partners[id]>=n).length,next:STEPS.find(n=>live.partners[id]<n)||null})),
- projects:PROJECTS.slice(0,Math.min(8,Object.values(live.projects).filter(p=>p.stage===4).length+2)).map(d=>{const p=live.projects[d.id];return {id:d.id,title:d.title,partner:PARTNERS[d.partner].name,branches:d.branches,outcomes:d.outcomes,art:d.art,stage:p?.stage??-1,branch:p?.branch??-1,boats:p?.boats.length||0,routes:p?.routes.length||0,goal:p?'chronicle:'+d.id+':'+p.stage:null,materials:d.items,needsStanding:['seawall','belltower','school'].includes(d.id)&&live.standing<1};}),memories:live.ledger};}
+ projects:PROJECTS.slice(0,Math.min(8,Object.values(live.projects).filter(p=>p.stage===4).length+2)).map(d=>{const p=live.projects[d.id];return {id:d.id,title:d.title,partner:PARTNERS[d.partner].name,branches:d.branches,outcomes:d.outcomes,art:d.art,stage:p?.stage??-1,branch:p?.branch??-1,boats:p?.boats.length||0,routes:p?.routes.length||0,usedBoats:p?.boats||[],missions:projectMissions(live,d.id),transport:PROJECT_TRANSPORT[d.id],goal:p?'chronicle:'+d.id+':'+p.stage:null,materials:d.items,needsStanding:['seawall','belltower','school'].includes(d.id)&&live.standing<1};}),memories:live.ledger};}
 
-Object.assign(exports,{SEASONS,PARTNERS,STEPS,PROJECTS,freshChronicle,enableFestival,canMake,projectCost,goalCost,goalTitle,reserve,release,exportTown,planTown,PARTNER_ITEMS,partnerCost,actions,households,mutate,departure,tick,restore,view});
+Object.assign(exports,{SEASONS,PARTNERS,STEPS,PROJECTS,PROJECT_TRANSPORT,projectMissions,freshChronicle,enableFestival,canMake,projectCost,goalCost,goalTitle,reserve,release,exportTown,planTown,PARTNER_ITEMS,partnerCost,actions,households,mutate,departure,tick,restore,view});
 },
 "native/city-port.js":function(exports,require){
 // Native city voyages occupy real shared-engine boats without extending browser route schemas.
