@@ -15,7 +15,7 @@ import XCTest
         let group = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Harbour crews")).firstMatch
         XCTAssertTrue(reveal(group, in: app)); group.tap()
         let release = app.buttons["crew-assign-0-bench"]; XCTAssertTrue(reveal(release, in: app)); XCTAssertTrue(release.isEnabled)
-        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Landscape crew and decorating bench"; shot.lifetime = .keepAlways; add(shot)
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "Landscape crew and decorating bench"; shot.lifetime = .keepAlways; add(shot)
     }
     func testCrewAssignmentUsesRealWorkplacesAndLocksWhileWorkIsUnderway() throws {
         XCUIDevice.shared.orientation = .portrait
