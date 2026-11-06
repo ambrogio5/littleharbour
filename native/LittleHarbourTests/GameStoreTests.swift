@@ -60,6 +60,23 @@ import XCTest
             XCTAssertEqual(store.category, "Journal", "A status refresh cannot hijack navigation")
         }
     }
+    func testBulkStockTargetsPersistWithoutSpendingOrMovingNavigation() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport(); store.navigate("Production")
+            let keys = Array(try XCTUnwrap(store.snapshot).workshops.keys).sorted()
+            let stock = store.snapshot?.stock, coins = store.snapshot?.coins
+            store.setStockTargets(keys, target: 24)
+            XCTAssertTrue(try XCTUnwrap(store.snapshot).workshops.values.allSatisfy { $0.target == 24 })
+            XCTAssertEqual(store.snapshot?.stock, stock); XCTAssertEqual(store.snapshot?.coins, coins)
+            XCTAssertEqual(store.category, "Production")
+            let saved = try repository.original()
+            store.setStockTargets(keys + ["missing"], target: 0)
+            XCTAssertEqual(try repository.original(), saved)
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertTrue(try XCTUnwrap(reopened.snapshot).workshops.values.allSatisfy { $0.target == 24 })
+        }
+    }
     private func withStore(_ body: (GameStore, SaveRepository) throws -> Void) throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import * as B from '../bridge.js';
 import * as E from '../../dist/engine.js';
+import {nextStep} from '../guidance.js';
 import {sampleTown} from '../../dist/demo-town.js';
 import {worldEntities} from '../../dist/world-model.js';
 const late=E.parseSave(fs.readFileSync(new URL('../LittleHarbourTests/late-town.json',import.meta.url),'utf8'));
@@ -12,6 +13,29 @@ const investments=JSON.parse(fs.readFileSync(new URL('../LittleHarbourTests/long
 const fixtures=[E.fresh(),preQuay,sampleTown(),late,investments.town].map(s=>E.parseSave(JSON.stringify(s)));
 const snapshot=()=>JSON.parse(B.snapshot());
 const nativeTown=()=>JSON.parse(B.browserSave());
+test('Bulk stock targets commit atomically, preserve resources and round-trip native Keep 24',()=>{
+ B.load(JSON.stringify(investments));
+ const keys=Object.keys(snapshot().workshops),before=nativeTown();
+ assert(keys.length>3);assert(B.setTargets(keys,24));
+ assert(Object.values(snapshot().workshops).every(w=>w.target===24));
+ assert.deepEqual(nativeTown().stock,before.stock);assert.deepEqual(nativeTown().jobs,before.jobs);assert.equal(nativeTown().coins,before.coins);
+ const paid=B.save();B.load(paid);assert.equal(B.save(),paid);assert(B.setTargets(keys,24));assert.equal(B.save(),paid,'Repeated target selection is a no-op');
+ for(const [list,target]of [[[keys[0],'missing'],6],[[keys[0],keys[0]],6],[keys,25],[[],0]]){
+  assert.equal(B.setTargets(list,target),false);assert.equal(B.save(),paid,'Invalid bulk edit must not partially change earlier recipes');
+ }
+ assert(B.setTargets(keys,0));assert(Object.values(snapshot().workshops).every(w=>w.target===0));
+ B.reset();const fresh=B.save();assert.equal(B.setTargets(['field'],24),false);assert.equal(B.save(),fresh);
+ const context=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../LittleHarbour/Resources/engine-bundle.js',import.meta.url),'utf8'),context);
+ context.Harbour.load(JSON.stringify(investments));assert(context.Harbour.setTargets(keys,24));
+ B.load(JSON.stringify(investments));assert(B.setTargets(keys,24));assert.equal(context.Harbour.save(),B.save());
+});
+test('A supply recommendation names its destination goal separately from its next action',()=>{
+ const town=E.parseSave(JSON.stringify(preQuay));town.stock.wood=0;town.stock.stone=0;town.stock.bread=0;town.stock.flour=0;town.stock.wheat=0;
+ B.load(JSON.stringify(town));const s=snapshot(),target=s.actions.find(a=>a.fn==='upgrade');assert(target&&!target.enabled);
+ const guidance=nextStep(town,s.actions,s.objective,{targets:[target],category:'Build'});
+ assert.equal(guidance.goalTitle,target.title);assert(guidance.requirements.length>0);
+ assert.notEqual(guidance.goalTitle,guidance.title);assert(guidance.choices.every(id=>s.actions.some(a=>a.id===id)));
+});
 test('Native investment transactions, previews and legacy-export protection match the shared engine',()=>{
  const expected=E.parseSave(JSON.stringify(late));expected.coins=100000;for(const k of Object.keys(expected.stock))expected.stock[k]=1000;expected.fleet.visits={quarry:10,island:10};
  for(const route of ['quarry','island'])for(let stage=0;stage<3;stage++)assert(E.fundCoastalProject(expected,route,stage));

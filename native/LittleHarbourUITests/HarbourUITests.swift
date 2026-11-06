@@ -1,6 +1,65 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testProductionControlsStayStillWhenStartingWorkAndFeedbackDisappears() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["nav-Production"].tap()
+        let harvest = app.buttons["harvest"]
+        XCTAssertTrue(reveal(harvest, in: app)); harvest.tap()
+        if app.buttons["Dismiss message"].exists { app.buttons["Dismiss message"].tap() }
+        let mill = app.buttons["action-[\"start\",[\"mill\"]]"]
+        XCTAssertTrue(reveal(mill, in: app)); XCTAssertTrue(mill.isEnabled)
+        let before = mill.frame
+        mill.tap()
+        let queued = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "2 batches"), object: app.staticTexts["production-queue-summary"])
+        XCTAssertEqual(XCTWaiter.wait(for: [queued], timeout: 5), .completed)
+        XCTAssertEqual(mill.frame.minY, before.minY, accuracy: 2, "Adding a job or changing availability must not shift the production button")
+        let feedbackGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Dismiss message"])
+        XCTAssertEqual(XCTWaiter.wait(for: [feedbackGone], timeout: 8), .completed)
+        XCTAssertEqual(mill.frame.minY, before.minY, accuracy: 2, "Feedback must not resize the scroll viewport")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Stable production controls"; shot.lifetime = .keepAlways; add(shot)
+    }
+
+    func testAllStockTargetsAndUnifiedBuildingPlansAreReachable() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "long-play-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["nav-Production"].tap()
+        let view = app.segmentedControls["production-view"]
+        XCTAssertTrue(reveal(view, in: app)); view.buttons["Stock targets"].tap()
+        let all = app.buttons["all-stock-target-24"]
+        XCTAssertTrue(reveal(all, in: app)); XCTAssertTrue(all.isEnabled); all.tap()
+        let search = app.textFields["production-search"]
+        XCTAssertTrue(reveal(search, in: app)); search.tap(); search.typeText("wheat\n")
+        let wheat = app.buttons["stock-target-field"]
+        XCTAssertTrue(reveal(wheat, in: app)); XCTAssertEqual(wheat.value as? String, "Keep 24")
+        wheat.tap()
+        let twelve = app.buttons["stock-target-choice-field-12"]
+        XCTAssertTrue(twelve.waitForExistence(timeout: 5)); twelve.tap()
+        XCTAssertEqual(wheat.value as? String, "Keep 12")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "All production stock targets"; shot.lifetime = .keepAlways; add(shot)
+        let build = app.buttons["inspector-nav-Build"].exists ? app.buttons["inspector-nav-Build"] : app.buttons["nav-Build"]
+        build.tap()
+        let buildingSearch = app.textFields["build-search"]
+        XCTAssertTrue(reveal(buildingSearch, in: app)); buildingSearch.tap(); buildingSearch.typeText("berth\n")
+        let sails = app.buttons["action-[\"refitBoatSails\",[0]]"]
+        XCTAssertTrue(reveal(sails, in: app), "Boat equipment must be directly reachable from Build")
+        let buildShot = XCTAttachment(screenshot: app.screenshot()); buildShot.name = "Unified building and equipment plans"; buildShot.lifetime = .keepAlways; add(buildShot)
+    }
+
+    func testGoalsNameTheOutcomeAndTheNextAction() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
+        XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["map-goals"].tap()
+        XCTAssertTrue(app.staticTexts["goal-outcome"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["goal-next-action"].label.contains("Harvest"))
+        let next = app.buttons["Go to the next action"]
+        XCTAssertTrue(reveal(next, in: app)); next.tap()
+        XCTAssertTrue(app.staticTexts["guidance-goal"].waitForExistence(timeout: 5))
+        XCTAssertTrue(reveal(app.buttons["harvest"], in: app))
+    }
+
     func testCoastLibraryCreatesSeparateTownAndRestoresOriginalAcrossRelaunch() throws {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
@@ -454,10 +513,9 @@ import XCTest
     func testReadyFilterSearchAndSiteContext() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["nav-Production"].waitForExistence(timeout: 20)); app.buttons["nav-Production"].tap()
-        app.segmentedControls.buttons["Ready now"].tap()
         XCTAssertTrue(app.buttons["harvest"].waitForExistence(timeout: 5))
-        let search = app.textFields["Search actions"]; search.tap(); search.typeText("nothing-matches")
-        XCTAssertTrue(app.staticTexts["No matching actions"].waitForExistence(timeout: 5))
+        let search = app.textFields["production-search"]; XCTAssertTrue(reveal(search, in: app)); search.tap(); search.typeText("nothing-matches")
+        XCTAssertTrue(app.staticTexts["No matching products. Clear the search to see all unlocked recipes."].waitForExistence(timeout: 5))
         if app.buttons["inspector-nav-Production"].exists, app.keyboards.firstMatch.exists {
             XCTAssertLessThanOrEqual(app.buttons["inspector-nav-Production"].frame.maxY, app.keyboards.firstMatch.frame.minY,
                                      "Reclaiming the home strip must not put activity controls under the keyboard")

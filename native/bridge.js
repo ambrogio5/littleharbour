@@ -184,6 +184,18 @@ export function act(id){
  if(nextChronicle)C.restore(validated,progress,nextChronicle);
  town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;chronicle=nextChronicle;return true;
 }
+// One atomic target edit. Reuses the original unlock/target rules and never
+// starts production or spends stock during this transaction.
+export function setTargets(keys,target){
+ if(!Array.isArray(keys)||!keys.length||new Set(keys).size!==keys.length||![0,6,12,24].includes(target))return false;
+ if(keys.some(key=>typeof key!=='string'||!Object.hasOwn(E.RECIPES,key)||!E.unlocked(town,key))||!town.pier)return false;
+ if(keys.every(key=>(stockTargets[key]||town.targets[key]||0)===target))return true;
+ const next=clone(town),targets={...stockTargets};
+ for(const key of keys){if(!mutate(next,'setTarget',[key,target]))return false;if(target===24)targets[key]=24;else delete targets[key];}
+ next.log=[`${keys.length} production targets · ${target?'keep '+target:'automatic production off'}`,...town.log].slice(0,5);
+ const validated=E.parseSave(JSON.stringify(next));
+ town=validated;stockTargets=targets;return true;
+}
 export function resolve(option){evolution=V.resolveEvent(evolution,option);return true;}
 export function newCoast(coast,name){
  if(!['rocky','marsh','windy'].includes(coast))return false;
