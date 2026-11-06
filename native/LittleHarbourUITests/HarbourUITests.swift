@@ -1,6 +1,30 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testShelteredBayLandmarksZoomAndSiteInteraction() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["Explore"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
+        if app.buttons["map-expand"].exists { app.buttons["map-expand"].tap() }
+        app.buttons["Explore"].tap(); app.buttons["Home harbour"].tap()
+        let bay = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); bay.name = "Sheltered Bay working waterfront"; bay.lifetime = .keepAlways; add(bay)
+        app.buttons["Sites"].tap()
+        let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Bakery")
+        let bakery = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Bakery")).firstMatch
+        XCTAssertTrue(bakery.waitForExistence(timeout: 5)); bakery.tap()
+        XCTAssertTrue(app.staticTexts["Bakery"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.switches["site-filter"].exists)
+        if app.buttons["Map"].exists { app.buttons["Map"].tap() } else { app.buttons["nav-Production"].tap() }
+        XCTAssertTrue(app.buttons["Zoom in"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["map-expand"].label, "Show activity panel", "Directory keyboard must not collapse the expanded map")
+        app.buttons["Zoom in"].tap()
+        let detail = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); detail.name = "Sheltered Bay bakery close view"; detail.lifetime = .keepAlways; add(detail)
+        app.buttons["Explore"].tap(); app.buttons["explore-all"].tap()
+        let overview = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); overview.name = "Sheltered Bay overview"; overview.lifetime = .keepAlways; add(overview)
+    }
     func testCrewOverviewLandscapeOpensTheDecoratingBench() throws {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
@@ -219,7 +243,12 @@ import XCTest
         XCTAssertTrue(businesses.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(businesses, in: app)); businesses.tap()
         let exchangeOption = app.buttons["Plot 3 · Craft exchange"]
-        XCTAssertTrue(exchangeOption.waitForExistence(timeout: 5)); exchangeOption.tap()
+        XCTAssertTrue(exchangeOption.waitForExistence(timeout: 5))
+        // iOS 18.5 can report an invalid AX activation point for this visible
+        // native menu row. Tap its observed centre rather than invoking AX auto-scroll.
+        XCTAssertGreaterThan(exchangeOption.frame.height, 1)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(exchangeOption.frame))
+        exchangeOption.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(reveal(app.buttons["market-automation"], in: app))
         XCTAssertTrue(app.buttons["market-automation"].label.contains("Craft exchange"))
         let marketShot = XCTAttachment(screenshot: app.screenshot()); marketShot.name = "Individual market business"; marketShot.lifetime = .keepAlways; add(marketShot)
@@ -696,11 +725,16 @@ import XCTest
         let next = app.buttons["toolbar-next-step"].exists ? app.buttons["toolbar-next-step"] : app.buttons["objective"]
         next.tap(); XCTAssertEqual(app.staticTexts["next-step-title"].label, "Harvest & replant")
     }
-    func testPausedGuideExplainsHowToResumeAndWholeTownFits() throws {
+    func testPausedGuideExplainsHowToResumeAndOverviewHonoursZoomBounds() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["fit-town"].waitForExistence(timeout: 20)); app.buttons["fit-town"].tap()
         let map = app.otherElements["world-map"], fitted = map.value as? String
-        app.buttons["Zoom out"].tap(); XCTAssertNotEqual(map.value as? String, fitted)
+        app.buttons["Zoom in"].tap(); XCTAssertNotEqual(map.value as? String, fitted)
+        app.buttons["Zoom out"].tap(); XCTAssertEqual(map.value as? String, fitted)
+        for _ in 0..<6 { app.buttons["Zoom out"].tap() }
+        let outerLimit = map.value as? String
+        app.buttons["Zoom out"].tap(); XCTAssertEqual(map.value as? String, outerLimit, "The camera stops before revealing an unpainted map edge")
+        app.buttons["Zoom in"].tap(); XCTAssertNotEqual(map.value as? String, outerLimit)
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["objective"].tap()
         let resume = app.buttons["guidance-resume"]
         XCTAssertTrue(reveal(resume, in: app)); resume.tap(); XCTAssertFalse(resume.exists)

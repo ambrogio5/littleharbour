@@ -1,0 +1,36 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-11-06",
+  "recordType": "Prompt intent and output specification; wording summarized from generation requests",
+  "assets": [
+    {
+      "file": "terrain.png",
+      "reference": "approved-concept.png",
+      "requested": "3:2 landscape, ideally 3840\u00d72560",
+      "intent": "Building-free playable Mediterranean terrain in elevated near-orthographic 2.5D. Upper 55% open limestone terraces, shared paved market and promenade, connected cart roads and stairs, farmland upper left, stream and empty mill landing. Curved working quay, sheltered turquoise bay, open southern mouth and independent boat lanes, short right breakwater with empty lighthouse platform. No buildings, boats, characters, text or UI baked into ground.",
+      "actualPixels": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "file": "props.png",
+      "reference": "existing architecture.png style",
+      "requested": "Transparent square atlas, ideally 2048\u00d72048",
+      "intent": "Four separated 2\u00d72 prop clusters with generous transparent gutters: crates/barrels/folded sailcloth; rope/nets/baskets; bench and terracotta flower/olive pots; shipbuilding planks on a trestle. Consistent elevated three-quarter Mediterranean painted style and upper-left light. No buildings, people, boats or ground pedestals.",
+      "actualPixels": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "file": "paving.png",
+      "requested": "1024\u00d71024 square",
+      "intent": "Seamless warm pale Mediterranean limestone paving material, top-down, small irregular hand-cut cream and sandy beige stones, fine dusty joints and restrained wear. Even lighting, no props, perspective, text or border. Restricted to feathered overlays because arbitrary seamless repetition is not verified.",
+      "actualPixels": [
+        1254,
+        1254
+      ]
+    }
+  ]
+}
