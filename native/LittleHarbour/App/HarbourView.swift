@@ -72,9 +72,10 @@ struct HarbourView: View {
             .overlay(alignment: .bottom) { if !wide && !showInspector && !showSettings { FeedbackBanner().padding(.bottom, 62) } }
             .accessibilityHidden(store.chapterCelebration != nil && !showInspector)
             .overlay { if !showInspector, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
+            .onChange(of: geometry.size.width) { _, width in if width < 700 { mapExpanded = false } }
             .onChange(of: mapExpanded) { _, expanded in hasSideInspector = wide && !expanded }
             .onAppear { hasSideInspector = wide && !mapExpanded; scene.switchCoastViewport(id: store.activeCoastID); scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !hasSideInspector { showInspector = true } } }
-            .onChange(of: wide) { _, value in if !value { mapExpanded = false }; hasSideInspector = value && !mapExpanded; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !hasSideInspector { showInspector = true } } }
+            .onChange(of: wide) { _, value in if typeSize.isAccessibilitySize { mapExpanded = false }; hasSideInspector = value && !mapExpanded; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !hasSideInspector { showInspector = true } } }
             .sheet(isPresented: $showInspector) {
                 NavigationStack {
                     InspectorView()

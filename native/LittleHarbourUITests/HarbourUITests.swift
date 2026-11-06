@@ -18,7 +18,9 @@ import XCTest
         XCTAssertTrue(app.staticTexts["Bakery"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.switches["site-filter"].exists)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() } else { app.buttons["nav-Production"].tap() }
-        XCTAssertTrue(app.buttons["Zoom in"].waitForExistence(timeout: 5)); app.buttons["Zoom in"].tap()
+        XCTAssertTrue(app.buttons["Zoom in"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["map-expand"].label, "Show activity panel", "Directory keyboard must not collapse the expanded map")
+        app.buttons["Zoom in"].tap()
         let detail = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); detail.name = "Sheltered Bay bakery close view"; detail.lifetime = .keepAlways; add(detail)
         app.buttons["Explore"].tap(); app.buttons["explore-all"].tap()
         let overview = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); overview.name = "Sheltered Bay overview"; overview.lifetime = .keepAlways; add(overview)
