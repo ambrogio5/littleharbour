@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// Status updates never insert a new row above a control. Large text remains
-/// untruncated; ordinary sizes reserve two lines even when an action is ready.
+/// Reserve the same status space at every text size. Full requirements remain
+/// available to VoiceOver and in the detail alert, without moving the controls.
 struct StableActionStatus: View {
-    @Environment(\.dynamicTypeSize) private var typeSize
     let action: HarbourAction
     @State private var showExplanation = false
     private var text: String { action.enabled ? "Ready when you are" : action.reason }
@@ -11,11 +10,10 @@ struct StableActionStatus: View {
         Button { showExplanation = true } label: {
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: action.enabled ? "checkmark.circle" : "info.circle")
-                if typeSize.isAccessibilitySize { Text(text).fixedSize(horizontal: false, vertical: true) }
-                else { Text(text).lineLimit(2, reservesSpace: true) }
+                Text(text).lineLimit(2, reservesSpace: true)
                 Spacer(minLength: 0)
             }.font(.caption).foregroundStyle(HarbourTheme.muted).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        }.buttonStyle(.plain).accessibilityLabel(text)
+        }.buttonStyle(.plain).accessibilityLabel(text).accessibilityHint("Show the full requirements.")
             .alert(action.title, isPresented: $showExplanation) { Button("OK", role: .cancel) {} } message: { Text(text) }
     }
 }
@@ -263,6 +261,7 @@ struct WorkshopAutomation: View {
     @EnvironmentObject private var store: GameStore
     let recipe: String
     var compact = false
+    @State private var showStatus = false
     var body: some View {
         if let s = store.snapshot, let workshop = s.workshops[recipe] {
             let actions = s.actions.filter { $0.invocation?.0 == "setTarget" && $0.invocation?.1.first as? String == recipe }
@@ -283,10 +282,15 @@ struct WorkshopAutomation: View {
                                 .accessibilityIdentifier("automation-\(recipe)-\(target)")
                         }
                     }
-                    Group {
-                        if typeSize.isAccessibilitySize { Text(workshop.status + ". Uses normal ingredients and queue space.").fixedSize(horizontal: false, vertical: true) }
-                        else { Text(workshop.status + ". Uses normal ingredients and queue space.").lineLimit(3, reservesSpace: true) }
-                    }.font(.caption).foregroundStyle(HarbourTheme.muted)
+                    Button { showStatus = true } label: {
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: "info.circle")
+                            Text(workshop.status + ". Uses normal ingredients and queue space.").lineLimit(3, reservesSpace: true)
+                            Spacer(minLength: 0)
+                        }.font(.caption).foregroundStyle(HarbourTheme.muted).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    }.buttonStyle(.plain).accessibilityLabel(workshop.status + ". Uses normal ingredients and queue space.")
+                        .accessibilityHint("Show automatic production details.")
+                        .alert("Automatic stock", isPresented: $showStatus) { Button("OK", role: .cancel) {} } message: { Text(workshop.status + ". Uses normal ingredients and queue space.") }
                 }.padding(12).background(HarbourTheme.sea.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
             }
         }
