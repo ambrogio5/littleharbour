@@ -1,5 +1,6 @@
 // Native city voyages occupy real shared-engine boats without extending browser route schemas.
 import * as E from '../dist/engine.js';
+import * as R from './crews.js';
 export const CARGO={provisions:6,cloth:6,wine:6};
 export const EXPEDITIONS=[['Chart the sheltered coves','Study the city potteries'],['Invite the coastal navigators','Invite the master ceramicists']];
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -21,10 +22,10 @@ export function actions(s,c){
  if(!unlocked(c))return [];const y=c.city,out=[];
  for(let slot=0;slot<3;slot++){
   if(s.fleet.boats[slot]?.type==='cutter')out.push({fn:'chronicleCityRefit',args:[slot,y.serial],category:'Fleet',title:'Berth '+(slot+1)+' · rebuild cutter as coaster',cost:E.FLEET_BOATS.coaster.cost,reason:'The boat must be idle. Rebuilding uses the existing coaster purchase cost and retains installed equipment.',destructive:true});
-  out.push({fn:'chronicleCitySail',args:[slot,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · City port · 240s · return with 6 glaze',cost:CARGO,reason:voyageReason(s,c,slot)||'The city storehouse is full. Decorate or contribute ceramics before another import.'});
+  out.push({fn:'chronicleCitySail',args:[slot,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · City port · '+(240/R.rate(c,'boat:'+slot))+'s · return with 6 glaze',cost:CARGO,reason:voyageReason(s,c,slot)||'The city storehouse is full. Decorate or contribute ceramics before another import.'});
   if(y.voyages[slot])out.push({fn:'chronicleCityRecall',args:[slot,y.voyages[slot].epoch],category:'Fleet',title:'Recall city voyage · berth '+(slot+1),cost:{},reason:'',destructive:true});
   const stage=y.chapter-1;
-  if(stage>=0&&stage<2&&y.choices.length>stage&&!y.explored.includes(stage))out.push({fn:'chronicleCityExplore',args:[slot,stage,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · '+EXPEDITIONS[stage][y.choices[stage]]+' · 240s',cost:CARGO,reason:'Choose an idle coaster with Expanded hold and prepare its city cargo. Only one crew can undertake this expedition.'});
+  if(stage>=0&&stage<2&&y.choices.length>stage&&!y.explored.includes(stage))out.push({fn:'chronicleCityExplore',args:[slot,stage,y.serial],category:'Fleet',goal:'city:'+slot,title:'Berth '+(slot+1)+' · '+EXPEDITIONS[stage][y.choices[stage]]+' · '+(240/R.rate(c,'boat:'+slot))+'s',cost:CARGO,reason:'Choose an idle coaster with Expanded hold and prepare its city cargo. Only one crew can undertake this expedition.'});
  }
  out.push({fn:'chronicleCityCraft',args:[y.serial],title:'Decorate ceramics · 2 glaze + 2 jars → 2 ceramics · 30s',cost:{jars:2},reason:'Needs 2 imported glaze, 2 finished jars and a free decorating bench.'});
  if(y.chapter<3)out.push({fn:'chronicleCityDeliver',args:[y.chapter],title:['Furnish the city gallery','A gift for the coastal visitors','The Porto Lume collection'][y.chapter]+' · '+[6,12,18][y.chapter]+' ceramics',cost:{},reason:y.chapter>0&&!y.explored.includes(y.chapter-1)?'Complete your chosen expedition before this collection.':'Decorate enough ceramics to complete this collection.'});
@@ -59,8 +60,8 @@ export function mutate(s,c,fn,args){
  }
  return false;
 }
-export function tick(s,c,elapsed){const y=c.city;for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;v.left=Math.max(0,v.left-elapsed);if(v.left===0){y.glaze+=6;if(v.expedition!==null&&!y.explored.includes(v.expedition))y.explored.push(v.expedition);y.voyages[slot]=null;note(s,'City crew returned · 6 glaze'+(v.expedition!==null?' · expedition completed':''));}}
- if(y.job){y.job.left=Math.max(0,y.job.left-elapsed);if(y.job.left===0){y.ceramics+=2;y.job=null;note(s,'Decorated ceramics complete · +2 ceramics');}}
+export function tick(s,c,elapsed){const y=c.city;for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;v.left=Math.max(0,v.left-elapsed*R.rate(c,'boat:'+slot));if(R.rate(c,'boat:'+slot)>1&&v.left<1e-9)v.left=0;if(v.left===0){y.glaze+=6;if(v.expedition!==null&&!y.explored.includes(v.expedition))y.explored.push(v.expedition);y.voyages[slot]=null;note(s,'City crew returned · 6 glaze'+(v.expedition!==null?' · expedition completed':''));}}
+ if(y.job){y.job.left=Math.max(0,y.job.left-elapsed*R.rate(c,'bench'));if(R.rate(c,'bench')>1&&y.job.left<1e-9)y.job.left=0;if(y.job.left===0){y.ceramics+=2;y.job=null;note(s,'Decorated ceramics complete · +2 ceramics');}}
 }
 export function browserRefund(s,c){const next=clone(s);for(const v of c.city.voyages)if(v)for(const[k,n]of Object.entries(CARGO)){if(next.stock[k]+n>1e9)throw Error('Recall city voyages before exporting this town.');next.stock[k]+=n;}if(c.city.job){if(next.stock.jars+2>1e9)throw Error('Finish the decorating bench before exporting.');next.stock.jars+=2;}return next;}
 export function restore(s,c){
@@ -72,5 +73,5 @@ export function restore(s,c){
  if(y.job&&(typeof y.job!=='object'||Array.isArray(y.job)||Object.keys(y.job).join()!=='left'||!Number.isFinite(y.job.left)||y.job.left<=0||y.job.left>30||y.ceramics+2>1000000))bad();
  if(!unlocked(c)&&JSON.stringify(y)!==JSON.stringify(freshCity()))bad();return y;
 }
-export function view(c){return {unlocked:unlocked(c),glaze:c.city.glaze,ceramics:c.city.ceramics,chapter:c.city.chapter,jobLeft:c.city.job?.left||0,choices:c.city.choices.map((choice,stage)=>EXPEDITIONS[stage][choice]),explored:c.city.explored,activeVoyages:c.city.voyages.filter(Boolean).length};}
-export function boats(s,c){return s.fleet.boats.map((b,i)=>b&&c?.city.voyages[i]?{...b,trip:{route:'city',duration:240,left:c.city.voyages[i].left,ferry:false}}:b);}
+export function view(c){return {unlocked:unlocked(c),glaze:c.city.glaze,ceramics:c.city.ceramics,chapter:c.city.chapter,jobLeft:(c.city.job?.left||0)/R.rate(c,'bench'),jobDuration:30/R.rate(c,'bench'),choices:c.city.choices.map((choice,stage)=>EXPEDITIONS[stage][choice]),explored:c.city.explored,activeVoyages:c.city.voyages.filter(Boolean).length};}
+export function boats(s,c){return s.fleet.boats.map((b,i)=>{if(!b)return b;const rate=R.rate(c,'boat:'+i),v=c?.city.voyages[i],trip=v?{route:'city',duration:240,left:v.left,ferry:false}:b.trip;return trip?{...b,trip:{...trip,duration:trip.duration/rate,left:trip.left/rate}}:b;});}

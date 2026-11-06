@@ -1,6 +1,56 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testCrewOverviewLandscapeOpensTheDecoratingBench() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["map-goals"].tap()
+        let horizon = app.segmentedControls["goal-horizon"]; XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["People"].tap()
+        let menu = app.buttons["crew-menu-0"]; XCTAssertTrue(reveal(menu, in: app)); menu.tap()
+        let bench = app.buttons["crew-option-0-bench"]; XCTAssertTrue(bench.waitForExistence(timeout: 5)); bench.tap()
+        let link = app.buttons["crew-workplace-0"]; XCTAssertTrue(reveal(link, in: app)); link.tap()
+        XCTAssertTrue(horizon.buttons["Projects"].isSelected)
+        let group = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Harbour crews")).firstMatch
+        XCTAssertTrue(reveal(group, in: app)); group.tap()
+        let release = app.buttons["crew-assign-0-bench"]; XCTAssertTrue(reveal(release, in: app)); XCTAssertTrue(release.isEnabled)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Landscape crew and decorating bench"; shot.lifetime = .keepAlways; add(shot)
+    }
+    func testCrewAssignmentUsesRealWorkplacesAndLocksWhileWorkIsUnderway() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20))
+        app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["map-goals"].tap()
+        let horizon = app.segmentedControls["goal-horizon"]; XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["People"].tap()
+        let menu = app.buttons["crew-menu-0"]; XCTAssertTrue(reveal(menu, in: app)); menu.tap()
+        let workshops = app.buttons["crew-workshops-0"]; XCTAssertTrue(workshops.waitForExistence(timeout: 5)); workshops.tap()
+        let choice = app.buttons["crew-option-0-station:mill"]
+        XCTAssertTrue(choice.waitForExistence(timeout: 5)); choice.tap()
+        XCTAssertTrue(app.staticTexts["crew-overview-0"].label.lowercased().contains("mill"))
+        let work = app.buttons["crew-workplace-0"]; XCTAssertTrue(reveal(work, in: app)); work.tap()
+        let group = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Harbour crews")).firstMatch
+        XCTAssertTrue(reveal(group, in: app)); group.tap()
+        let release = app.buttons["crew-assign-0-station:mill"]
+        XCTAssertTrue(reveal(release, in: app)); XCTAssertTrue(release.isEnabled)
+        let mill = app.buttons["action-[\"start\",[\"mill\"]]"]
+        XCTAssertTrue(reveal(mill, in: app)); XCTAssertTrue(mill.isEnabled); mill.tap()
+        XCTAssertTrue(reveal(release, in: app)); XCTAssertFalse(release.isEnabled)
+        XCTAssertTrue(app.staticTexts["crew-status-0-station:mill"].label.contains("Finish active batches"))
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Crew working at the selected mill"; shot.lifetime = .keepAlways; add(shot)
+        let map = app.buttons["Map"]; if map.exists { map.tap() }
+        app.buttons["map-goals"].tap(); XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["People"].tap()
+        let second = app.buttons["crew-menu-1"]; XCTAssertTrue(reveal(second, in: app)); second.tap()
+        let boats = app.buttons["crew-boats-1"]; XCTAssertTrue(boats.waitForExistence(timeout: 5)); boats.tap()
+        let boat = app.buttons["crew-option-1-boat:0"]; XCTAssertTrue(boat.waitForExistence(timeout: 5)); boat.tap()
+        let boatWork = app.buttons["crew-workplace-1"]; XCTAssertTrue(reveal(boatWork, in: app)); boatWork.tap()
+        XCTAssertTrue(app.buttons["boat-selector-0"].waitForExistence(timeout: 5))
+        let boatGroup = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Harbour crews")).firstMatch
+        XCTAssertTrue(reveal(boatGroup, in: app)); boatGroup.tap()
+        XCTAssertTrue(reveal(app.buttons["crew-assign-1-boat:0"], in: app))
+        let fleet = XCTAttachment(screenshot: app.screenshot()); fleet.name = "Crew beside individual boat controls"; fleet.lifetime = .keepAlways; add(fleet)
+    }
     func testProductionControlsStayStillWhenStartingWorkAndFeedbackDisappears() throws {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()

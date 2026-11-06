@@ -19,6 +19,7 @@
 		1013980B63D7E1E64F81C742 /* chronicle-source-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 33FC0AF1C3C6465C2636C3B9 /* chronicle-source-manifest.json */; };
 		102CDC2303823BD13143415E /* vessel-coaster-homebound.png in Resources */ = {isa = PBXBuildFile; fileRef = E871D3DEBB6EF7877B42FE48 /* vessel-coaster-homebound.png */; };
 		111B9B3398D303A5BD6780AA /* boat-built.png in Resources */ = {isa = PBXBuildFile; fileRef = F5DC4283A85A6A1E1FD5EE07 /* boat-built.png */; };
+		1137AEDF63F0B72CEB3BB7E2 /* crews-ready.json in Resources */ = {isa = PBXBuildFile; fileRef = 5195B2BB6F30ECA1210A6CFF /* crews-ready.json */; };
 		13D8C0D2CD63E3F6702FE9A8 /* HarbourUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4AA985637C02571F2C4CFF /* HarbourUITests.swift */; };
 		146A506DA9D05217A4FBF2A6 /* vessel-coaster-upgraded-outbound.png in Resources */ = {isa = PBXBuildFile; fileRef = 47F1B6B4B80BE109D9E56FD3 /* vessel-coaster-upgraded-outbound.png */; };
 		17606B7A65A9F177B9BE5760 /* late-town.json in Resources */ = {isa = PBXBuildFile; fileRef = 253AE54DDEE82CB08C7A06D9 /* late-town.json */; };
@@ -122,6 +123,7 @@
 		708763A092D9A888BA6AEB74 /* orchard-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 81AA05F654BC784B5DDC287D /* orchard-unbuilt.png */; };
 		71BE2D5AE3882CE95FF08547 /* chronicle-regatta.png in Resources */ = {isa = PBXBuildFile; fileRef = 94E175DCB8E7A3C18DF7A43B /* chronicle-regatta.png */; };
 		7215AE5AAE0D6D974E3AE1CD /* chronicle-restoration.png in Resources */ = {isa = PBXBuildFile; fileRef = 3CFC18CCD375622750458B37 /* chronicle-restoration.png */; };
+		745E1A80766B072A8643EB21 /* crews-ready.json in Resources */ = {isa = PBXBuildFile; fileRef = 5195B2BB6F30ECA1210A6CFF /* crews-ready.json */; };
 		74E546552703883DBC423C40 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 558BB41A827967E6AE3F24B0 /* EngineTests.swift */; };
 		75367659FE7ADEA0F996B5F9 /* lighthouse-building.png in Resources */ = {isa = PBXBuildFile; fileRef = E8B0CC45F4B02F94AAE362DA /* lighthouse-building.png */; };
 		775AB577574C3E8909630CB3 /* terrain-surround.png in Resources */ = {isa = PBXBuildFile; fileRef = 3C475001E2DBAF0B89988EB9 /* terrain-surround.png */; };
@@ -154,6 +156,7 @@
 		9173A84EC3DBBCAD6FF6A630 /* field-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = CF3DA21A40197AD557635F97 /* field-ripe.png */; };
 		91FBF327DC95B31E1B12404D /* waterfront-ripe.png in Resources */ = {isa = PBXBuildFile; fileRef = 456899F7EBBCEE1EB1A20119 /* waterfront-ripe.png */; };
 		930CF9ED1756EEE10DDC6BBD /* bakery-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 4EBD1C8CD55942333C37D54C /* bakery-building.png */; };
+		943B6B8F5109C7A61F47C61F /* legacy-engine-v16.js in Resources */ = {isa = PBXBuildFile; fileRef = ABC8E8D828F429264C770D28 /* legacy-engine-v16.js */; };
 		9462D3559E0D703CA5FBDA06 /* flaxgarden-unbuilt.png in Resources */ = {isa = PBXBuildFile; fileRef = 3FFDE9AB895CA9A570FC26E1 /* flaxgarden-unbuilt.png */; };
 		94B2D6B44F318A8054048AE8 /* advanced-kitchen.png in Resources */ = {isa = PBXBuildFile; fileRef = 1D254B06FC9AB69C35DE0D33 /* advanced-kitchen.png */; };
 		965C5B3D50DA5ECDD1985328 /* festival-campaigns.json in Resources */ = {isa = PBXBuildFile; fileRef = FB4A02F59CEE98603E8DD61F /* festival-campaigns.json */; };
@@ -208,6 +211,7 @@
 		CEC4E5EB0A7D632BC0C9F7B6 /* good-sails.png in Resources */ = {isa = PBXBuildFile; fileRef = 3F4FA4A4EB061107F09EC112 /* good-sails.png */; };
 		D12D09E83801429AFD57A650 /* boatyard-building.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F4C09C57C840523F83598E0 /* boatyard-building.png */; };
 		D17C90BA689554169289FAFC /* long-play-campaigns.json in Resources */ = {isa = PBXBuildFile; fileRef = 33CA043802034D960C1226F0 /* long-play-campaigns.json */; };
+		D364974A06279501BF200DFE /* crews-campaigns.json in Resources */ = {isa = PBXBuildFile; fileRef = E19CCD9A949F4F08E3EED74B /* crews-campaigns.json */; };
 		D3F38E95FC0C250F888171DA /* good-flax.png in Resources */ = {isa = PBXBuildFile; fileRef = 0993249C9E819F28C3408E35 /* good-flax.png */; };
 		D42F5D93217E650310B3E9EE /* boatyard-upgraded.png in Resources */ = {isa = PBXBuildFile; fileRef = 68ACC3FA35694C152C79812B /* boatyard-upgraded.png */; };
 		D5C0E7B600FD475CBD919F85 /* chronicle-garden-alternate.png in Resources */ = {isa = PBXBuildFile; fileRef = AD55AC0E57CD631F90009930 /* chronicle-garden-alternate.png */; };
@@ -365,6 +369,7 @@
 		4EBD1C8CD55942333C37D54C /* bakery-building.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bakery-building.png"; sourceTree = "<group>"; };
 		4FD3B97DC0D02061F0B1B05A /* city-campaigns.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "city-campaigns.json"; sourceTree = "<group>"; };
 		50637907B29BB90E6090D6BA /* olive-tree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "olive-tree.png"; sourceTree = "<group>"; };
+		5195B2BB6F30ECA1210A6CFF /* crews-ready.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "crews-ready.json"; sourceTree = "<group>"; };
 		521691299596A9EC263D0319 /* LittleHarbour.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = LittleHarbour.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		53215A0799BFC2AC6192CB5B /* clay-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "clay-built.png"; sourceTree = "<group>"; };
 		534895C135CCBF67073F53D2 /* EngineRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineRuntime.swift; sourceTree = "<group>"; };
@@ -447,6 +452,7 @@
 		A8E4C27FDA711B955FB31885 /* fishing-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "fishing-built.png"; sourceTree = "<group>"; };
 		A964824D40E34BD603544185 /* HarbourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarbourView.swift; sourceTree = "<group>"; };
 		AB4D722B075AD45931764537 /* home-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "home-upgraded.png"; sourceTree = "<group>"; };
+		ABC8E8D828F429264C770D28 /* legacy-engine-v16.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "legacy-engine-v16.js"; sourceTree = "<group>"; };
 		ABCD19C24D093D7B638C7E3A /* kiln-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kiln-upgraded.png"; sourceTree = "<group>"; };
 		AD55AC0E57CD631F90009930 /* chronicle-garden-alternate.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "chronicle-garden-alternate.png"; sourceTree = "<group>"; };
 		ADC42F8E4D86E0A2D9ECDDD8 /* CoastLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoastLibraryView.swift; sourceTree = "<group>"; };
@@ -489,6 +495,7 @@
 		DE9A78E19770D3D6015EB2A4 /* weaver-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "weaver-upgraded.png"; sourceTree = "<group>"; };
 		DEB94C1ED0B7BC461239E3E0 /* lighthouse-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "lighthouse-built.png"; sourceTree = "<group>"; };
 		DFD59D7C2D5E672D10B7144F /* field-upgraded.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "field-upgraded.png"; sourceTree = "<group>"; };
+		E19CCD9A949F4F08E3EED74B /* crews-campaigns.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "crews-campaigns.json"; sourceTree = "<group>"; };
 		E28D241AA833F8C41A9E7925 /* home-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "home-unbuilt.png"; sourceTree = "<group>"; };
 		E3A03FDEE2CF0FD67E6B0155 /* flaxgarden-built.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "flaxgarden-built.png"; sourceTree = "<group>"; };
 		E3AEA5516216FCAC7985A798 /* specialist-unbuilt.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "specialist-unbuilt.png"; sourceTree = "<group>"; };
@@ -548,6 +555,8 @@
 				ED488E78F88F85B4C2949CE9 /* chronicle-campaigns.json */,
 				4FD3B97DC0D02061F0B1B05A /* city-campaigns.json */,
 				91D1428F36F753A781D4FC23 /* city-ready.json */,
+				E19CCD9A949F4F08E3EED74B /* crews-campaigns.json */,
+				5195B2BB6F30ECA1210A6CFF /* crews-ready.json */,
 				4C6056532A142CAE2FB8B3C2 /* earned-campaigns.json */,
 				558BB41A827967E6AE3F24B0 /* EngineTests.swift */,
 				FB4A02F59CEE98603E8DD61F /* festival-campaigns.json */,
@@ -556,6 +565,7 @@
 				02C3496792698D15EC5E15E9 /* GameStoreTests.swift */,
 				253AE54DDEE82CB08C7A06D9 /* late-town.json */,
 				4B1644ED53BD7403E51D6597 /* legacy-engine-v13.js */,
+				ABC8E8D828F429264C770D28 /* legacy-engine-v16.js */,
 				44BE8C9FCF83F0A56D7436EF /* legacy-festival-campaigns-v13.json */,
 				16ACDA48C13B1AD5B7613D9F /* legacy-paid-voyages.json */,
 				33CA043802034D960C1226F0 /* long-play-campaigns.json */,
@@ -972,12 +982,15 @@
 				DEF5F6EB9FE0041E00677274 /* chronicle-campaigns.json in Resources */,
 				3FCEC3999294677C66254632 /* city-campaigns.json in Resources */,
 				1AD394FD3A80FD3058FF0BEA /* city-ready.json in Resources */,
+				D364974A06279501BF200DFE /* crews-campaigns.json in Resources */,
+				745E1A80766B072A8643EB21 /* crews-ready.json in Resources */,
 				E5777D89EDDD3B465833E758 /* earned-campaigns.json in Resources */,
 				965C5B3D50DA5ECDD1985328 /* festival-campaigns.json in Resources */,
 				EFDC55086622ED71358EBA2B /* festival-opening.json in Resources */,
 				0B0B2AC622FE99C785CEA833 /* festival-ready.json in Resources */,
 				2BE7F523B618E6EF8D77C404 /* late-town.json in Resources */,
 				58D40ADD4D23005FCFFF520D /* legacy-engine-v13.js in Resources */,
+				943B6B8F5109C7A61F47C61F /* legacy-engine-v16.js in Resources */,
 				6B32BA65F32E6FDE7420CF86 /* legacy-festival-campaigns-v13.json in Resources */,
 				4514EBBBEA0519108AF356E6 /* legacy-paid-voyages.json in Resources */,
 				D17C90BA689554169289FAFC /* long-play-campaigns.json in Resources */,
@@ -1208,6 +1221,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E3B755FB63B15910034BF6FD /* city-ready.json in Resources */,
+				1137AEDF63F0B72CEB3BB7E2 /* crews-ready.json in Resources */,
 				538BAAFE7684C0427662A07B /* festival-opening.json in Resources */,
 				4B2FEB0508A004B0E58A3076 /* festival-ready.json in Resources */,
 				17606B7A65A9F177B9BE5760 /* late-town.json in Resources */,
@@ -1346,7 +1360,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1435,7 +1449,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;

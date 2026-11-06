@@ -5,6 +5,35 @@ import JavaScriptCore
 @testable import LittleHarbour
 
 @MainActor final class EngineTests: XCTestCase {
+    func testEarnedCrewAllocationsReplayAndOlderReaderProtectsVersionFive() throws {
+        let bundle = Bundle(for: Self.self)
+        let campaigns = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: "crews-campaigns", withExtension: "json")))) as? [[String: Any]])
+        let bases = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: XCTUnwrap(bundle.url(forResource: "city-campaigns", withExtension: "json")))) as? [[String: Any]])
+        XCTAssertEqual(campaigns.count, 6)
+        for campaign in campaigns {
+            let runtime = try EngineRuntime()
+            let index = try XCTUnwrap(campaign["baseIndex"] as? Int)
+            try runtime.load(JSONSerialization.data(withJSONObject: XCTUnwrap(bases[index]["expected"])))
+            for step in try XCTUnwrap(campaign["steps"] as? [[String: Any]]) {
+                if let action = step["action"] as? String { XCTAssertTrue(try runtime.call("act", [action]).toBool(), action) }
+                else if let args = step["crew"] as? [Any] { XCTAssertTrue(try runtime.call("assignCrew", args).toBool()) }
+                else if let keys = step["targets"] as? [String] { XCTAssertTrue(try runtime.call("setTargets", [keys, 0]).toBool()) }
+                else if let speed = step["speed"] as? Int { try runtime.call("speed", [speed]) }
+                else if let ticks = step["ticks"] as? Int { for _ in 0..<ticks { try runtime.call("tick", [1]) } }
+                else { let saved = try runtime.save(); try runtime.load(saved); XCTAssertEqual(try runtime.save(), saved) }
+            }
+            XCTAssertEqual(try JSONSerialization.jsonObject(with: runtime.save()) as? NSDictionary, campaign["expected"] as? NSDictionary)
+            let snapshot = try runtime.snapshot(); XCTAssertEqual(snapshot.crews.unlocked, 2)
+            if campaign["allocation"] as? String != "none" {
+                let old = try XCTUnwrap(JSContext())
+                old.evaluateScript(try String(contentsOf: XCTUnwrap(bundle.url(forResource: "legacy-engine-v16", withExtension: "js")), encoding: .utf8))
+                let engine = try XCTUnwrap(old.objectForKeyedSubscript("Harbour")); let original = engine.invokeMethod("save", withArguments: [])?.toString()
+                engine.invokeMethod("load", withArguments: [try XCTUnwrap(String(data: runtime.save(), encoding: .utf8))])
+                XCTAssertNotNil(old.exception); old.exception = nil
+                XCTAssertEqual(engine.invokeMethod("save", withArguments: [])?.toString(), original)
+            }
+        }
+    }
     func testEarnedChronicleAndCityContinuationsReplayThroughJavaScriptCore() throws {
         let bundle = Bundle(for: Self.self)
         for (source, base) in [("chronicle-campaigns", "long-play-campaigns"), ("city-campaigns", "chronicle-campaigns")] {

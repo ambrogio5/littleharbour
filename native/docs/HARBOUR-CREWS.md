@@ -1,6 +1,6 @@
 # Harbour crews — next gameplay phase
 
-Proposal, 6 November 2026. Not implemented or approved yet. Builds on the completed city/civic systems and build-16 navigation fixes. This is one reviewable increment, not a promise to add all remaining roadmap ideas at once.
+Approved by the owner on 6 November 2026, including the rates and native-envelope-5 boundary. Implemented in build 17; final verification is in progress. Builds on the completed city/civic systems and build-16 navigation fixes. This is one reviewable increment, not a promise to add all remaining roadmap ideas at once.
 
 ## Player decision
 
@@ -8,7 +8,7 @@ The late game has many supply goals but little reason to change a working produc
 
 The first team graduates when the harbour school is completed; the second becomes available after the regatta. Both are optional, cost no coins or goods, and have no wages or upkeep. Each team has one assignment; each workplace or boat can have at most one team. No crew occupies the existing partner/adviser slot.
 
-## Proposed numbers and rules — awaiting owner agreement
+## Approved numbers and rules
 
 - Two teams maximum, unlocked by the existing school and regatta completions.
 - A team contributes 25% extra work per active simulated second to one assigned workshop or boat: about 20% shorter completion time. Existing refits, cargo prices, outputs and voyage rewards remain as they are. Crew effects cannot stack on the same target.
@@ -35,3 +35,21 @@ Assignments use an epoch token and atomic validation. Reject unknown workplaces,
 ## Acceptance
 
 Exercise both unlocks through the existing earned city/civic traces; compare no-team, workshop-team and boat-team continuations. Record goods, coins, active decisions and simulated waiting rather than claiming a longer or more enjoyable game from timers alone. Test mixed refits, station queues, repeated voyages, city imports/crafting, recall, pause, save/reload, browser export and old-reader protection. Replay through Node and JavaScriptCore, then verify inline assignment and goal navigation on iPhone/iPad simulators. Physical acceptance remains a separate step on a disposable test town; never replace the owner's town with a fixture.
+
+## Implemented behavior and earned checks
+
+Assignments are inline in Production and the selected boat, plus the decorating bench. The People overview groups its picker into workshops and boats; the bench is directly accessible. Goal supply cards link to the actual workshop. Controls reserve status space and reject rapid reversal taps. No new character raster art is claimed.
+
+The canonical engine accepts an optional fourth work-rate argument; the default remains exactly the original simulation. Rates affect one station budget or one boat, not every queued batch, construction or the seasonal clock. Native arrival recording consumes actual completion events, including immediate repeat departures. Tiny floating-point residues are clamped only on accelerated work. Displayed remaining time converts canonical work units into game seconds.
+
+Six earned continuations start with the two existing city-campaign towns, compare no crew / workshop crews / fleet-and-bench crews, use real recipes and voyage costs, and checkpoint reloads throughout. Each allocation produces exactly the same final stocks, coins, glaze and ceramics for its starting town:
+
+| Earned task | No crew | Workshop allocation | Fleet + bench allocation |
+| --- | ---: | ---: | ---: |
+| Prepare jars and wine, either starting town | 408 s | 348 s | 408 s |
+| Import glaze and make six ceramics, maritime town | 513 s | 513 s | 447 s |
+| Import glaze and make six ceramics, estate town | 548 s | 548 s | 482 s |
+
+These are scripted game-time measurements at 1×, including ingredient preparation, not human session timings or evidence that the new choice is enjoyable. Existing no-crew economy baselines retain identical measurements; only the current bundle fingerprint changes.
+
+Initial validation: all 216 browser tests and 52 adapter tests passed before the additional accelerated-repeat regression; the expanded crew suite now has nine passing tests. The six earned traces replay through JavaScriptCore, and native persistence/navigation tests pass. Phone portrait assignment and busy-lock checks pass. The first landscape run exposed a long ungrouped menu; grouped-menu and landscape reruns now pass on iPhone, together with the rapid-tap/save test. iPad accessibility checks and full CI are in progress. Physical playtesting, VoiceOver gestures and sustained performance remain unverified. Build 16 on Duo remains untouched by this development.

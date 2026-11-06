@@ -20,9 +20,10 @@ node native/scripts/festival-campaign.mjs --check
 node native/scripts/long-play-campaign.mjs --check
 node native/scripts/chronicle-campaign.mjs --check
 node native/scripts/city-campaign.mjs --check
+node native/scripts/crews-campaign.mjs --check
 node native/scripts/long-play-baseline.mjs --check
 node native/scripts/long-play-baseline.mjs --after --check
-node --test native/scripts/bridge.test.mjs native/scripts/chronicle.test.mjs
+node --test native/scripts/bridge.test.mjs native/scripts/chronicle.test.mjs native/scripts/crews.test.mjs
 npm test
 mkdir -p "$HARBOUR_OUTPUT"
 xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \

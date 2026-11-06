@@ -21,13 +21,14 @@ jobs:
           node-version: '22'
       - run: node native/scripts/bundle-engine.mjs --check
       - run: npm test
-      - run: node --test native/scripts/bridge.test.mjs native/scripts/chronicle.test.mjs
+      - run: node --test native/scripts/bridge.test.mjs native/scripts/chronicle.test.mjs native/scripts/crews.test.mjs
       - run: node native/scripts/verify-art.mjs
       - run: node native/scripts/campaign.mjs --check
       - run: node native/scripts/festival-campaign.mjs --check
       - run: node native/scripts/long-play-campaign.mjs --check
       - run: node native/scripts/chronicle-campaign.mjs --check
       - run: node native/scripts/city-campaign.mjs --check
+      - run: node native/scripts/crews-campaign.mjs --check
       - run: node native/scripts/long-play-baseline.mjs --check
       - run: node native/scripts/long-play-baseline.mjs --after --check
   simulator:
