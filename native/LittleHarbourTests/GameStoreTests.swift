@@ -2,6 +2,26 @@ import XCTest
 @testable import LittleHarbour
 
 @MainActor final class GameStoreTests: XCTestCase {
+    func testCrewAssignmentPersistsAndLinksToActualWorkplaceWithoutSpending() throws {
+        try withStore { store, repository in
+            let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json"))
+            store.previewImport(try Data(contentsOf: fixture)); store.confirmImport()
+            let before = try XCTUnwrap(store.snapshot)
+            store.assignCrew(0, to: "station:mill", epoch: before.crews.epoch)
+            XCTAssertEqual(store.snapshot?.crews.teams[0].target, "station:mill")
+            XCTAssertEqual(store.snapshot?.stock, before.stock); XCTAssertEqual(store.snapshot?.coins, before.coins)
+            store.assignCrew(0, to: nil, epoch: store.snapshot!.crews.epoch)
+            XCTAssertEqual(store.snapshot?.crews.teams[0].target, "station:mill", "A rapid second tap must not release the just-assigned team")
+            let reopened = GameStore(repository: SaveRepository(directory: repository.directory), arguments: [], environment: [:])
+            XCTAssertEqual(reopened.snapshot?.crews.teams[0].target, "station:mill")
+            reopened.openCrewWorkplace("boat:1"); XCTAssertEqual(reopened.category, "Fleet"); XCTAssertEqual(reopened.selectedBerth, 1)
+            reopened.openCrewWorkplace("bench"); XCTAssertEqual(reopened.category, "Goals"); XCTAssertEqual(reopened.preferredGoalSection, "Projects")
+            reopened.openCrewWorkplace("station:mill"); XCTAssertEqual(reopened.category, "Production"); XCTAssertNotNil(reopened.selectedSite)
+            let bytes = try repository.original(); reopened.protectedSave = true
+            reopened.assignCrew(1, to: "boat:0", epoch: reopened.snapshot!.crews.epoch)
+            XCTAssertEqual(try repository.original(), bytes)
+        }
+    }
     func testProjectMissionSelectsUnusedBoatAndExactRouteWithoutLaunching() throws {
         try withStore { store, _ in
             let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "city-ready", withExtension: "json"))

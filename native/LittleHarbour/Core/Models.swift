@@ -126,7 +126,20 @@ struct HarbourStory: Decodable {
 }
 struct MarketState: Decodable, Identifiable { let id, name: String; let plot: Int; let demand: Int? }
 struct AdvancedRefit: Decodable { let tier, epoch: Int; let mode: String }
+struct CrewState: Decodable {
+    struct Option: Decodable, Identifiable { let id, title, kind, reason: String; let recipe: String? }
+    struct Team: Decodable, Identifiable {
+        let id: Int
+        let name, title, reason: String
+        let unlocked: Bool
+        let target: String?
+        let options: [Option]
+    }
+    let epoch, unlocked: Int
+    let teams: [Team]
+}
 struct HarbourSnapshot: Decodable {
+    let crews: CrewState
     let chronicle: ChronicleState
     let markets: [MarketState]
     let advancedRefits: [String: AdvancedRefit]
@@ -317,7 +330,7 @@ struct ChronicleState: Decodable {
     struct City: Decodable {
         let unlocked: Bool
         let glaze, ceramics, chapter, activeVoyages: Int
-        let jobLeft: Double
+        let jobLeft, jobDuration: Double
         let choices: [String]
         let explored: [Int]
     }

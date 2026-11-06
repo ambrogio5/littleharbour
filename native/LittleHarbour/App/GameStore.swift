@@ -13,6 +13,7 @@ import Combine
     @Published var selectedBerth = 0
     @Published var preferredFleetMission: String?
     @Published var preferredFleetRoute: String?
+    @Published var preferredGoalSection: String?
     @Published var directionFocus: String?
     @Published private(set) var chapterCelebration: StoryMemory?
     private var knownChapters: Set<String>?
@@ -103,6 +104,27 @@ import Combine
             }
             if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: snapshot?.log.first) }
         } catch { freeze(error) }
+    }
+    func assignCrew(_ team: Int, to target: String?, epoch: Int) {
+        guard !protectedSave, let engine else { return }
+        let now = actionClock()
+        guard now - lastActionAt >= 0.65 else { return }
+        do {
+            guard try engine.call("assignCrew", [team, target as Any? ?? NSNull(), epoch]).toBool() else {
+                message = "The team or workplace changed. Finish its work and review the assignment."; return
+            }
+            lastActionAt = now
+            try refresh(); flush()
+            if !protectedSave { message = snapshot?.log.first; feedbackUntil = ProcessInfo.processInfo.systemUptime + 4 }
+        } catch { freeze(error) }
+    }
+    func openCrewWorkplace(_ target: String) {
+        if target.hasPrefix("boat:"), let slot = Int(target.dropFirst(5)) { navigate("Fleet"); selectedBerth = slot }
+        else if target == "bench" { navigate("Goals"); preferredGoalSection = "Projects" }
+        else {
+            let station = String(target.dropFirst(8)); navigate("Production")
+            selectedSite = snapshot?.entities.first { $0.select == station || $0.id == station }?.id
+        }
     }
     func setStockTargets(_ recipes: [String], target: Int) {
         guard !protectedSave, let engine else { return }
@@ -220,7 +242,7 @@ import Combine
         navigate(direction.category); directionFocus = direction.id
         if let site = direction.siteID { selectedSite = site }
     }
-    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; preferredFleetRoute = nil; self.category = category }
+    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; preferredFleetRoute = nil; preferredGoalSection = nil; self.category = category }
     func chooseCityBoat() { navigate("Fleet"); preferredFleetMission = "City" }
     func chooseProjectBoat(_ project: ChronicleState.Project, mission: ChronicleState.Project.Mission) {
         pin("chronicle:" + project.id)

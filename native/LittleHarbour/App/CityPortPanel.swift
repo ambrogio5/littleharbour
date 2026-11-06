@@ -15,8 +15,9 @@ struct CityPortPanel: View {
                         Spacer()
                         Label("\(city.ceramics) ceramics", systemImage: "cup.and.saucer.fill")
                     }.font(.subheadline.bold())
-                    if city.jobLeft > 0 { ProgressView("Decorating · \(Int(ceil(city.jobLeft)))s", value: 30 - city.jobLeft, total: 30).font(.caption) }
+                    if city.jobLeft > 0 { ProgressView("Decorating · \(Int(ceil(city.jobLeft)))s", value: city.jobDuration - city.jobLeft, total: city.jobDuration).font(.caption) }
                     Button("Choose a city boat") { store.chooseCityBoat() }.frame(minHeight: 44).accessibilityIdentifier("choose-city-boat")
+                    CrewAssignmentControls(target: "bench")
                     ForEach(actions) { ManagementAction(action: $0) }
                     ForEach(Array(city.choices.enumerated()), id: \.offset) { i, choice in
                         Label(choice + (city.explored.contains(i) ? " · completed" : " · choose a boat in Fleet"), systemImage: city.explored.contains(i) ? "checkmark.seal" : "map").font(.caption)

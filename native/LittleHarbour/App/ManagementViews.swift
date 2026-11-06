@@ -1,5 +1,74 @@
 import SwiftUI
 
+/// Assignments stay beside the workshop or the selected boat; no automatic dispatch.
+struct CrewAssignmentControls: View {
+    @EnvironmentObject private var store: GameStore
+    let target: String
+    var body: some View {
+        if let crews = store.snapshot?.crews, crews.unlocked > 0 {
+            DisclosureGroup {
+                Text("One team gives 25% extra work: about 20% shorter jobs or voyages, with the same supplies and rewards. Teams move only between idle workplaces.").font(.caption)
+                ForEach(crews.teams.filter(\.unlocked)) { team in
+                    let assigned = team.target == target
+                    let option = team.options.first { $0.id == (assigned ? "unassigned" : target) }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Button(assigned ? "Release " + team.name : "Assign " + team.name) {
+                            store.assignCrew(team.id, to: assigned ? nil : target, epoch: crews.epoch)
+                        }.frame(minHeight: 44).buttonStyle(.bordered)
+                            .disabled(store.protectedSave || option?.reason.isEmpty != true)
+                            .accessibilityIdentifier("crew-assign-\(team.id)-\(target)")
+                        Text(option?.reason.isEmpty == false ? option!.reason : assigned ? "Helping here · 25% extra work" : "Currently: " + team.title)
+                            .font(.caption).foregroundStyle(HarbourTheme.muted).lineLimit(3, reservesSpace: true)
+                            .accessibilityIdentifier("crew-status-\(team.id)-\(target)")
+                    }
+                }
+            } label: {
+                Text("Harbour crews · " + (crews.teams.first { $0.target == target }?.name ?? "available to assign"))
+                    .font(.caption.bold()).lineLimit(2, reservesSpace: true).frame(minHeight: 44)
+            }
+        }
+    }
+}
+
+struct CrewOverview: View {
+    @EnvironmentObject private var store: GameStore
+    var body: some View {
+        if let crews = store.snapshot?.crews {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Harbour crews", systemImage: "person.2.fill").font(.headline)
+                Text("Choose which bottleneck to help. A team can support one workshop or one boat; both teams cannot work at the same place.").font(.caption)
+                ForEach(crews.teams) { team in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(team.name).font(.subheadline.bold())
+                        Text(team.unlocked ? team.title : team.reason).font(.caption).accessibilityIdentifier("crew-overview-\(team.id)")
+                        if team.unlocked {
+                            Menu("Choose workplace") {
+                                ForEach(team.options.filter { $0.id == "unassigned" || $0.id == "bench" }) { option in
+                                    assignment(option, team: team, epoch: crews.epoch)
+                                }
+                                Menu("Workshops") {
+                                    ForEach(team.options.filter { $0.kind == "Production" }) { option in assignment(option, team: team, epoch: crews.epoch) }
+                                }.accessibilityIdentifier("crew-workshops-\(team.id)")
+                                Menu("Boats") {
+                                    ForEach(team.options.filter { $0.kind == "Fleet" }) { option in assignment(option, team: team, epoch: crews.epoch) }
+                                }.accessibilityIdentifier("crew-boats-\(team.id)")
+                            }.frame(minHeight: 44).disabled(store.protectedSave || !team.reason.isEmpty).accessibilityIdentifier("crew-menu-\(team.id)")
+                            if let target = team.target {
+                                Button("Go to workplace") { store.openCrewWorkplace(target) }.frame(minHeight: 44).accessibilityIdentifier("crew-workplace-\(team.id)")
+                            }
+                            Text(team.reason.isEmpty ? "25% extra work while assigned. No fees or upkeep." : team.reason).font(.caption).foregroundStyle(HarbourTheme.muted)
+                        }
+                    }.padding(.vertical, 4)
+                }
+            }.harbourCard()
+        }
+    }
+    private func assignment(_ option: CrewState.Option, team: CrewState.Team, epoch: Int) -> some View {
+        Button(option.title) { store.assignCrew(team.id, to: option.id == "unassigned" ? nil : option.id, epoch: epoch) }
+            .disabled(!option.reason.isEmpty).accessibilityIdentifier("crew-option-\(team.id)-\(option.id)")
+    }
+}
+
 /// Reserve the same status space at every text size. Full requirements remain
 /// available to VoiceOver and in the detail alert, without moving the controls.
 struct StableActionStatus: View {
@@ -84,6 +153,7 @@ struct ProductionPanel: View {
                                 ManagementAction(action: action, showTitle: false)
                                 DisclosureGroup("Automatic stock · \(workshop.target == 0 ? "Off" : "Keep \(workshop.target)")") { WorkshopAutomation(recipe: key) }
                                     .font(.caption.bold())
+                            CrewAssignmentControls(target: "station:" + workshop.station)
                         }.harbourCard()
                         }
                     }
@@ -112,6 +182,9 @@ struct StockTargetRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(action.title).font(.subheadline.bold()).lineLimit(2, reservesSpace: true)
                     Text("\(workshop.stock) stored · \(workshop.incoming) underway").font(.caption.monospacedDigit()).lineLimit(2, reservesSpace: true)
+                    if let crews = store.snapshot?.crews, crews.unlocked > 0 {
+                        Text(crews.teams.first { $0.target == "station:" + workshop.station }?.name ?? "No crew assigned").font(.caption2).lineLimit(1)
+                    }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
             Menu {
@@ -457,11 +530,12 @@ struct FleetPanel: View {
                         Button("Return to festival") { store.navigate("Festival") }.font(.caption).frame(minHeight: 44)
                     }.padding(12).background(HarbourTheme.gold.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                 }
+                    CrewAssignmentControls(target: "boat:\(slot)")
                     missionPicker
                     if let mission { ManagementAction(action: mission) }
                     else { Text(mode == "Passengers" ? "Finish the ferry terminal to carry passengers." : "This mission is not unlocked yet. Continue the coastal projects with Elena.").font(.caption) }
                     if mode == "City" {
-                        Text("The city needs a coaster with Expanded hold. Its voyage takes four game minutes and returns with imported glaze for the decorating bench.").font(.caption)
+                        Text("The city needs a coaster with Expanded hold. Its voyage takes four game minutes without a crew and returns with imported glaze for the decorating bench.").font(.caption)
                         ForEach(matching("chronicleCityRefit")) { ManagementAction(action: $0) }
                         ForEach(matching("chronicleCityExplore")) { ManagementAction(action: $0) }
                     }

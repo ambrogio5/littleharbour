@@ -72,6 +72,7 @@ struct GoalsPanel: View {
                     CityPortPanel()
                     }
                     if section == "People" {
+                    CrewOverview()
                     DisclosureGroup("People of Porto Lume", isExpanded: $showPartners) {
                         ForEach(c.partners) { p in
                             VStack(alignment: .leading, spacing: 6) {
@@ -97,7 +98,8 @@ struct GoalsPanel: View {
                     DisclosureGroup("Other ambitions") { DirectionsPanel() }
                     }
                 }
-            }.onAppear { if store.snapshot?.chronicle.pin?.hasPrefix("chronicle:") == true { section = "Projects" } }
+            }.onAppear { if let desired = store.preferredGoalSection { section = desired } else if store.snapshot?.chronicle.pin?.hasPrefix("chronicle:") == true { section = "Projects" } }
+            .onChange(of: store.preferredGoalSection) { _, desired in if let desired { section = desired } }
             .sheet(isPresented: Binding(get: { selectedPlan != nil }, set: { if !$0 { selectedPlan = nil } })) {
                 if let goal = selectedPlan { ProjectView(goal: goal) }
             }
@@ -197,6 +199,10 @@ struct GoalSupplyChecklist: View {
         if let plan = store.plan(goal), !plan.requirements.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Requirements for this step").font(.caption.bold())
+                if let crews = store.snapshot?.crews, crews.unlocked > 0, let recipe = plan.recipes.first {
+                    Button("Crew help for " + recipe.station) { store.openCrewWorkplace("station:" + recipe.station) }.font(.caption).frame(minHeight: 44)
+                    Text("A team helps the whole workshop queue. Finish existing work before moving it here.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                }
                 ForEach(plan.requirements) { r in
                     RequirementLine(item: r.item, available: r.available, required: r.required)
                     Text("\(r.incoming) already in production").font(.caption.monospacedDigit()).foregroundStyle(HarbourTheme.muted)

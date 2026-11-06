@@ -1,6 +1,6 @@
 {
-  "native/bridge.js": "a3377e7a21fc12574462446cf89d2a0680cdae50de635d01775fb10a1a3c2a48",
-  "dist/engine.js": "aa69fb1a711f5feb22986d1e51cb9ad504d35b7c4e2fbcd794967162c9180414",
+  "native/bridge.js": "58b0117e63c33e9282090ca0e10c0f33828fea41596694640cb3ad110def0b26",
+  "dist/engine.js": "1d386ff7019b76a670d709a79bda9b19cd4767b618833313c9c4dbc693fe3e60",
   "dist/catalog.js": "e7350888b916b4590815c84894a4a77904588fc6c95ece6cd5aeefe66d8558c6",
   "dist/lab/evolution.js": "cb63acae292cc50791cc3838949894538314288a56d7c85492852007fd13e118",
   "dist/world-model.js": "0448193134717bb23e147dfc835ea19de1659db46533e3905e9d1885b5e0be8f",
@@ -11,6 +11,7 @@
   "native/directions.js": "2324d0a7dfa1898aa32ce12a3c8b1deac1d8f7d9e0628082d47f68853bb5729a",
   "native/festival.js": "c7ac4865bb5caf3edd602a6d53b2cab2990f5ec0dff8859cb3d3a3e2fdb29b1f",
   "native/story.js": "cd333b282a573af573cd387ad0bfe21947bdf52618c8fb290375cf9fd35d9bf1",
-  "native/chronicle.js": "99e659fcc20ede003108aeb77cd54ef47e9def001a8f4394fa852aa8329c8280",
-  "native/city-port.js": "6227892b8f5c85092d8dd4624d0b5de2bdc49b850042b16def9a6cccec303adc"
+  "native/chronicle.js": "c898f39ab1200e16238b4fe4b0e0a50606f3269b79e71a7b558356ac6a2ed8cd",
+  "native/city-port.js": "74f5b0f9894cfe5532af25fc5471a8762a0c2bc9f93f2886c9a60f60e4934a47",
+  "native/crews.js": "d4d3da7cf46b852d54a716bdac5eaf7e4f1acf7c0ccf8de3dcc324d31f49549d"
 }

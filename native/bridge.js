@@ -11,6 +11,7 @@ import * as F from './festival.js';
 import * as S from './story.js';
 import * as C from './chronicle.js';
 import * as Y from './city-port.js';
+import * as R from './crews.js';
 let town=E.fresh(), evolution=V.createEvolution(), stockTargets={}, festival=F.freshFestival(), chronicle=null;
 const clone=x=>JSON.parse(JSON.stringify(x));
 const costText=c=>Object.entries(c||{}).map(([k,n])=>`${n} ${E.ITEMS[k]||k}`).join(' · ');
@@ -30,7 +31,7 @@ function registry(s,f=festival,c=chronicle){
  add('Production','Harvest & replant','harvestReplant',[],null,'Wait for the wheat to ripen.');
  for(const [key,r]of Object.entries(E.RECIPES))if(E.unlocked(s,key)){
   add('Production',r.name,'start',[key],r.cost,`Needs ingredients and a free ${r.station} queue slot. A ripe crop must be harvested.`,null);
-  out[out.length-1].detail=`${E.recipeDuration(s,key)}s · makes ${costText(E.recipeOutput(s,key))}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
+  out[out.length-1].detail=`${Math.round(E.recipeDuration(s,key)/R.rate(c,'station:'+r.station)*10)/10}s · makes ${costText(E.recipeOutput(s,key))}${Object.keys(r.cost).length?' · needs '+costText(r.cost):' · no ingredients'}`;
   if(s.pier)for(const n of [0,6,12,24])add('Automation',`${r.name} · ${n?'maintain '+n:'stop target'}`,'setTarget',[key,n]);
  }
  s.jobs.forEach((j,i)=>{if(E.canCancel(s,i)){add('Queues','Cancel '+E.RECIPES[j.key].name,'cancel',[i],null,'Only waiting batches can be cancelled.');add('Queues','Make next: '+E.RECIPES[j.key].name,'prioritize',[i]);}});
@@ -77,14 +78,14 @@ function registry(s,f=festival,c=chronicle){
   if(!b){for(const[id,d]of Object.entries(E.FLEET_BOATS))add('Fleet',`Buy ${d.name} · berth ${slot+1}`,'buyBoat',[slot,id],d.cost,E.boatBlocker(s,slot,id));continue;}
   if(b.trip)add('Fleet',`Recall berth ${slot+1} · refund cargo`,'cancelVoyage',[slot],null,'',null,true);
   for(const[route,r]of Object.entries(E.FLEET_ROUTES))for(let tier=1;tier<=3;tier++){
-   const p=E.voyagePlan(s,slot,route,tier);add('Fleet',`Berth ${slot+1}: ${r.tiers[tier-1].name} · ${p.duration}s · ${costText(p.reward)}`,'startVoyage',[slot,route,tier],p.cost,E.voyageBlocker(s,slot,route,tier),p.goal);
+   const p=E.voyagePlan(s,slot,route,tier);add('Fleet',`Berth ${slot+1}: ${r.tiers[tier-1].name} · ${Math.round(p.duration/R.rate(c,'boat:'+slot)*10)/10}s · ${costText(p.reward)}`,'startVoyage',[slot,route,tier],p.cost,E.voyageBlocker(s,slot,route,tier),p.goal);
    if(s.fleet.visits[route]>=3)add('Fleet',`Repeat ${r.name} tier ${tier} · berth ${slot+1}`,'setRepeatVoyage',[slot,route,tier],null,E.repeatVoyageBlocker(s,slot,route,tier));
   }
   if(b.repeat)add('Fleet','Stop repeat · berth '+(slot+1),'setRepeatVoyage',[slot,null]);
-  for(let q=1;q<=3;q++)for(let i=1;i<=3;i++){const stops=[{route:'quarry',tier:q},{route:'island',tier:i}],p=E.circuitPlan(s,slot,stops);if(p)add('Circuits',`Berth ${slot+1}: quarry ${q} → island ${i} · ${p.duration}s`,'startCircuit',[slot,stops],p.cost,E.circuitBlocker(s,slot,stops),p.goal);}
+  for(let q=1;q<=3;q++)for(let i=1;i<=3;i++){const stops=[{route:'quarry',tier:q},{route:'island',tier:i}],p=E.circuitPlan(s,slot,stops);if(p)add('Circuits',`Berth ${slot+1}: quarry ${q} → island ${i} · ${Math.round(p.duration/R.rate(c,'boat:'+slot)*10)/10}s`,'startCircuit',[slot,stops],p.cost,E.circuitBlocker(s,slot,stops),p.goal);}
   for(const[mode,d]of Object.entries(E.FLEET_UPGRADES))add('Fleet',`Berth ${slot+1}: ${d.name}`,'installBoatUpgrade',[slot,mode],d.cost,E.boatUpgradeBlocker(s,slot,mode),null,!!b.upgrade);
   add('Fleet','Fit new sails · berth '+(slot+1),'refitBoatSails',[slot],E.SAIL_REFIT_COST,E.sailRefitBlocker(s,slot),'neighbourhood:sails:'+slot);
-  if(E.ferryEligible(s)&&s.ferry.stage===3)for(const dest of Object.keys(E.FERRY_SERVICES)){const p=E.ferryPlan(s,slot,dest);add('Ferry',`Berth ${slot+1}: ${p.name} · ${p.duration}s · ${costText(p.reward)}`,'startFerryService',[slot,dest],p.cost,E.ferryServiceBlocker(s,slot,dest),p.goal);}
+  if(E.ferryEligible(s)&&s.ferry.stage===3)for(const dest of Object.keys(E.FERRY_SERVICES)){const p=E.ferryPlan(s,slot,dest);add('Ferry',`Berth ${slot+1}: ${p.name} · ${Math.round(p.duration/R.rate(c,'boat:'+slot)*10)/10}s · ${costText(p.reward)}`,'startFerryService',[slot,dest],p.cost,E.ferryServiceBlocker(s,slot,dest),p.goal);}
  }
  if(s.fleet.lighthouse.stage<3){const stage=s.fleet.lighthouse.stage,d=E.LIGHTHOUSE_STAGES[stage];add('Lighthouse',d.name,'buildLighthouseStage',[stage],d.cost,E.lighthouseBlocker(s),'lighthouse:'+stage);}
  for(const route of Object.keys(E.FLEET_ROUTES)){
@@ -130,20 +131,21 @@ function checkedStockTargets(s,raw){
 export function load(raw){
  const input=JSON.parse(raw);let next,evo,targets={},progress=F.freshFestival(),history=null;
  if(input&&Object.hasOwn(input,'nativeVersion')){
-  if(![1,2,3,4].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
+  if(![1,2,3,4,5].includes(input.nativeVersion))throw Error('This native save requires a newer app.');
+  if(input.nativeVersion===5&&!input.chronicle?.crews||input.nativeVersion<5&&input.chronicle&&Object.hasOwn(input.chronicle,'crews'))throw Error('Harbour crews require native save version 5.');
   next=E.parseSave(JSON.stringify(input.town));evo=V.restoreEvolution(JSON.stringify(input.evolution));
   if(input.nativeVersion>=2)targets=checkedStockTargets(next,input.stockTargets);
   else if(Object.hasOwn(input,'stockTargets'))throw Error('Native stock targets require save version 2.');
-  if(input.nativeVersion>=3){if(input.nativeVersion===4&&JSON.stringify(input.festival)===JSON.stringify(F.freshFestival()))progress=F.freshFestival();else progress=F.restoreFestival(next,input.festival);}
+  if(input.nativeVersion>=3){if(input.nativeVersion>=4&&JSON.stringify(input.festival)===JSON.stringify(F.freshFestival()))progress=F.freshFestival();else progress=F.restoreFestival(next,input.festival);}
   else if(Object.hasOwn(input,'festival'))throw Error('Festival progress requires native save version 3.');
-  if(input.nativeVersion===4)history=C.restore(next,progress,input.chronicle);
+  if(input.nativeVersion>=4)history=C.restore(next,progress,input.chronicle);
   else if(Object.hasOwn(input,'chronicle'))throw Error('Chronicle progress requires native save version 4.');
  }else{next=E.parseSave(raw);evo=V.createEvolution();}
  town=next;evolution=evo;stockTargets=targets;festival=progress;chronicle=history;return true;
 }
 export function save(){
  const extended=Object.keys(stockTargets).length>0;
- return JSON.stringify({nativeVersion:chronicle?4:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((chronicle||extended||festival.stage>0)?{stockTargets}:{}),...((chronicle||festival.stage>0)?{festival}:{}),...(chronicle?{chronicle}:{})});
+ return JSON.stringify({nativeVersion:chronicle?.crews?5:chronicle?4:festival.stage>0?3:extended?2:1,town,evolution:V.restoreEvolution(V.serializeEvolution(evolution)),...((chronicle||extended||festival.stage>0)?{stockTargets}:{}),...((chronicle||festival.stage>0)?{festival}:{}),...(chronicle?{chronicle}:{})});
 }
 export function browserSave(){return JSON.stringify(C.exportTown(town,chronicle));}
 export function legacyBrowserSave(){return E.legacyBrowserSave(C.exportTown(town,chronicle));}
@@ -153,9 +155,10 @@ export function tick(dt){
  // queues, reservations and target accounting are all the original engine logic.
  const before=town.fleet.boats.map(b=>b?.trip?clone(b.trip):null),seconds=town.seconds;
  for(const key of Object.keys(stockTargets))town.targets[key]=24;
- try{E.tick(town,dt);}finally{for(const key of Object.keys(stockTargets))town.targets[key]=12;}
+ const arrivals=[null,null,null];
+ try{E.tick(town,dt,undefined,R.work(chronicle,(slot,trip)=>{arrivals[slot]=trip;}));}finally{for(const key of Object.keys(stockTargets))town.targets[key]=12;}
  F.recordArrivals(town,festival,before);
- C.tick(town,chronicle,before,town.seconds-seconds);
+ C.tick(town,chronicle,before,town.seconds-seconds,arrivals);
  return true;
 }
 export function speed(value){if(![0,1,3].includes(value))throw Error('Invalid speed');town.speed=value;return true;}
@@ -181,6 +184,7 @@ export function act(id){
  if(progress.stage>0)F.restoreFestival(validated,progress);
  if(nextChronicle)C.enableFestival(nextChronicle,progress);
  C.departure(nextChronicle,action.fn,action.args);
+ R.reconcile(validated,nextChronicle);
  if(nextChronicle)C.restore(validated,progress,nextChronicle);
  town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;chronicle=nextChronicle;return true;
 }
@@ -240,5 +244,13 @@ export function snapshot(){
   const item=Object.keys(r.output)[0],target=stockTargets[key]||town.targets[key]||0,stock=town.stock[item]||0,incoming=E.incoming(town,item);
   return [key,{station:r.station,target,stock,incoming,item,status:!target?'Manual production':town.speed===0?'Paused':stock+incoming>=target?'Target covered by stock and queued work':actions.some(a=>a.fn==='start'&&a.args[0]===key&&a.enabled)?'Will queue when the town clock advances':'Waiting for ingredients or a free queue slot'}];
  }));
- return JSON.stringify(S.presentation({chronicle:C.view(town,chronicle,festival),story:{...S.story(town,evolution,festival,objective,guidance),townName:chronicle?.townName||S.TOWN_NAME},festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:Y.boats(town,chronicle)}));
+ return JSON.stringify(S.presentation({crews:R.view(town,chronicle),chronicle:C.view(town,chronicle,festival),story:{...S.story(town,evolution,festival,objective,guidance),townName:chronicle?.townName||S.TOWN_NAME},festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left/R.rate(chronicle,'station:'+E.RECIPES[j.key].station),duration:E.recipeDuration(town,j.key)/R.rate(chronicle,'station:'+E.RECIPES[j.key].station)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:Y.boats(town,chronicle)}));
+}
+
+export function assignCrew(team,target,epoch){
+ if(!chronicle)return false;
+ const next=clone(town),history=clone(chronicle);
+ if(!R.assign(next,history,team,target,epoch))return false;
+ const validated=E.parseSave(JSON.stringify(next));C.restore(validated,festival,history);
+ town=validated;chronicle=history;return true;
 }
