@@ -720,11 +720,16 @@ import XCTest
         let next = app.buttons["toolbar-next-step"].exists ? app.buttons["toolbar-next-step"] : app.buttons["objective"]
         next.tap(); XCTAssertEqual(app.staticTexts["next-step-title"].label, "Harvest & replant")
     }
-    func testPausedGuideExplainsHowToResumeAndWholeTownFits() throws {
+    func testPausedGuideExplainsHowToResumeAndOverviewHonoursZoomBounds() throws {
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]; app.launch()
         XCTAssertTrue(app.buttons["fit-town"].waitForExistence(timeout: 20)); app.buttons["fit-town"].tap()
         let map = app.otherElements["world-map"], fitted = map.value as? String
-        app.buttons["Zoom out"].tap(); XCTAssertNotEqual(map.value as? String, fitted)
+        app.buttons["Zoom in"].tap(); XCTAssertNotEqual(map.value as? String, fitted)
+        app.buttons["Zoom out"].tap(); XCTAssertEqual(map.value as? String, fitted)
+        for _ in 0..<6 { app.buttons["Zoom out"].tap() }
+        let outerLimit = map.value as? String
+        app.buttons["Zoom out"].tap(); XCTAssertEqual(map.value as? String, outerLimit, "The camera stops before revealing an unpainted map edge")
+        app.buttons["Zoom in"].tap(); XCTAssertNotEqual(map.value as? String, outerLimit)
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap(); app.buttons["objective"].tap()
         let resume = app.buttons["guidance-resume"]
         XCTAssertTrue(reveal(resume, in: app)); resume.tap(); XCTAssertFalse(resume.exists)
