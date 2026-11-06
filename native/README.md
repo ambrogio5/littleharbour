@@ -1,6 +1,6 @@
 # Little Harbour for iPhone and iPad
 
-A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 15) adds the optional harbour year, persistent goals, five partners, eight branching civic projects, isolated coast saves, and the Porto Grande glaze/ceramics route. It retains the approved long-play economy, inline Keep 24, per-boat missions, dark appearance and compact bottom spacing. This is a QA candidate; human pacing and final release acceptance remain open.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
+A working native client of the existing game, with SwiftUI controls, a SpriteKit world and the shipped simulation running locally in JavaScriptCore. **Version 1.0.0 (build 16) improves production stability, shared stock targets and consolidated building plans. Build 15 added the optional harbour year, persistent goals, five partners, eight branching civic projects, isolated coast saves, and the Porto Grande glaze/ceramics route. It retains the approved long-play economy, inline Keep 24, per-boat missions, dark appearance and compact bottom spacing. This is a QA candidate; human pacing and final release acceptance remain open.** No web view, remote engine, analytics, account, purchases or third-party runtime dependencies are used.
 
 ## Build and run
 
@@ -31,6 +31,9 @@ xcodebuild -project native/LittleHarbour.xcodeproj -scheme LittleHarbour \
 `LittleHarbourTests` runs the actual JavaScriptCore engine and native filesystem recovery tests. `LittleHarbourUITests` exercises native navigation, harvests, save/relaunch, map gestures, site selection and landscape layout. UI tests use a separate disposable application-support namespace, never the player's town. Tests that request `--ui-testing` reset their own in-memory town; persistence tests use `--persistence-testing` and explicitly reset only that namespace.
 
 ## Playing
+
+Build 16: **Build** gathers workplaces, harbour/coastal works, homes, boat equipment, workshop refits and civic construction. Search a building or expand its section to review existing costs. **Production → Stock targets** shows every unlocked recipe in catalog order; set Off/Keep 6/12/24 individually or apply one target to all unlocked recipes (including recipes hidden by your search). Automation still uses normal ingredients and queue capacity. Bulk changes are atomic, do not spend or start batches themselves, and use the existing save versions. **Make** keeps recipes in place when queues and stock change. Feedback overlays the page instead of resizing it; readiness text reserves space, and accepted requests no longer jump ahead of other offers. Goal cards separate the intended outcome, the next action and the required supplies; civic projects show their ordered stages.
+
 
 Use **Goals** on the map to keep a next step pinned while browsing workshops or boats. After the first festival, choose **Begin the harbour year**. **Today** holds three optional requests; **Projects** shows the next two civic possibilities and, after the harbour school, the city partnership; **People** holds partner work and new dated memories. Accepted requests never expire. Reserve supplies and use Plan to queue real workshop batches. Boats still depart individually from Fleet. **Choose a city boat** opens its City mission controls.
 

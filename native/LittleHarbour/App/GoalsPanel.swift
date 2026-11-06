@@ -24,6 +24,16 @@ struct GoalsPanel: View {
                     Button("Continue my next step") { store.nextPinnedStep() }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("continue-goal")
                 }
                 if !c.started {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("YOUR CURRENT GOAL").font(.caption.bold()).foregroundStyle(HarbourTheme.muted)
+                        Text(s.guidance.goalTitle ?? s.objective.title).font(.headline).accessibilityIdentifier("goal-outcome")
+                        Text("Next: " + s.guidance.title).font(.subheadline.bold()).accessibilityIdentifier("goal-next-action")
+                        Text(s.guidance.body).font(.caption)
+                        ForEach(s.guidance.requirements) { r in
+                            RequirementLine(item: r.item, available: r.available, required: r.required)
+                        }
+                        Button(s.guidance.waiting ? "See work in progress" : "Go to the next action") { store.pin("guide"); store.followGuidance() }.frame(minHeight: 44)
+                    }.harbourCard()
                     Image(uiImage: HarbourArtwork.image("square-upgraded")).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: 130).accessibilityHidden(true)
                     Text(c.unlocked ? "A new year in Porto Lume" : "Your harbour is taking shape").font(.system(.title2, design: .serif, weight: .semibold))
                     Text(c.unlocked ? "Help familiar neighbours, welcome visitors and choose lasting projects. Accepted requests never expire. Your boats and workshops do the real work." : "Follow Elena’s next step, or choose an ambition. The harbour year opens after your first festival.").font(.subheadline)
@@ -45,7 +55,7 @@ struct GoalsPanel: View {
                         Text("Today").tag("Today"); Text("Projects").tag("Projects"); Text("People").tag("People")
                     }.pickerStyle(.segmented).accessibilityIdentifier("goal-horizon")
                     if section == "Today" {
-                    ForEach(c.offers.sorted { $0.accepted && !$1.accepted }) { request in
+                    ForEach(c.offers) { request in
                         requestCard(request)
                     }
                     }
@@ -106,6 +116,7 @@ struct GoalsPanel: View {
             ForEach(controls("chronicleAdvice", r.id)) { ManagementAction(action: $0) }
             ForEach(controls(r.accepted ? (r.kind == 2 && r.choice == nil ? "chronicleChoose" : "chronicleDeliver") : "chronicleAccept", r.id)) { ManagementAction(action: $0) }
             if r.accepted {
+                if !r.cost.isEmpty { GoalSupplyChecklist(goal: r.goal) }
                 HStack {
                     Button("Pin goal") { store.pin(r.goal) }.frame(minHeight: 44)
                     Spacer()
@@ -136,8 +147,12 @@ struct GoalsPanel: View {
                 }
             } else {
                 Text(p.branches[p.branch]).font(.subheadline.bold())
-                ProgressView(value: Double(p.stage), total: 4)
-                Text(["Contribute foundation materials", "Contribute workshop supplies", "Return from both coasts with two different boats", "Contribute the opening supplies", "Open to the town"][p.stage]).font(.caption)
+                Text("Complete these steps in order").font(.caption.bold())
+                ForEach(Array(["Foundation materials", "Workshop supplies", "Two boats returning from both coasts", "Opening supplies"].enumerated()), id: \.offset) { index, label in
+                    Label("\(index + 1). \(label)\(index == p.stage ? " · next" : "")", systemImage: index < p.stage ? "checkmark.circle.fill" : index == p.stage ? "arrow.right.circle" : "circle")
+                        .font(.caption).foregroundStyle(index == p.stage ? HarbourTheme.ink : HarbourTheme.muted)
+                }
+                if let goal = p.goal { GoalSupplyChecklist(goal: goal) }
                 if p.stage == 2 {
                     Text("\(p.boats) / 2 boats · \(p.routes) / 2 coasts").font(.caption.bold())
                     ForEach(p.missions) { mission in
@@ -157,5 +172,36 @@ struct GoalsPanel: View {
                 }.font(.caption.bold())
             }
         }.harbourCard()
+    }
+}
+
+struct RequirementLine: View {
+    let item: String
+    let available, required: Int
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: available >= required ? "checkmark.circle.fill" : "circle")
+            VStack(alignment: .leading, spacing: 3) {
+                Text(goodsNames[item] ?? item.capitalized).font(.caption.bold())
+                Text("\(available) / \(required) ready · \(max(0, required - available)) still needed").font(.caption.monospacedDigit())
+            }
+            Spacer(minLength: 0)
+        }.foregroundStyle(HarbourTheme.ink)
+    }
+}
+
+struct GoalSupplyChecklist: View {
+    @EnvironmentObject private var store: GameStore
+    let goal: String
+    var body: some View {
+        if let plan = store.plan(goal), !plan.requirements.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Requirements for this step").font(.caption.bold())
+                ForEach(plan.requirements) { r in
+                    RequirementLine(item: r.item, available: r.available, required: r.required)
+                    Text("\(r.incoming) already in production").font(.caption.monospacedDigit()).foregroundStyle(HarbourTheme.muted)
+                }
+            }
+        }
     }
 }

@@ -50,6 +50,7 @@ struct WorldEntity: Decodable, Identifiable {
     }
 }
 struct NextStep: Decodable {
+    let goalTitle: String?
     struct Requirement: Decodable, Identifiable { let item: String; let required, available: Int; var id: String { item } }
     let title, body, category: String
     let actionID, siteID: String?

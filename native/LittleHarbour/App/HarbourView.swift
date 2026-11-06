@@ -62,12 +62,12 @@ struct HarbourView: View {
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     if wide { InspectorView(showCelebrations: false).environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                if !wide && !showInspector && !showSettings { FeedbackBanner() }
                 dock(wide: wide).environment(\.densePanels, wide)
                     .overlay(alignment: .top) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
             }
             .frame(width: geometry.size.width, height: geometry.size.height + reclaimedBottom, alignment: .top)
             .background(harbourPaper)
+            .overlay(alignment: .bottom) { if !wide && !showInspector && !showSettings { FeedbackBanner().padding(.bottom, 62) } }
             .accessibilityHidden(store.chapterCelebration != nil && !showInspector)
             .overlay { if !showInspector, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
             .onAppear { hasSideInspector = wide; scene.switchCoastViewport(id: store.activeCoastID); scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
@@ -244,7 +244,6 @@ extension EnvironmentValues { var densePanels: Bool { get { self[DensePanelsKey.
 struct InspectorView: View {
     var showCelebrations = true
     @Environment(\.densePanels) private var dense
-    @State private var guideDetails = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var store: GameStore
     @State private var pendingAction: HarbourAction?
@@ -305,9 +304,12 @@ struct InspectorView: View {
                         else if store.category == "Festival" { FestivalPanel() }
                         else if store.category == "Market" { MarketPanel() }
                         else if store.category == "Refits" { WorkshopRefitPanel() }
+                        else if store.category == "Production" && !store.guidanceFocus && store.directionFocus == nil { ProductionPanel(site: selected) }
+                        else if store.category == "Build" && !store.guidanceFocus && store.directionFocus == nil { ConstructionPanel() }
                         else if ["Fleet", "Circuits", "Ferry"].contains(store.category) { FleetPanel() }
                         else {
-                            if (store.category == "Production" || store.category == "Queues") && (!store.guidanceFocus || s.guidance.waiting) { jobs(s) }
+                            if store.category == "Queues" { DisclosureGroup("Work in progress · \(s.jobs.count) batches") { jobs(s) } }
+                            else if store.category == "Production" && s.guidance.waiting { jobs(s) }
                             if selected == nil && !store.guidanceFocus { stock(s) }
                             if !store.guidanceFocus && store.directionFocus == nil { HStack {
                                 Image(systemName: "magnifyingglass").foregroundStyle(HarbourTheme.muted)
@@ -346,7 +348,7 @@ struct InspectorView: View {
             .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
         .accessibilityHidden(showCelebrations && store.chapterCelebration != nil)
-        .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
+        .overlay(alignment: .bottom) { FeedbackBanner() }
         .confirmationDialog("Confirm this investment", isPresented: Binding(get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } }), titleVisibility: .visible) {
             if let action = pendingAction { Button(action.title, role: .destructive) { store.perform(action); pendingAction = nil } }
             Button("Cancel", role: .cancel) { pendingAction = nil }
@@ -364,9 +366,10 @@ struct InspectorView: View {
                     Text(s.guidance.title).font(.system(.headline, design: .serif)).accessibilityIdentifier("next-step-title")
                 }
             }
+                Text("GOAL · " + (s.guidance.goalTitle ?? s.objective.title)).font(.caption.bold()).accessibilityIdentifier("guidance-goal")
                 Text(s.story.voice).font(dense ? .caption : .subheadline).italic().fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("elena-voice")
                 Text(s.guidance.body).font(dense ? .caption : .subheadline).fixedSize(horizontal: false, vertical: true)
-                if !dense || guideDetails { Text("Chapter \(s.objective.chapter) · \(s.objective.title)").font(.caption).foregroundStyle(HarbourTheme.muted)
+                Group { Text("Chapter \(s.objective.chapter) · \(s.objective.title)").font(.caption).foregroundStyle(HarbourTheme.muted)
                 if !s.guidance.requirements.isEmpty {
                     Text("SUPPLIES FOR THE GOAL").font(.caption2.weight(.bold)).foregroundStyle(HarbourTheme.muted)
                     ForEach(s.guidance.requirements) { r in
@@ -374,7 +377,6 @@ struct InspectorView: View {
                     }
                 }
                 }
-                if dense { Button(guideDetails ? "Less detail" : "Supplies & chapter details") { guideDetails.toggle() }.font(.caption).frame(minHeight: 44) }
                 if s.speed == 0 { Button("Resume town · 1×") { store.speed(1) }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("guidance-resume") }
                 else if s.guidance.waiting && !dense { Label("Work takes game time. Your next step updates automatically.", systemImage: "clock").font(.caption).foregroundStyle(HarbourTheme.muted) }
                 HStack { Button("Browse all \(store.category.lowercased())") { store.guidanceFocus = false }; Spacer(); Button("Other goals") { store.navigate("Goals") }.accessibilityIdentifier("other-goals") }.font(.caption).frame(minHeight: 44)
@@ -384,7 +386,8 @@ struct InspectorView: View {
         }.padding(dense ? 10 : 14).background(HarbourTheme.gold.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
     }
     private func stock(_ s: HarbourSnapshot) -> some View {
-        let goods = s.stock.keys.sorted().filter { (s.stock[$0] ?? 0) > 0 }
+        let staples = ["wheat", "flour", "bread"]
+        let goods = staples.filter { s.stock[$0] != nil } + s.stock.keys.filter { !staples.contains($0) }.sorted()
         return DisclosureGroup(isExpanded: $allSupplies) {
             LazyVGrid(columns: typeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.adaptive(minimum: 86))], alignment: .leading, spacing: 8) {
                 ForEach(goods, id: \.self) { item in supply(item, count: s.stock[item] ?? 0) }
@@ -447,16 +450,16 @@ struct InspectorView: View {
                     if !action.detail.isEmpty { Text(action.detail).font(.subheadline).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
                 }
             }
-            if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
+            StableActionStatus(action: action)
             Button { if action.destructive { pendingAction = action } else { store.perform(action) } } label: {
                 HStack {
-                    Text(store.lastPerformedActionID == action.id ? "Done · saved" : action.enabled ? action.verb : "Not ready yet").fixedSize(horizontal: false, vertical: true)
+                    Text(action.verb).fixedSize(horizontal: false, vertical: true)
                     Spacer()
                     Image(systemName: action.enabled ? "arrow.right" : "lock").font(.system(size: 18, weight: .semibold))
                 }.font(.subheadline.weight(.semibold)).padding(.horizontal, 13).frame(minHeight: 46)
                     .background(action.enabled ? HarbourTheme.action : harbourInk.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
                     .foregroundStyle(action.enabled ? .white : HarbourTheme.muted)
-            }.buttonStyle(.plain).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+            }.buttonStyle(.plain).disabled(!action.enabled || store.protectedSave)
                 .accessibilityLabel(action.title).accessibilityHint(action.enabled ? action.detail : action.reason)
                 .accessibilityIdentifier(action.title == "Harvest & replant" ? "harvest" : "action-" + action.id)
             if let goal = action.goal {
@@ -543,7 +546,7 @@ struct ProjectView: View {
                 }
             }.background(HarbourTheme.paper).foregroundStyle(HarbourTheme.ink).tint(HarbourTheme.sea)
             .navigationTitle("Plan supplies").navigationBarTitleDisplayMode(.inline).toolbar { Button("Done") { dismiss() } }
-            .safeAreaInset(edge: .bottom, spacing: 0) { FeedbackBanner() }
+            .overlay(alignment: .bottom) { FeedbackBanner() }
         }
     }
 }

@@ -190,6 +190,18 @@ function act(id){
  if(nextChronicle)C.restore(validated,progress,nextChronicle);
  town=validated;evolution=nextEvolution;stockTargets=targets;festival=progress;chronicle=nextChronicle;return true;
 }
+// One atomic target edit. Reuses the original unlock/target rules and never
+// starts production or spends stock during this transaction.
+function setTargets(keys,target){
+ if(!Array.isArray(keys)||!keys.length||new Set(keys).size!==keys.length||![0,6,12,24].includes(target))return false;
+ if(keys.some(key=>typeof key!=='string'||!Object.hasOwn(E.RECIPES,key)||!E.unlocked(town,key))||!town.pier)return false;
+ if(keys.every(key=>(stockTargets[key]||town.targets[key]||0)===target))return true;
+ const next=clone(town),targets={...stockTargets};
+ for(const key of keys){if(!mutate(next,'setTarget',[key,target]))return false;if(target===24)targets[key]=24;else delete targets[key];}
+ next.log=[`${keys.length} production targets · ${target?'keep '+target:'automatic production off'}`,...town.log].slice(0,5);
+ const validated=E.parseSave(JSON.stringify(next));
+ town=validated;stockTargets=targets;return true;
+}
 function resolve(option){evolution=V.resolveEvent(evolution,option);return true;}
 function newCoast(coast,name){
  if(!['rocky','marsh','windy'].includes(coast))return false;
@@ -237,7 +249,7 @@ function snapshot(){
  return JSON.stringify(S.presentation({chronicle:C.view(town,chronicle,festival),story:{...S.story(town,evolution,festival,objective,guidance),townName:chronicle?.townName||S.TOWN_NAME},festival:festivalView,directions:directions(town,actions),legacyBrowserAvailable:!E.legacyExportBlocker(town),markets:Object.entries(E.MARKET_BUSINESSES).map(([id,d])=>({id,name:d.name,plot:d.plot,demand:town.market.businesses[id]?.demand??null})),workshops,advancedRefits:town.advancedRefits,townFocus:town.townFocus,berthCount:E.berthCount(town),guidance,coins:town.coins,speed:town.speed,seconds:town.seconds,stock:town.stock,deliveries:town.deliveries,jobs:town.jobs.map((j,i)=>({id:String(i),name:E.RECIPES[j.key].name,left:j.left,duration:E.recipeDuration(town,j.key)})),objective,entities,actions,evolution,style:V.deriveWorldStyle(evolution),event:V.currentEvent(evolution),log:town.log,boats:Y.boats(town,chronicle)}));
 }
 
-Object.assign(exports,{load,save,browserSave,legacyBrowserSave,reset,tick,speed,act,resolve,newCoast,identity,pin,reserve,plan,queuePlan,snapshot});
+Object.assign(exports,{load,save,browserSave,legacyBrowserSave,reset,tick,speed,act,setTargets,resolve,newCoast,identity,pin,reserve,plan,queuePlan,snapshot});
 },
 "dist/engine.js":function(exports,require){
 const {ITEMS,RECIPES,BUILD_COST,SECOND_COST,PIER_COST,WORKSHOP_COST,PATHS,CONTRACTS,CHARTER_COST,REFITS,WATERFRONT_SECONDS,WATERFRONT_STAGES,MARKET_ACCESS_COST,MARKET_SECONDS,MARKET_BUSINESSES,INLAND_ACCESS_COST,INLAND_SECONDS,TERRACE_TYPES,KILN_COST,COURTYARD_COST,FLEET_BOATS,FLEET_UPGRADES,FLEET_ROUTES,LIGHTHOUSE_STAGES,LIGHTHOUSE_SECONDS,COASTAL_PROJECTS,COASTAL_COMMISSIONS,NEIGHBOURHOOD_ACCESS_COST,PLOT_COST,NEIGHBOURHOOD_BUILDINGS,HOME_UPGRADE_COST,SAIL_REFIT_COST,NEIGHBOURHOOD_ORDERS,RESIDENT_PROPOSALS,FERRY_STAGES,FERRY_SERVICES,ADVANCED_STATIONS,ADVANCED_REFITS,MARKET_SWITCH_COST,THIRD_BERTH_COST}=require("dist/catalog.js");
@@ -1386,7 +1398,7 @@ function nextStep(s,actions,o,override=null){
  const target=targets[0];
  const requirements=Object.entries(target?.cost||{}).map(([item,required])=>({item,required,available:Math.max(0,E.available(s,item,target.goal))}));
  const siteFor=a=>a.fn==='harvestReplant'?'field':a.fn==='start'?({press:'olive',olives:'olive',saw:'boatyard',fittings:'boatyard',grapes:'estate',wine:'estate',clay:'claypit',jars:'kiln',tiles:'kiln',fruitPreserves:'kiln',vegetablePreserves:'kiln'}[a.args[0]]||a.args[0]):null;
- const result=(a,body)=>({title:a.title,body,category:a.category,actionID:a.id,choices:[a.id],siteID:siteFor(a),waiting:false,requirements});
+ const result=(a,body)=>({goalTitle:target?.title||o.title,title:a.title,body,category:a.category,actionID:a.id,choices:[a.id],siteID:siteFor(a),waiting:false,requirements});
  if(target?.enabled)return result(target,o.description);
  // Follow actual missing ingredients, counting reserved and incoming goods. No fake resource grants.
  const need=(item,amount,path=[])=>{
@@ -1411,7 +1423,7 @@ function nextStep(s,actions,o,override=null){
   const cargo=find('dispatch')[0]?.cost||{};
   const waitingForCargo=requirements.some(r=>['coins','wood','stone'].includes(r.item)&&r.available<r.required)&&Object.entries(cargo).some(([item,n])=>pending(item,n));
   if(requirements.some(r=>pending(r.item,r.required))||waitingForCargo){
-   return {title:'Wait for your workshops',body:s.speed===0?'Your town is paused. Resume time to finish the queued supplies.':'Supplies are already in production for '+target.title.toLowerCase()+'. Let the current batches finish; your next action will appear here.',category:'Production',actionID:null,choices:[],siteID:null,waiting:true,requirements};
+   return {goalTitle:target.title,title:'Wait for your workshops',body:s.speed===0?'Your town is paused. Resume time to finish the queued supplies.':'Supplies are already in production for '+target.title.toLowerCase()+'. Let the current batches finish; your next action will appear here.',category:'Production',actionID:null,choices:[],siteID:null,waiting:true,requirements};
   }
   return {...result(target,target.reason||o.description),waiting:false};
  }

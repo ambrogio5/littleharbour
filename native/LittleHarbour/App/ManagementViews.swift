@@ -1,5 +1,157 @@
 import SwiftUI
 
+/// Status updates never insert a new row above a control. Large text remains
+/// untruncated; ordinary sizes reserve two lines even when an action is ready.
+struct StableActionStatus: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let action: HarbourAction
+    @State private var showExplanation = false
+    private var text: String { action.enabled ? "Ready when you are" : action.reason }
+    var body: some View {
+        Button { showExplanation = true } label: {
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: action.enabled ? "checkmark.circle" : "info.circle")
+                if typeSize.isAccessibilitySize { Text(text).fixedSize(horizontal: false, vertical: true) }
+                else { Text(text).lineLimit(2, reservesSpace: true) }
+                Spacer(minLength: 0)
+            }.font(.caption).foregroundStyle(HarbourTheme.muted).frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }.buttonStyle(.plain).accessibilityLabel(text)
+            .alert(action.title, isPresented: $showExplanation) { Button("OK", role: .cancel) {} } message: { Text(text) }
+    }
+}
+
+struct ProductionPanel: View {
+    @EnvironmentObject private var store: GameStore
+    let site: WorldEntity?
+    @State private var section = "Make"
+    @State private var search = ""
+    @State private var onlySite = true
+    @FocusState private var searchFocused: Bool
+    var body: some View {
+        if let s = store.snapshot {
+            let recipes = s.actions.filter { $0.invocation?.0 == "start" }
+            let keys = recipes.compactMap { $0.invocation?.1.first as? String }
+            VStack(alignment: .leading, spacing: 14) {
+                Picker("Production view", selection: $section) {
+                    Text("Make").tag("Make"); Text("Stock targets").tag("Stocks")
+                }.pickerStyle(.segmented).accessibilityIdentifier("production-view")
+                HStack {
+                    Text("\(s.jobs.count) \(s.jobs.count == 1 ? "batch" : "batches") underway").monospacedDigit().accessibilityIdentifier("production-queue-summary")
+                    Spacer()
+                    Button("Manage queue") { store.navigate("Queues") }.frame(minHeight: 44)
+                }.font(.caption)
+                HStack {
+                    TextField("Find a product", text: $search).textFieldStyle(.roundedBorder).focused($searchFocused)
+                        .accessibilityIdentifier("production-search").autocorrectionDisabled().submitLabel(.done).onSubmit { searchFocused = false }
+                    if !search.isEmpty { Button { search = ""; searchFocused = false } label: { Image(systemName: "xmark.circle.fill").frame(width: 44, height: 44) }.accessibilityLabel("Clear search") }
+                }
+                if section == "Stocks" {
+                    Text("Manage every unlocked recipe here. Targets use normal ingredients and shared workshop queue space as time advances.").font(.caption)
+                    Text("Apply to all \(keys.count) recipes").font(.subheadline.bold())
+                    TargetChoices { target in store.setStockTargets(keys, target: target) }
+                        .disabled(store.protectedSave || !s.actions.contains { $0.invocation?.0 == "setTarget" })
+                    if !s.actions.contains(where: { $0.invocation?.0 == "setTarget" }) {
+                        Text("Extend the working quay to unlock automatic stock targets.").font(.caption)
+                        Button("Open Build") { store.navigate("Build") }.frame(minHeight: 44)
+                    }
+                } else {
+                    if site != nil { Toggle("Only this site", isOn: $onlySite).accessibilityIdentifier("site-filter") }
+                    if search.isEmpty, (site == nil || !onlySite || site?.id == "field"), let harvest = s.actions.first(where: { $0.invocation?.0 == "harvestReplant" }) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Wheat · \(s.stock["wheat"] ?? 0) stored").font(.headline).monospacedDigit().accessibilityIdentifier("stock-count-wheat")
+                            ManagementAction(action: harvest)
+                        }
+                    }
+                }
+                // Catalog order and identity stay fixed across queues, stock and
+                // availability updates. Never sort or filter by readiness here.
+                ForEach(recipes.filter { action in
+                    (section == "Stocks" || site == nil || !onlySite || action.belongs(to: site)) &&
+                    (search.isEmpty || (action.title + " " + action.detail).localizedCaseInsensitiveContains(search))
+                }) { action in
+                    if let key = action.invocation?.1.first as? String, let workshop = s.workshops[key] {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 10) {
+                                ResourceIcon(item: workshop.item, size: 32)
+                                Text(action.title).font(.headline)
+                                Spacer(minLength: 0)
+                            }
+                            Text("\(workshop.stock) stored · \(workshop.incoming) in progress")
+                                .font(.caption.monospacedDigit()).accessibilityIdentifier("production-stock-" + key)
+                            if section == "Stocks" { WorkshopAutomation(recipe: key, compact: true) }
+                            else {
+                                ManagementAction(action: action, showTitle: false)
+                                DisclosureGroup("Automatic stock · \(workshop.target == 0 ? "Off" : "Keep \(workshop.target)")") { WorkshopAutomation(recipe: key) }
+                                    .font(.caption.bold())
+                            }
+                        }.harbourCard()
+                    }
+                }
+                if recipes.filter({ search.isEmpty || ($0.title + " " + $0.detail).localizedCaseInsensitiveContains(search) }).isEmpty {
+                    Text("No matching products. Clear the search to see all unlocked recipes.").font(.caption)
+                }
+            }
+        }
+    }
+}
+
+struct TargetChoices: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let choose: (Int) -> Void
+    var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 2 : 4), spacing: 8) {
+            ForEach([0, 6, 12, 24], id: \.self) { value in
+                Button(value == 0 ? "All off" : "Keep \(value)") { choose(value) }
+                    .font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 44)
+                    .background(HarbourTheme.sea.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    .accessibilityIdentifier("all-stock-target-\(value)")
+            }
+        }.buttonStyle(.plain)
+    }
+}
+
+/// All construction and improvements have a home under Build. The original
+/// commands, costs, confirmations and dedicated operational panels are retained.
+struct ConstructionPanel: View {
+    @EnvironmentObject private var store: GameStore
+    @FocusState private var searchFocused: Bool
+    @State private var expanded: Set<String> = ["Workplaces"]
+    @State private var search = ""
+    private let groups: [(String, [String])] = [
+        ("Workplaces", ["build", "upgradeWorkshops", "specialise", "invest", "marketAccess", "buildMarketBusiness", "switchMarketBusiness", "inlandAccess", "buildTerrace", "buildKiln", "buildCourtyard"]),
+        ("Harbour & coasts", ["upgrade", "establishCharter", "fundWaterfront", "supplyWaterfront", "buildLighthouseStage", "fundCoastalProject", "buildThirdBerth", "fundFerryStage", "deliverFerrySupplies"]),
+        ("Homes & neighbourhood", ["openNeighbourhood", "buyNeighbourhoodPlot", "buildNeighbourhood", "upgradeNeighbourhoodHome", "moveNeighbourhoodBuilding", "removeNeighbourhoodBuilding"]),
+        ("Boats & equipment", ["buyBoat", "installBoatUpgrade", "refitBoatSails", "chronicleCityRefit"])
+    ]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Buildings, land, harbour works and upgrades—in one place. Open a section to review its costs and requirements.").font(.subheadline)
+            TextField("Find a building or improvement", text: $search).textFieldStyle(.roundedBorder).accessibilityIdentifier("build-search").focused($searchFocused).submitLabel(.done).onSubmit { searchFocused = false }
+            ForEach(groups, id: \.0) { group in
+                let actions = (store.snapshot?.actions ?? []).filter { action in
+                    group.1.contains(action.invocation?.0 ?? "") && (search.isEmpty || (action.title + " " + action.detail).localizedCaseInsensitiveContains(search))
+                }
+                if search.isEmpty || !actions.isEmpty {
+                    DisclosureGroup(isExpanded: Binding(get: { expanded.contains(group.0) || !search.isEmpty }, set: { if $0 { expanded.insert(group.0) } else { expanded.remove(group.0) } })) {
+                        if actions.isEmpty { Text("No further plans here yet. Completed work stays in your town; new plans open with progression.").font(.caption).padding(.vertical, 10) }
+                        ForEach(actions) { ManagementAction(action: $0) }
+                    } label: { Text(group.0).font(.headline).frame(minHeight: 44) }
+
+                }
+            }
+            if search.isEmpty {
+                DisclosureGroup("Workshop improvements") { WorkshopRefitPanel() }.font(.headline)
+                DisclosureGroup("Civic projects & festival") {
+                    Text("Choose a lasting project, check its stages and contribute the required supplies.").font(.caption)
+                    ForEach((store.snapshot?.actions ?? []).filter { ["festivalPrepare", "festivalSupply", "festivalCelebrate", "chronicleProject", "chronicleBuild", "chooseResidentsProposal", "deliverResidentsSupplies"].contains($0.invocation?.0 ?? "") }) { ManagementAction(action: $0) }
+                    Button("Project goals & requirements") { store.navigate("Goals") }.frame(minHeight: 44)
+                    Button("Festival plan") { store.navigate("Festival") }.frame(minHeight: 44).disabled(store.snapshot?.festival.unlocked != true)
+                }.font(.headline)
+            }
+        }
+    }
+}
+
 struct WorkshopRefitPanel: View {
     @EnvironmentObject private var store: GameStore
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -95,7 +247,7 @@ struct MarketPanel: View {
                 ForEach(s.actions.filter { $0.category == "Market" && $0.invocation?.1.first as? String == selected && $0.invocation?.0 != "setMarketAuto" }) { ManagementAction(action: $0) }
                 if let automatic = s.actions.first(where: { $0.invocation?.0 == "setMarketAuto" && $0.invocation?.1.first as? String == selected }) {
                     Button { store.perform(automatic) } label: { Label(automatic.title, systemImage: "arrow.triangle.2.circlepath").frame(minHeight: 44) }
-                        .disabled(!automatic.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+                        .disabled(!automatic.enabled || store.protectedSave)
                         .accessibilityIdentifier("market-automation")
                 }
                 ForEach(s.actions.filter { $0.invocation?.0 == "releaseReservation" && ($0.invocation?.1.first as? String)?.hasPrefix("market:") == true }) { ManagementAction(action: $0) }
@@ -110,25 +262,31 @@ struct WorkshopAutomation: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var store: GameStore
     let recipe: String
+    var compact = false
     var body: some View {
         if let s = store.snapshot, let workshop = s.workshops[recipe] {
             let actions = s.actions.filter { $0.invocation?.0 == "setTarget" && $0.invocation?.1.first as? String == recipe }
             if !actions.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Automatic stock", systemImage: "arrow.triangle.2.circlepath").font(.subheadline.bold())
-                    Text("\(goodsNames[workshop.item] ?? workshop.item): \(workshop.stock) stored · \(workshop.incoming) in progress").font(.caption)
+                    if !compact {
+                        Label("Automatic stock", systemImage: "arrow.triangle.2.circlepath").font(.subheadline.bold())
+                        Text("\(goodsNames[workshop.item] ?? workshop.item): \(workshop.stock) stored · \(workshop.incoming) in progress").font(.caption.monospacedDigit())
+                    }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: typeSize.isAccessibilitySize ? 2 : 4), spacing: 8) {
                         ForEach(actions) { action in
                             let target = action.invocation?.1.last as? Int ?? 0
                             Button(target == 0 ? "Off" : "Keep \(target)") { store.perform(action) }
                                 .font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 44)
                                 .background(workshop.target == target ? HarbourTheme.sea.opacity(0.18) : HarbourTheme.surface.opacity(0.9), in: RoundedRectangle(cornerRadius: 10))
-                                .disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil || workshop.target == target)
+                                .disabled(!action.enabled || store.protectedSave || workshop.target == target)
                                 .accessibilityAddTraits(workshop.target == target ? .isSelected : [])
                                 .accessibilityIdentifier("automation-\(recipe)-\(target)")
                         }
                     }
-                    Text(workshop.status + ". Uses normal ingredients and queue space.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                    Group {
+                        if typeSize.isAccessibilitySize { Text(workshop.status + ". Uses normal ingredients and queue space.").fixedSize(horizontal: false, vertical: true) }
+                        else { Text(workshop.status + ". Uses normal ingredients and queue space.").lineLimit(3, reservesSpace: true) }
+                    }.font(.caption).foregroundStyle(HarbourTheme.muted)
                 }.padding(12).background(HarbourTheme.sea.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
             }
         }
@@ -139,18 +297,19 @@ struct WorkshopAutomation: View {
 struct ManagementAction: View {
     @EnvironmentObject private var store: GameStore
     let action: HarbourAction
+    var showTitle = true
     @State private var confirm = false
     @State private var plan = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let partner = action.partner { Text(partner).font(.caption).foregroundStyle(HarbourTheme.muted).fixedSize(horizontal: false, vertical: true) }
-            Text(action.title).font(.subheadline.bold()).fixedSize(horizontal: false, vertical: true)
+            if showTitle { Text(action.title).font(.subheadline.bold()).fixedSize(horizontal: false, vertical: true) }
             if let cost = action.detail.components(separatedBy: "\n").first, !cost.isEmpty { Text(cost).font(.caption).foregroundStyle(HarbourTheme.muted) }
             Button { if action.destructive { confirm = true } else { store.perform(action) } } label: {
-                Text(action.enabled ? action.verb : "Not ready yet").font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
-            }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
-                .accessibilityLabel(action.title).accessibilityIdentifier("action-" + action.id)
-            if !action.enabled { Label(action.reason, systemImage: "info.circle").font(.caption).foregroundStyle(HarbourTheme.muted) }
+                Text(action.verb).font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
+            }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave)
+                .accessibilityLabel(action.title).accessibilityIdentifier(action.invocation?.0 == "harvestReplant" ? "harvest" : "action-" + action.id)
+            StableActionStatus(action: action)
             if action.detail.contains("\n") { DisclosureGroup("Batch preview") { Text(action.detail.components(separatedBy: "\n").dropFirst().joined(separator: "\n")).font(.caption) } }
             if action.goal != nil { Button("Plan supplies") { plan = true }.font(.caption).frame(minHeight: 44) }
         }.padding(12).background(HarbourTheme.surface.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
@@ -302,11 +461,11 @@ struct FleetPanel: View {
             Text(boat.repeat.map { "\(destination($0.route)) · cargo tier \($0.tier). Automatically sails again when supplies are ready." } ?? "Off · this boat returns home after its mission.").font(.caption)
             if mode == "Cargo", let action = matching("setRepeatVoyage").first(where: { $0.invocation?.1.count == 3 && $0.invocation?.1[1] as? String == route && $0.invocation?.1[2] as? Int == tier }) {
                 Button("Repeat selected cargo route") { store.perform(action) }.frame(minHeight: 44).buttonStyle(.bordered)
-                    .disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil).accessibilityIdentifier("repeat-selected-route")
+                    .disabled(!action.enabled || store.protectedSave).accessibilityIdentifier("repeat-selected-route")
                 if !action.enabled { Text(action.reason).font(.caption) }
             } else if boat.repeat == nil { Text("Earn three visits to a destination to unlock its repeat cargo route.").font(.caption).foregroundStyle(HarbourTheme.muted) }
             if let stop = matching("setRepeatVoyage").first(where: { $0.invocation?.1.count == 2 }) {
-                Button("Stop repeating") { store.perform(stop) }.frame(minHeight: 44).disabled(!stop.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+                Button("Stop repeating") { store.perform(stop) }.frame(minHeight: 44).disabled(!stop.enabled || store.protectedSave)
             }
         }.padding(12).background(HarbourTheme.sea.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
@@ -354,7 +513,7 @@ struct FestivalPanel: View {
                                     Button(choice == "food" ? "Food fair" : "Craft exhibition") { store.perform(action) }
                                         .font(.caption.bold()).frame(maxWidth: .infinity, minHeight: 44)
                                         .background(f.choice == choice ? HarbourTheme.sea.opacity(0.18) : HarbourTheme.surface, in: RoundedRectangle(cornerRadius: 10))
-                                        .disabled(!action.enabled || store.protectedSave || store.lastPerformedActionID != nil)
+                                        .disabled(!action.enabled || store.protectedSave)
                                         .accessibilityAddTraits(f.choice == choice ? .isSelected : []).accessibilityIdentifier("festival-theme-" + choice)
                                 }
                             }

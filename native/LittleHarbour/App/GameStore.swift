@@ -104,6 +104,17 @@ import Combine
             if UIAccessibility.isVoiceOverRunning { UIAccessibility.post(notification: .announcement, argument: snapshot?.log.first) }
         } catch { freeze(error) }
     }
+    func setStockTargets(_ recipes: [String], target: Int) {
+        guard !protectedSave, let engine else { return }
+        do {
+            guard try engine.call("setTargets", [recipes, target]).toBool() else { message = "Stock targets need an extended quay and unlocked workshops."; return }
+            try refresh(); flush()
+            if !protectedSave {
+                message = target == 0 ? "Automatic production stopped for \(recipes.count) recipes." : "\(recipes.count) recipes now keep \(target) in stock."
+                feedbackUntil = ProcessInfo.processInfo.systemUptime + 4
+            }
+        } catch { freeze(error) }
+    }
     func speed(_ speed: Int) { guard !protectedSave else { return }; do { try engine?.call("speed", [speed]); try refresh(); flush() } catch { freeze(error) } }
     func resolve(_ option: String) { guard !protectedSave else { return }; do { try engine?.call("resolve", [option]); try refresh(); flush() } catch { freeze(error) } }
     func reserve(_ goal: String) { guard !protectedSave else { return }; do { let ok = try engine?.call("reserve", [goal]).toBool() ?? false; message = ok ? "Available supplies reserved for this project." : "No available supplies to reserve."; try refresh(); flush() } catch { freeze(error) } }

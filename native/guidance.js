@@ -72,7 +72,7 @@ export function nextStep(s,actions,o,override=null){
  const target=targets[0];
  const requirements=Object.entries(target?.cost||{}).map(([item,required])=>({item,required,available:Math.max(0,E.available(s,item,target.goal))}));
  const siteFor=a=>a.fn==='harvestReplant'?'field':a.fn==='start'?({press:'olive',olives:'olive',saw:'boatyard',fittings:'boatyard',grapes:'estate',wine:'estate',clay:'claypit',jars:'kiln',tiles:'kiln',fruitPreserves:'kiln',vegetablePreserves:'kiln'}[a.args[0]]||a.args[0]):null;
- const result=(a,body)=>({title:a.title,body,category:a.category,actionID:a.id,choices:[a.id],siteID:siteFor(a),waiting:false,requirements});
+ const result=(a,body)=>({goalTitle:target?.title||o.title,title:a.title,body,category:a.category,actionID:a.id,choices:[a.id],siteID:siteFor(a),waiting:false,requirements});
  if(target?.enabled)return result(target,o.description);
  // Follow actual missing ingredients, counting reserved and incoming goods. No fake resource grants.
  const need=(item,amount,path=[])=>{
@@ -97,7 +97,7 @@ export function nextStep(s,actions,o,override=null){
   const cargo=find('dispatch')[0]?.cost||{};
   const waitingForCargo=requirements.some(r=>['coins','wood','stone'].includes(r.item)&&r.available<r.required)&&Object.entries(cargo).some(([item,n])=>pending(item,n));
   if(requirements.some(r=>pending(r.item,r.required))||waitingForCargo){
-   return {title:'Wait for your workshops',body:s.speed===0?'Your town is paused. Resume time to finish the queued supplies.':'Supplies are already in production for '+target.title.toLowerCase()+'. Let the current batches finish; your next action will appear here.',category:'Production',actionID:null,choices:[],siteID:null,waiting:true,requirements};
+   return {goalTitle:target.title,title:'Wait for your workshops',body:s.speed===0?'Your town is paused. Resume time to finish the queued supplies.':'Supplies are already in production for '+target.title.toLowerCase()+'. Let the current batches finish; your next action will appear here.',category:'Production',actionID:null,choices:[],siteID:null,waiting:true,requirements};
   }
   return {...result(target,target.reason||o.description),waiting:false};
  }
