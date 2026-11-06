@@ -42,7 +42,8 @@ struct HarbourView: View {
     private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
     var body: some View {
         GeometryReader { geometry in
-            let wide = geometry.size.width >= 700 && geometry.size.height >= 300
+            // At accessibility sizes, use the wider activity sheet instead of a narrow side panel.
+            let wide = geometry.size.width >= 700 && geometry.size.height >= 300 && !typeSize.isAccessibilitySize
             // The dock already contains full-height touch targets. Use the lower
             // safe-area strip for layout, retaining clearance for the home gesture.
             let reclaimedBottom = keyboardShown ? 0 : max(0, geometry.safeAreaInsets.bottom - 12)
