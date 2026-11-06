@@ -86,7 +86,7 @@ struct HarbourView: View {
                                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         }
                         .safeAreaInset(edge: .bottom, spacing: 0) {
-                            inspectorNavigation.padding(.bottom, -reclaimedBottom)
+                            inspectorNavigation.padding(.bottom, UIDevice.current.userInterfaceIdiom == .pad ? 0 : -reclaimedBottom)
                         }
                         .toolbar(.hidden, for: .navigationBar)
                 }.presentationDetents([.large]).presentationCornerRadius(28).presentationDragIndicator(.visible)
