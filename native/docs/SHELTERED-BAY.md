@@ -6,7 +6,7 @@ The owner selected concept A on 6 November 2026. This is its first playable impl
 
 A single building-free landscape supplies a curved limestone quay, shared market paving, stepped village ground, stream, farmland, open harbour mouth and lighthouse platform. Six exact adjoining terrain tiles replace the old centre/surround blend. No gameplay buildings or boats are baked into the new terrain.
 
-`BayLayout` registers each canonical site ID to a ground-contact anchor. The bakery, market, warehouse/quay, boatyard and ferry face connected paving. Six neighbourhood plots retain their original ownership and types. All eight chronicle projects, the third market and berth, specialist workshops and agricultural plots remain independently selectable and retain their real unbuilt/construction/built/upgraded artwork. Unbuilt markers are quieter; completed sites receive separate working-yard props. Shared village lanes appear as plots develop. Existing scenery no longer adds decorative lookalike shops and boats to the harbour.
+`BayLayout` registers each canonical site ID to a ground-contact anchor. The bakery, market, warehouse/quay, boatyard and ferry face connected paving. Six neighbourhood plots retain their original ownership and types. All eight chronicle projects, the third market and berth, specialist workshops and agricultural plots remain independently selectable and retain their real unbuilt/construction/built/upgraded artwork. Unbuilt markers are quieter; completed sites receive separate working-yard props. Painted village lanes and stairs connect the terraces; completed plots receive independent yard props. Existing scenery no longer adds decorative lookalike shops and boats to the harbour.
 
 Three berth positions and southbound/returning boat paths stay within open water and west of the breakwater. Directional hull art is selected for the new direction, keeping masts upright; wakes follow the travel tangent. People use the new ground paths and continue to respect pause and Reduce Motion.
 
@@ -27,5 +27,7 @@ The viewport is bounded to authored ground; depending on device aspect ratio, Wh
 ## Verification
 
 Presentation checks cover every earned-town site remaining selectable, canonical save-byte preservation, camera migration/restoration/clamping, open-water boat lanes and return positions, construction/state texture distinctions, pause and Reduce Motion. The new UI journey covers the full-width landscape harbour, searchable bakery selection and close view, and overview navigation. Existing native, browser and adapter suites remain required. See the PR for the exact final commit, results and screenshots; an intermediate test run is not final acceptance.
+
+Visual review also removed flat procedural lane/slipway overlays that crossed painted retaining walls; the authored paths and independent dock sprites supply those connections.
 
 The first local UI check could not find the bakery below the visible portion of the landscape site list. The journey now uses the real directory search before selecting it. No gameplay assertion was removed. No owner-device installation, merge, browser deployment or App Store submission is part of this map change.

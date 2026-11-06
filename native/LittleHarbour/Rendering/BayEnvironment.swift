@@ -1,7 +1,7 @@
 import SpriteKit
 import UIKit
 
-/// Ground, shared lanes and site activity are separate from the interactive buildings.
+/// Ground, paving and site activity are separate from the interactive buildings.
 @MainActor final class BayEnvironment: SKNode {
     private let details = SKNode()
     private let paving = SKNode()
@@ -47,13 +47,6 @@ import UIKit
     func apply(_ entities: [WorldEntity]) {
         let next = entities.map { "\($0.id):\($0.stage):\($0.level)" }.joined(separator: ",")
         guard signature != next else { return }; signature = next; details.removeAllChildren()
-        let active = Set(entities.filter { $0.stage != "unbuilt" }.map(\.id))
-        // Shared village lanes are revealed as neighbourhoods develop, with no change
-        // to plot ownership or production. Wide faded borders soften the soil join.
-        if entities.contains(where: { $0.id.hasPrefix("plot") && $0.stage != "unbuilt" }) {
-            lane([(470, 293), (630, 293), (790, 293)], width: 28)
-            lane([(970, 350), (1120, 350), (1285, 350)], width: 28)
-        }
         for e in entities where e.stage == "built" {
             let kind: String?
             switch e.id {
@@ -67,37 +60,11 @@ import UIKit
             let foot = BayLayout.ground(e)
             prop(kind, at: CGPoint(x: foot.x + 105, y: foot.y - 12), width: e.level > 1 ? 125 : 100)
         }
-        // Timber access connects real docks to the masonry edge; no decorative
-        // boat or building is substituted for an unpurchased gameplay site.
-        if active.contains("thirdberth") { jetty(x: 660, from: 500, to: 565) }
-        if active.contains("fishing") { jetty(x: 190, from: 615, to: 650) }
-        if active.contains("ferry") { jetty(x: 1250, from: 520, to: 550) }
-        if active.contains("boatyard") {
-            for x in [405.0, 440.0] { jetty(x: x, from: 515, to: 565, width: 9) }
-        }
     }
     private func prop(_ name: String, at point: CGPoint, width: CGFloat) {
         let node = SKSpriteNode(imageNamed: "bay-" + name)
         node.name = "bay-detail-" + name; node.size = CGSize(width: width, height: width)
         node.position = point; node.zPosition = BayLayout.size.height - point.y + 5; details.addChild(node)
-    }
-    private func lane(_ points: [(CGFloat, CGFloat)], width: CGFloat) {
-        let path = CGMutablePath()
-        for (i, p) in points.enumerated() { let v = BayLayout.point(p.0, p.1); if i == 0 { path.move(to: v) } else { path.addLine(to: v) } }
-        for (extra, alpha) in [(14.0, 0.12), (7.0, 0.18), (0.0, 0.45)] {
-            let road = SKShapeNode(path: path); road.lineCap = .round; road.lineJoin = .round
-            road.lineWidth = (width + extra) * 2.5
-            road.strokeColor = UIColor(red: 0.85, green: 0.73, blue: 0.52, alpha: alpha)
-            road.zPosition = -9998; details.addChild(road)
-        }
-    }
-    private func jetty(x: CGFloat, from: CGFloat, to: CGFloat, width: CGFloat = 30) {
-        for y in stride(from: from, through: to, by: 4) {
-            let plank = SKShapeNode(rectOf: CGSize(width: width * 2.5, height: 8), cornerRadius: 1)
-            plank.fillColor = UIColor(red: 0.48 + (Int(y) % 3 == 0 ? 0.04 : 0), green: 0.33, blue: 0.19, alpha: 1)
-            plank.strokeColor = UIColor(red: 0.28, green: 0.21, blue: 0.13, alpha: 1)
-            plank.lineWidth = 1; plank.position = BayLayout.point(x, y); plank.zPosition = -9980; details.addChild(plank)
-        }
     }
     func zoom(_ scale: CGFloat, labels: Bool) {
         paving.alpha = max(0, min(0.36, (2.4 - scale) * 0.25))
