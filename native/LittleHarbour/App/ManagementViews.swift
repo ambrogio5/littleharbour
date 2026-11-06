@@ -20,6 +20,7 @@ struct StableActionStatus: View {
 
 struct ProductionPanel: View {
     @EnvironmentObject private var store: GameStore
+    @Environment(\.dynamicTypeSize) private var typeSize
     let site: WorldEntity?
     @State private var section = "Make"
     @State private var search = ""
@@ -33,9 +34,11 @@ struct ProductionPanel: View {
                 Picker("Production view", selection: $section) {
                     Text("Make").tag("Make"); Text("Stock targets").tag("Stocks")
                 }.pickerStyle(.segmented).accessibilityIdentifier("production-view")
-                HStack {
-                    Text("\(s.jobs.count) \(s.jobs.count == 1 ? "batch" : "batches") underway").monospacedDigit().accessibilityIdentifier("production-queue-summary")
-                    Spacer()
+                let queueLayout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+                queueLayout {
+                    Text("\(s.jobs.count) \(s.jobs.count == 1 ? "batch" : "batches") underway").monospacedDigit()
+                        .lineLimit(typeSize.isAccessibilitySize ? 2 : 1, reservesSpace: true)
+                        .frame(maxWidth: .infinity, alignment: .leading).accessibilityIdentifier("production-queue-summary")
                     Button("Manage queue") { store.navigate("Queues") }.frame(minHeight: 44)
                 }.font(.caption)
                 HStack {
@@ -68,6 +71,8 @@ struct ProductionPanel: View {
                     (search.isEmpty || (action.title + " " + action.detail).localizedCaseInsensitiveContains(search))
                 }) { action in
                     if let key = action.invocation?.1.first as? String, let workshop = s.workshops[key] {
+                        if section == "Stocks" { StockTargetRow(recipe: key, action: action, workshop: workshop) }
+                        else {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 10) {
                                 ResourceIcon(item: workshop.item, size: 32)
@@ -76,13 +81,11 @@ struct ProductionPanel: View {
                             }
                             Text("\(workshop.stock) stored · \(workshop.incoming) in progress")
                                 .font(.caption.monospacedDigit()).accessibilityIdentifier("production-stock-" + key)
-                            if section == "Stocks" { WorkshopAutomation(recipe: key, compact: true) }
-                            else {
                                 ManagementAction(action: action, showTitle: false)
                                 DisclosureGroup("Automatic stock · \(workshop.target == 0 ? "Off" : "Keep \(workshop.target)")") { WorkshopAutomation(recipe: key) }
                                     .font(.caption.bold())
-                            }
                         }.harbourCard()
+                        }
                     }
                 }
                 if recipes.filter({ search.isEmpty || ($0.title + " " + $0.detail).localizedCaseInsensitiveContains(search) }).isEmpty {
@@ -90,6 +93,42 @@ struct ProductionPanel: View {
                 }
             }
         }
+    }
+}
+
+struct StockTargetRow: View {
+    @EnvironmentObject private var store: GameStore
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let recipe: String
+    let action: HarbourAction
+    let workshop: WorkshopState
+    @State private var details = false
+    private var targetLabel: String { workshop.target == 0 ? "Off" : "Keep \(workshop.target)" }
+    var body: some View {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 10))
+        layout {
+            HStack(spacing: 8) {
+                ResourceIcon(item: workshop.item, size: 28)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(action.title).font(.subheadline.bold()).lineLimit(2, reservesSpace: true)
+                    Text("\(workshop.stock) stored · \(workshop.incoming) underway").font(.caption.monospacedDigit()).lineLimit(2, reservesSpace: true)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Menu {
+                ForEach([0, 6, 12, 24], id: \.self) { value in
+                    Button { store.setStockTargets([recipe], target: value) } label: {
+                        Label(value == 0 ? "Off" : "Keep \(value)", systemImage: workshop.target == value ? "checkmark.circle.fill" : "circle")
+                    }.accessibilityIdentifier("stock-target-choice-\(recipe)-\(value)")
+                }
+                Button("Production details") { details = true }
+            } label: {
+                HStack(spacing: 5) { Text(targetLabel); Image(systemName: "chevron.up.chevron.down") }
+                    .font(.caption.bold()).frame(minWidth: 100, minHeight: 44).padding(.horizontal, 8)
+                    .background(HarbourTheme.sea.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+            }.accessibilityIdentifier("stock-target-" + recipe).accessibilityLabel("Stock target for " + action.title).accessibilityValue(targetLabel)
+                .disabled(store.protectedSave || !(store.snapshot?.actions.contains { $0.invocation?.0 == "setTarget" && $0.invocation?.1.first as? String == recipe } ?? false))
+        }.padding(12).background(HarbourTheme.surface, in: RoundedRectangle(cornerRadius: 14))
+            .alert(action.title, isPresented: $details) { Button("OK", role: .cancel) {} } message: { Text(action.detail + "\n\n" + workshop.status + ". Off keeps batches already queued.") }
     }
 }
 
@@ -311,7 +350,10 @@ struct ManagementAction: View {
             if let cost = action.detail.components(separatedBy: "\n").first, !cost.isEmpty { Text(cost).font(.caption).foregroundStyle(HarbourTheme.muted) }
             Button { if action.destructive { confirm = true } else { store.perform(action) } } label: {
                 Text(action.verb).font(.subheadline.bold()).frame(maxWidth: .infinity, minHeight: 44)
-            }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(!action.enabled || store.protectedSave)
+                    .padding(.horizontal, 12).padding(.vertical, 4)
+                    .background(action.enabled ? HarbourTheme.action : HarbourTheme.ink.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(action.enabled ? .white : HarbourTheme.muted)
+            }.buttonStyle(.plain).disabled(!action.enabled || store.protectedSave)
                 .accessibilityLabel(action.title).accessibilityIdentifier(action.invocation?.0 == "harvestReplant" ? "harvest" : "action-" + action.id)
             StableActionStatus(action: action)
             if action.detail.contains("\n") { DisclosureGroup("Batch preview") { Text(action.detail.components(separatedBy: "\n").dropFirst().joined(separator: "\n")).font(.caption) } }

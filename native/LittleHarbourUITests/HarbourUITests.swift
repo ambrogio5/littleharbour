@@ -33,8 +33,12 @@ import XCTest
         XCTAssertTrue(reveal(all, in: app)); XCTAssertTrue(all.isEnabled); all.tap()
         let search = app.textFields["production-search"]
         XCTAssertTrue(reveal(search, in: app)); search.tap(); search.typeText("wheat\n")
-        let wheat = app.buttons["automation-field-24"]
-        XCTAssertTrue(reveal(wheat, in: app)); XCTAssertTrue(wheat.isSelected)
+        let wheat = app.buttons["stock-target-field"]
+        XCTAssertTrue(reveal(wheat, in: app)); XCTAssertEqual(wheat.value as? String, "Keep 24")
+        wheat.tap()
+        let twelve = app.buttons["stock-target-choice-field-12"]
+        XCTAssertTrue(twelve.waitForExistence(timeout: 5)); twelve.tap()
+        XCTAssertEqual(wheat.value as? String, "Keep 12")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "All production stock targets"; shot.lifetime = .keepAlways; add(shot)
         let build = app.buttons["inspector-nav-Build"].exists ? app.buttons["inspector-nav-Build"] : app.buttons["nav-Build"]
         build.tap()
