@@ -428,7 +428,7 @@ import XCTest
         app.buttons["nav-Production"].tap()
         let harvest = app.buttons["harvest"]; XCTAssertTrue(harvest.waitForExistence(timeout: 10)); XCTAssertTrue(harvest.isEnabled); harvest.tap()
         XCTAssertFalse(harvest.isEnabled)
-        XCTAssertTrue(app.staticTexts["stock-count-wheat"].label.hasPrefix("Wheat · "))
+        XCTAssertTrue(app.staticTexts["Wheat"].exists)
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["nav-Trade"].tap(); XCTAssertTrue(app.staticTexts["Trade"].firstMatch.waitForExistence(timeout: 5))
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }

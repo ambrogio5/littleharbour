@@ -56,7 +56,7 @@ struct ProductionPanel: View {
                     if site != nil { Toggle("Only this site", isOn: $onlySite).accessibilityIdentifier("site-filter") }
                     if search.isEmpty, (site == nil || !onlySite || site?.id == "field"), let harvest = s.actions.first(where: { $0.invocation?.0 == "harvestReplant" }) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Wheat · \(s.stock["wheat"] ?? 0) stored").font(.headline).monospacedDigit().accessibilityIdentifier("stock-count-wheat")
+                            HStack { Text("Wheat"); Spacer(); Text("\(s.stock["wheat"] ?? 0)").monospacedDigit().accessibilityIdentifier("stock-count-wheat"); Text("stored").font(.caption) }.font(.headline)
                             ManagementAction(action: harvest)
                         }
                     }
