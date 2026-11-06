@@ -93,7 +93,9 @@ struct Boat: Decodable {
     let sails: Bool?
     let trip: Trip?
     var artwork: String { "vessel-" + type + (upgrade != nil || sails == true ? "-upgraded" : "") }
-    var sailingArtwork: String { artwork + (trip?.outward == true ? "-outbound" : "-homebound") }
+    // The bay departs southwest. Historical texture suffixes describe the old map,
+    // so select by the actual painted bow direction without rotating upright masts.
+    var sailingArtwork: String { artwork + (trip?.outward == true ? "-homebound" : "-outbound") }
 }
 struct WorkshopState: Decodable { let target, stock, incoming: Int; let item, status, station: String }
 struct TownDirection: Decodable, Identifiable {
@@ -266,9 +268,10 @@ struct MapViewport: Codable, Equatable {
         let knownRegion = region.map { ["all", "inland", "neighbourhood", "market", "coast", "harbour"].contains($0) } ?? true
         let withinBounds = version == 1 ? (0...1800).contains(x) && (0...2700).contains(y)
             : version == 2 ? (-300...2100).contains(x) && (-350...3050).contains(y)
-            : (-2450...3550).contains(x) && (-650...3350).contains(y)
-        return [1, 2, 3].contains(version) && x.isFinite && y.isFinite && scale.isFinite
-            && withinBounds && (0.65...64).contains(scale)
+            : version == 3 ? (-2450...3550).contains(x) && (-650...3350).contains(y)
+            : (0...3840).contains(x) && (0...2560).contains(y)
+        return [1, 2, 3, 4].contains(version) && x.isFinite && y.isFinite && scale.isFinite
+            && withinBounds && ((version == 4 ? 0.5 : 0.65)...64).contains(scale)
             && knownRegion
     }
     static func decode(_ data: Data?) -> MapViewport? {
@@ -318,11 +321,13 @@ struct VesselPose {
     let position: CGPoint
     let heading: CGFloat
     static func at(slot: Int, trip: Boat.Trip) -> VesselPose {
-        let distance: Double = trip.route == "quarry" ? 850 : 1350
+        let berth = BayLayout.berth(slot)
+        let exits: [CGFloat] = [420, 680, 800]
+        let exit = BayLayout.point(exits[max(0, min(2, slot))] - (trip.route == "quarry" ? 25 : 0), 960)
+        let dx = exit.x - berth.x, dy = exit.y - berth.y
         let excursion = sin(trip.progress * .pi)
-        let dx = distance * 0.55
-        return .init(position: CGPoint(x: 1630 + excursion * dx, y: Double(600 - slot * 240) + excursion * distance),
-                     heading: atan2(distance, dx) + (trip.outward ? 0 : .pi))
+        return .init(position: CGPoint(x: berth.x + excursion * dx, y: berth.y + excursion * dy),
+                     heading: atan2(dy, dx) + (trip.outward ? 0 : .pi))
     }
 }
 

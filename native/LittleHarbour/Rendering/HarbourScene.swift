@@ -6,6 +6,7 @@ import SwiftUI
     let world = SKNode()
     let cameraNode = SKCameraNode()
     private let ornaments = SKNode()
+    private let bay = BayEnvironment()
     private var sprites: [String: SKSpriteNode] = [:]
     private var labels: [String: SKLabelNode] = [:]
     private var labelPlates: [String: SKShapeNode] = [:]
@@ -38,18 +39,7 @@ import SwiftUI
         super.init(size: size)
         scaleMode = .resizeFill; backgroundColor = UIColor(red: 0.08, green: 0.39, blue: 0.49, alpha: 1)
         addChild(world); addChild(cameraNode); camera = cameraNode
-        let surround = SKSpriteNode(texture: texture("terrain-surround"), size: CGSize(width: 6000, height: 4000))
-        surround.name = "landscape-surround"; surround.anchorPoint = .zero
-        surround.position = CGPoint(x: -2450, y: -650); surround.zPosition = -10001; world.addChild(surround)
-        let terrain = SKSpriteNode(texture: texture("terrain"), size: CGSize(width: 1800, height: 2700))
-        terrain.shader = SKShader(source: """
-        void main() {
-            vec2 edge = min(v_tex_coord, vec2(1.0) - v_tex_coord);
-            float blend = smoothstep(0.0, 0.055, edge.x) * smoothstep(0.0, 0.037, edge.y);
-            gl_FragColor = texture2D(u_texture, v_tex_coord) * blend;
-        }
-        """)
-        terrain.anchorPoint = .zero; terrain.position = .zero; terrain.zPosition = -10000; world.addChild(terrain)
+        world.addChild(bay)
         world.addChild(ornaments); world.addChild(chronicleDecor)
         selectionRing.strokeColor = UIColor(red: 1, green: 0.87, blue: 0.55, alpha: 1)
         selectionRing.lineWidth = 4; selectionRing.fillColor = UIColor(red: 1, green: 0.88, blue: 0.58, alpha: 0.15); selectionRing.zPosition = 1; selectionRing.isHidden = true; world.addChild(selectionRing)
@@ -66,23 +56,18 @@ import SwiftUI
     }
     func persistViewport() {
         guard initialFocus, let preferences = viewportPreferences else { return }
-        let value = MapViewport(version: 3, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(0.65, cameraNode.xScale), region: focusedRegion)
+        let value = MapViewport(version: BayLayout.version, x: cameraNode.position.x, y: cameraNode.position.y, scale: max(BayLayout.minimumScale, cameraNode.xScale), region: focusedRegion)
         if value.isValid, let data = try? JSONEncoder().encode(value), preferences.data(forKey: viewportKey) != data { preferences.set(data, forKey: viewportKey) }
     }
-    // Presentation anchors align fixed coastal landmarks to the painted shore.
-    // Saved neighbourhood plots and all economic coordinates remain untouched.
-    func mapPosition(_ entity: WorldEntity) -> CGPoint {
-        let shore: [String: CGPoint] = ["pier": CGPoint(x: 1150, y: 2320), "fishing": CGPoint(x: 530, y: 2120), "ferry": CGPoint(x: 1400, y: 2060), "lighthouse": CGPoint(x: 1510, y: 1780),
-            "chronicle-belltower": CGPoint(x: 500, y: 1900), "chronicle-regatta": CGPoint(x: 960, y: 1950)]
-        let p = shore[entity.id] ?? CGPoint(x: entity.x, y: entity.y)
-        return CGPoint(x: p.x, y: 2700 - p.y)
-    }
+    // Layout registration changes only presentation; canonical plot identity is retained.
+    func mapPosition(_ entity: WorldEntity) -> CGPoint { BayLayout.position(entity) }
     private func texture(_ name: String) -> SKTexture {
         if let cached = textures.object(forKey: name as NSString) { return cached }
         let result = SKTexture(imageNamed: name); result.filteringMode = .linear; textures.setObject(result, forKey: name as NSString, cost: Int(result.size().width * result.size().height * 4)); return result
     }
     func apply(_ snapshot: HarbourSnapshot, selected: String?) {
         entities = snapshot.entities; current = snapshot; selectedID = selected
+        bay.apply(entities)
         let ids = Set(entities.map(\.id))
         for id in sprites.keys.filter({ !ids.contains($0) }) { sprites.removeValue(forKey: id)?.removeFromParent(); labels.removeValue(forKey: id)?.removeFromParent(); labelPlates.removeValue(forKey: id)?.removeFromParent(); badges.removeValue(forKey: id)?.removeFromParent() }
         for e in entities {
@@ -107,14 +92,14 @@ import SwiftUI
                 for radius in stride(from: 3, through: 0, by: -1) {
                     let ellipse = SKShapeNode(ellipseOf: CGSize(width: 150 + radius * 18, height: 30 + radius * 7))
                     ellipse.fillColor = UIColor(red: 0.18, green: 0.19, blue: 0.12, alpha: 0.045)
-                    ellipse.strokeColor = .clear; ellipse.position = CGPoint(x: 12, y: -86)
+                    ellipse.strokeColor = .clear; ellipse.position = CGPoint(x: 12, y: -110)
                     shadow.addChild(ellipse)
                 }
                 node.addChild(shadow)
             }
             node.childNode(withName: "ground-contact")?.isHidden = e.stage == "unbuilt"
-            node.position = mapPosition(e); node.zPosition = 2700 - mapPosition(e).y
-            node.alpha = e.stage == "unbuilt" ? 0.74 : 1
+            node.position = mapPosition(e); node.zPosition = BayLayout.size.height - mapPosition(e).y
+            node.alpha = e.stage == "unbuilt" ? 0.44 : 1
             labels[e.id]?.text = e.displayLabel
             labels[e.id]?.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 124)
             badges[e.id]?.text = e.ripe == true ? "✦" : e.stage == "building" ? "•••" : nil
@@ -125,7 +110,7 @@ import SwiftUI
                 } else { badge.removeAllActions(); badge.alpha = 1 }
             }
         }
-        if let selected, let e = entities.first(where: { $0.id == selected }) { selectionRing.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 60); selectionRing.zPosition = 2700 - mapPosition(e).y - 0.5; selectionRing.isHidden = false }
+        if let selected, let e = entities.first(where: { $0.id == selected }) { selectionRing.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 105); selectionRing.zPosition = BayLayout.size.height - mapPosition(e).y - 0.5; selectionRing.isHidden = false }
         else { selectionRing.isHidden = true }
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
@@ -137,7 +122,8 @@ import SwiftUI
         if !initialFocus && size.width > 0 && size.height > 0 {
             initialFocus = true
             if let viewport = restoredViewport {
-                if let region = viewport.region { focus(region) }
+                if viewport.version < BayLayout.version { focus(viewport.region ?? (snapshot.deliveries == 0 ? "inland" : "harbour")) }
+                else if let region = viewport.region { focus(region) }
                 else {
                     focusedRegion = nil; cameraNode.position = CGPoint(x: viewport.x, y: viewport.y)
                     cameraNode.setScale(min(16, viewport.scale)); clampCamera()
@@ -159,25 +145,25 @@ import SwiftUI
             let art = c.coast == "rocky" ? "chronicle-seawall" : c.coast == "marsh" ? "garden-built" : "chronicle-regatta-alternate"
             for i in 0..<5 {
                 let item = SKSpriteNode(texture: texture(art), size: CGSize(width: 190, height: 190))
-                let y = 300 + i * 390; item.position = CGPoint(x: 80 + i % 2 * 75, y: 2700 - y); item.zPosition = CGFloat(y)
+                item.position = BayLayout.point(65 + CGFloat(i % 2) * 18, 160 + CGFloat(i) * 105); item.zPosition = BayLayout.size.height - item.position.y
                 chronicleDecor.addChild(item)
             }
         }
         guard c.started else { return }
         // Existing painted objects provide static seasonal dressing, including under Reduce Motion.
-        let seasonalArt = ["Spring": "garden-built", "Summer": "market-built", "Autumn": "orchard-built", "Winter": "weaver-built"][c.season] ?? "garden-built"
+        let seasonalArt = ["Spring": "bay-bench", "Summer": "bay-nets", "Autumn": "bay-cargo", "Winter": "bay-timber"][c.season] ?? "bay-bench"
         let decoration = SKSpriteNode(texture: texture(seasonalArt), size: CGSize(width: 130, height: 130))
-        decoration.position = CGPoint(x: 1310, y: 2700 - 1300); decoration.zPosition = 1300; chronicleDecor.addChild(decoration)
+        decoration.position = BayLayout.point(860, 440); decoration.zPosition = BayLayout.size.height - decoration.position.y; chronicleDecor.addChild(decoration)
         if c.city.chapter == 3 {
             let collection = SKSpriteNode(texture: texture("chronicle-exhibition-alternate"), size: CGSize(width: 140, height: 140))
-            collection.position = CGPoint(x: 1340, y: 2700 - 1540); collection.zPosition = 1540; collection.name = "city-collection"; chronicleDecor.addChild(collection)
+            collection.position = BayLayout.point(590, 480); collection.zPosition = BayLayout.size.height - collection.position.y; collection.name = "city-collection"; chronicleDecor.addChild(collection)
         }
         let sites = ["matteo": "waterfront", "lucia": "boatyard", "sofia": "courtyard", "nico": "civic", "ada": "ferry"]
         for partner in c.partners where partner.level >= 4 || partner.work >= 4 {
             guard let entity = snapshot.entities.first(where: { $0.id == sites[partner.id] }) else { continue }
-            let art = partner.work >= 4 ? "chronicle-garden" : "garden-built"
+            let art = partner.work >= 4 ? "bay-bench" : "bay-cargo"
             let detail = SKSpriteNode(texture: texture(art), size: CGSize(width: 110, height: 110))
-            let p = mapPosition(entity); detail.position = CGPoint(x: p.x - 105, y: p.y - 60); detail.zPosition = 2700 - p.y + 1
+            let p = mapPosition(entity); detail.position = CGPoint(x: p.x - 105, y: p.y - 60); detail.zPosition = BayLayout.size.height - p.y + 1
             detail.name = "partner-" + partner.id; chronicleDecor.addChild(detail)
         }
     }
@@ -220,23 +206,13 @@ import SwiftUI
     }
     private func rebuildOrnaments(_ style: WorldStyle) {
         ornaments.removeAllChildren()
-        for i in 0..<max(0, min(16, style.oliveDensity - 14)) {
-            let tree = SKSpriteNode(texture: texture("olive-tree"), size: CGSize(width: 90, height: 90))
-            let y = CGFloat(280 + i * 94); tree.position = CGPoint(x: 105 + i % 2 * 55, y: 2700 - Int(y)); tree.zPosition = y - 10; ornaments.addChild(tree)
+        for i in 0..<max(0, min(8, style.oliveDensity - 14)) {
+            let tree = SKSpriteNode(texture: texture("olive-tree"), size: CGSize(width: 100, height: 100))
+            tree.position = BayLayout.point(920 + CGFloat(i) * 43, 70)
+            tree.zPosition = BayLayout.size.height - tree.position.y; ornaments.addChild(tree)
         }
-        for i in 0..<min(7, style.marketStalls) {
-            let stall = SKSpriteNode(texture: texture("market-built"), size: CGSize(width: 105, height: 105))
-            let y = 1140 + i / 3 * 102; stall.position = CGPoint(x: 1010 + i % 3 * 147, y: 2700 - y); stall.zPosition = CGFloat(y - 1); ornaments.addChild(stall)
-        }
-        for i in 0..<min(9, style.lanterns) {
-            let lantern = SKShapeNode(rectOf: CGSize(width: 10, height: 16), cornerRadius: 3)
-            lantern.fillColor = UIColor(red: 0.98, green: 0.81, blue: 0.43, alpha: 1); lantern.strokeColor = .brown
-            let y = 1430 + i / 4 * 138; lantern.position = CGPoint(x: 260 + i % 4 * 159, y: 2700 - y); lantern.zPosition = CGFloat(y + 1); ornaments.addChild(lantern)
-        }
-        for i in 0..<min(4, max(0, style.tradeTraffic - 1)) {
-            let boat = SKSpriteNode(texture: texture(i.isMultiple(of: 2) ? "vessel-cutter" : "vessel-coaster"), size: CGSize(width: 125, height: 125))
-            boat.position = CGPoint(x: 1680 + i % 2 * 70, y: 2700 - (1370 + i * 150)); boat.zPosition = 3000; ornaments.addChild(boat)
-        }
+        // Activity is represented by real sites, real boats and their nearby props.
+        // Avoid adding unselectable lookalike shops or boats to the harbour.
     }
     private func animateActivity(_ snapshot: HarbourSnapshot) {
         let working = Set(snapshot.jobs.map(\.name))
@@ -265,7 +241,7 @@ import SwiftUI
                 let pose = VesselPose.at(slot: slot, trip: trip)
                 let excursion = sin(trip.progress * .pi)
                 sprite.position = pose.position
-                sprite.zPosition = 2700 - sprite.position.y
+                sprite.zPosition = BayLayout.size.height - sprite.position.y
                 if sprite.childNode(withName: "wake") == nil {
                     let path = CGMutablePath()
                     for offset in [0, 18, 36] {
@@ -285,7 +261,7 @@ import SwiftUI
         for e in entities where e.kind == "boat" {
             guard let boat = sprites[e.id] else { continue }
             labels[e.id]?.position = CGPoint(x: boat.position.x, y: boat.position.y - 124)
-            if selectedID == e.id { selectionRing.position = CGPoint(x: boat.position.x, y: boat.position.y - 60); selectionRing.zPosition = boat.zPosition - 0.5 }
+            if selectedID == e.id { selectionRing.position = CGPoint(x: boat.position.x, y: boat.position.y - 105); selectionRing.zPosition = boat.zPosition - 0.5 }
         }
     }
     override func didChangeSize(_ oldSize: CGSize) {
@@ -300,30 +276,17 @@ import SwiftUI
     }
     func focus(_ region: String) {
         focusedRegion = region
-        let frame: CGRect
-        switch region {
-        case "inland": frame = CGRect(x: 80, y: 1730, width: 1500, height: 950)
-        case "neighbourhood": frame = CGRect(x: 60, y: 1070, width: 910, height: 830)
-        case "market": frame = CGRect(x: 860, y: 1030, width: 860, height: 880)
-        case "coast": frame = CGRect(x: 1080, y: 100, width: 720, height: 1120)
-        case "harbour": frame = CGRect(x: 230, y: 300, width: 1250, height: 900)
-        default: frame = CGRect(x: -120, y: -180, width: 2040, height: 3060)
-        }
+        let frame = BayLayout.frame(region)
         guard size.width > 0, size.height > 0 else { return }
         cameraNode.position = CGPoint(x: frame.midX, y: frame.midY)
         let horizontal = frame.width / size.width, vertical = frame.height / size.height
-        // Districts favour readable buildings on tall screens; Whole town fits all geography.
+        // Districts favour readable buildings; overview zooms out as far as authored bounds allow.
         cameraNode.setScale((region == "all" ? max(horizontal, vertical) : sqrt(horizontal * vertical)) * 1.04)
         clampCamera()
-        // District shortcuts frame the painted land; expanded margins are for manual exploration.
-        if region != "all" {
-            let halfW = min(900, size.width * cameraNode.xScale / 2), halfH = min(1350, size.height * cameraNode.yScale / 2)
-            cameraNode.position.x = max(halfW, min(1800 - halfW, cameraNode.position.x))
-            cameraNode.position.y = max(halfH, min(2700 - halfH, cameraNode.position.y))
-        }
         persistViewport()
     }
     private func updateLabels() {
+        bay.zoom(cameraNode.xScale, labels: showLabels)
         var candidates: [MapLabelLayout.Candidate] = []
         for e in entities {
             guard let label = labels[e.id], let plate = labelPlates[e.id] else { continue }
@@ -331,7 +294,7 @@ import SwiftUI
             let rect = CGRect(x: -label.frame.width / 2 - 12, y: -label.frame.height / 2 - 7, width: label.frame.width + 24, height: label.frame.height + 14)
             plate.path = CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil)
             plate.position = label.position
-            if e.id == selectedID || (showLabels && cameraNode.xScale < 3.5 && e.stage != "unbuilt") {
+            if e.id == selectedID || (showLabels && cameraNode.xScale < 2.4 && e.stage != "unbuilt") {
                 let box = rect.offsetBy(dx: label.position.x, dy: label.position.y).insetBy(dx: -5 * cameraNode.xScale, dy: -4 * cameraNode.xScale)
                 candidates.append(.init(id: e.id, frame: box, priority: e.id == selectedID ? 100 : e.ripe == true ? 20 : 10))
             }
@@ -349,7 +312,7 @@ import SwiftUI
     func zoom(_ multiplier: CGFloat, persist: Bool = true) {
         guard multiplier.isFinite, multiplier > 0 else { return }
         focusedRegion = nil
-        cameraNode.setScale(min(16, max(0.65, cameraNode.xScale * multiplier))); clampCamera()
+        cameraNode.setScale(min(16, max(BayLayout.minimumScale, cameraNode.xScale * multiplier))); clampCamera()
         if persist { persistViewport() }
     }
     func pan(by delta: CGPoint) {
@@ -362,11 +325,11 @@ import SwiftUI
     func clampCamera() {
         guard size.width > 0, size.height > 0 else { return }
         // Clamp the visible viewport, not only its centre, to the painted surround.
-        let maximum = min(16, 6000 / size.width, 4000 / size.height)
-        cameraNode.setScale(min(maximum, max(0.65, cameraNode.xScale)))
+        let maximum = min(16, BayLayout.size.width / size.width, BayLayout.size.height / size.height)
+        cameraNode.setScale(min(maximum, max(BayLayout.minimumScale, cameraNode.xScale)))
         let halfW = size.width * cameraNode.xScale / 2, halfH = size.height * cameraNode.yScale / 2
-        cameraNode.position.x = max(-2450 + halfW, min(3550 - halfW, cameraNode.position.x))
-        cameraNode.position.y = max(-650 + halfH, min(3350 - halfH, cameraNode.position.y))
+        cameraNode.position.x = max(halfW, min(BayLayout.size.width - halfW, cameraNode.position.x))
+        cameraNode.position.y = max(halfH, min(BayLayout.size.height - halfH, cameraNode.position.y))
         updateLabels(); onZoomChange?(cameraNode.xScale)
     }
     /// Uses the visible building silhouette area, including roofs, instead of a tiny centre target.
@@ -403,10 +366,11 @@ import SwiftUI
             let phase = reduceMotion ? route.offset : residentTime / route.duration + route.offset
             let cycle = phase.truncatingRemainder(dividingBy: 2)
             let progress = cycle <= 1 ? cycle : 2 - cycle
-            let p = CGPoint(x: route.start.x + (route.end.x - route.start.x) * progress, y: route.start.y + (route.end.y - route.start.y) * progress)
+            let (start, end) = BayLayout.residentRoute(route.id)
+            let p = CGPoint(x: start.x + (end.x - start.x) * progress, y: start.y + (end.y - start.y) * progress)
             let bob = !reduceMotion && current?.speed != 0 ? abs(sin(residentTime * 5 + route.offset)) * 2 : 0
-            person.position = CGPoint(x: p.x, y: 2700 - p.y + bob)
-            person.zPosition = p.y + 1
+            person.position = CGPoint(x: p.x, y: p.y + bob)
+            person.zPosition = BayLayout.size.height - p.y + 1
             person.xScale = cycle <= 1 ? 1 : -1
         }
     }

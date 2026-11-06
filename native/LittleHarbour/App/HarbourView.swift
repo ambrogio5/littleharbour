@@ -37,6 +37,7 @@ struct HarbourView: View {
     @State private var pendingSite: WorldEntity?
     @State private var hasSideInspector = false
     @State private var expandedObjective = false
+    @State private var mapExpanded = false
     @State private var keyboardShown = false
     @AppStorage("mapLabels") private var mapLabels = true
     private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
@@ -58,10 +59,10 @@ struct HarbourView: View {
                         ZStack(alignment: .bottomLeading) {
                             HarbourMap(scene: scene, snapshot: store.snapshot, selected: store.selectedSite, reduceMotion: reduceMotion, showLabels: mapLabels, paused: !store.active || store.modalOpen || store.protectedSave)
                                 .overlay { if colorScheme == .dark { Color(red: 0.02, green: 0.08, blue: 0.14).opacity(0.22).allowsHitTesting(false).accessibilityHidden(true) } }
-                            if !wide || !store.guidanceFocus { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
+                            if !mapExpanded && (!wide || !store.guidanceFocus) { objective(wide: wide, compact: wide || geometry.size.height < 450).padding(wide ? 6 : 12) }
                         }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                    if wide { InspectorView(showCelebrations: false).environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
+                    if wide && !mapExpanded { InspectorView(showCelebrations: false).environment(\.densePanels, !typeSize.isAccessibilitySize).frame(width: min(360, max(290, geometry.size.width * 0.34))).background(harbourPaper).overlay(alignment: .leading) { Rectangle().fill(harbourInk.opacity(0.10)).frame(width: 1) } }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 dock(wide: wide).environment(\.densePanels, wide)
                     .overlay(alignment: .top) { Rectangle().fill(HarbourTheme.sea.opacity(0.25)).frame(height: 1) }
@@ -71,8 +72,9 @@ struct HarbourView: View {
             .overlay(alignment: .bottom) { if !wide && !showInspector && !showSettings { FeedbackBanner().padding(.bottom, 62) } }
             .accessibilityHidden(store.chapterCelebration != nil && !showInspector)
             .overlay { if !showInspector, let memory = store.chapterCelebration { ChapterMoment(memory: memory) } }
-            .onAppear { hasSideInspector = wide; scene.switchCoastViewport(id: store.activeCoastID); scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !wide { showInspector = true } } }
-            .onChange(of: wide) { _, value in hasSideInspector = value; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !value { showInspector = true } } }
+            .onChange(of: mapExpanded) { _, expanded in hasSideInspector = wide && !expanded }
+            .onAppear { hasSideInspector = wide && !mapExpanded; scene.switchCoastViewport(id: store.activeCoastID); scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !hasSideInspector { showInspector = true } } }
+            .onChange(of: wide) { _, value in if !value { mapExpanded = false }; hasSideInspector = value && !mapExpanded; if value { showInspector = false }; scene.onSelect = { entity in guard !showInspector && !showSites && !showExplore && !showTown && !showSettings else { return }; store.select(entity); if !hasSideInspector { showInspector = true } } }
             .sheet(isPresented: $showInspector) {
                 NavigationStack {
                     InspectorView()
@@ -172,6 +174,11 @@ struct HarbourView: View {
             Button { showExplore = true } label: { Label("Explore", systemImage: "map").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Explore")
             Button { pendingSite = nil; showSites = true } label: { Label("Sites", systemImage: "building.2").labelStyle(MapControlLabelStyle(compact: typeSize.isAccessibilitySize)).frame(minWidth: 44, minHeight: 44) }.accessibilityLabel("Sites")
             Spacer(minLength: 0)
+            if wide {
+                Button { mapExpanded.toggle() } label: { Image(systemName: mapExpanded ? "sidebar.right" : "map.fill").frame(width: 44, height: 44) }
+                    .accessibilityLabel(mapExpanded ? "Show activity panel" : "Expand map")
+                    .accessibilityIdentifier("map-expand")
+            }
             Button { scene.focus("all") } label: { Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44) }.accessibilityLabel("Whole town").accessibilityIdentifier("fit-town")
             Button { scene.zoom(1.25) } label: { Image(systemName: "minus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom out")
             Button { scene.zoom(0.8) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }.accessibilityLabel("Zoom in")

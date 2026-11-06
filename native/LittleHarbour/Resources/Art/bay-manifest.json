@@ -1,0 +1,22 @@
+{
+  "hashes" : {
+    "native\/art-source\/sheltered-bay-v1\/approved-concept.png" : "ddba605eafe5db246c24c93c28a6eb2e03eef74f080a38e6cbe352ba69657aa8",
+    "native\/art-source\/sheltered-bay-v1\/paving.png" : "eb99ca1be059a52beaa22c9829f2e275b5538337300f9be1ae008ee7b27dd57d",
+    "native\/art-source\/sheltered-bay-v1\/props.png" : "fe8b28cca440aeb3b416c1432df25835fef2b65c4c7264e9e5a75acf066ac2c9",
+    "native\/art-source\/sheltered-bay-v1\/terrain.png" : "16508f05ceee36b42c07607204d9715834deabbc2ad366ce891b9390c6ae24fd"
+  },
+  "outputHashes" : {
+    "bay-bench" : "26eae9bf5aa5eebdcc3378b21613134de835ca89d870a575f8e7b7686e79a9b3",
+    "bay-cargo" : "8c328dfbd55f60b71fc887c4a39d84092e87f8365218ce035b08581212e14cbc",
+    "bay-ground-0-0" : "07fbca22ed8d43e8718875fcfb5331c43a996ac5de6bfa755d317541c88e3585",
+    "bay-ground-0-1" : "7b6f1bf924b7c46eac57221a59845ca86dc1d28d1e7cc6184933b0e8b8674036",
+    "bay-ground-1-0" : "8a7b93ee205a6fb63eac9f233084fd0a12a9c9066aeeeef9aeeb90f768fa7447",
+    "bay-ground-1-1" : "5810ebbb7135837aab0d65b2eabaa36fc22d3be42dd89806071f7665ef26bcc2",
+    "bay-ground-2-0" : "d05219ee72a55e97ea2a275827397f913e4e802b10f56cd203837cd14d5a2cc8",
+    "bay-ground-2-1" : "1d0cbebb4068c20ad7b9e119cbee76134f038b54ad3490bd6a56f6f28c043262",
+    "bay-nets" : "5f89b560b90ab01294baa37200ebc3cddb65e637d0532589e82e8127f6cc8011",
+    "bay-paving" : "ae7ae90495ef2429da96685797ac02b1de5d89368810be262ca8bae22435a008",
+    "bay-timber" : "7fc6b16365550693b15dd37ab2de8a5f2efab12547cc34fc2dacd0a19f1881f9"
+  },
+  "version" : 1
+}

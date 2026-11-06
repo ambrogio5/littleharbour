@@ -66,15 +66,37 @@ import SwiftUI
         XCTAssertEqual(matching.count, 1)
         XCTAssertEqual(matching.first?.verb, "Start production")
     }
-    func testFixedShoreRegistrationDoesNotMoveSavedNeighbourhoodPlots() throws {
-        let s = try EngineRuntime().snapshot(), scene = HarbourScene(size: CGSize(width: 400, height: 700))
-        for entity in s.entities where entity.id.hasPrefix("plot") {
-            XCTAssertEqual(scene.mapPosition(entity).x, entity.x)
-            XCTAssertEqual(scene.mapPosition(entity).y, 2700 - entity.y)
+    func testBayRegistrationMovesOnlyPresentationAndKeepsEveryPlotSelectable() throws {
+        let engine = try EngineRuntime()
+        try engine.load(Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json"))))
+        let saved = try engine.save(), snapshot = try engine.snapshot()
+        let scene = HarbourScene(size: CGSize(width: 900, height: 600))
+        scene.apply(snapshot, selected: nil); scene.zoom(0.1)
+        for entity in snapshot.entities {
+            let p = scene.mapPosition(entity)
+            XCTAssertTrue(BayLayout.bounds.contains(p), entity.id)
+            XCTAssertEqual(scene.site(at: p)?.id, entity.id, "The real site must own its touch target: " + entity.id)
+            if entity.id.hasPrefix("plot") { XCTAssertNotEqual(p.x, entity.x) }
         }
-        let pier = try XCTUnwrap(s.entities.first { $0.id == "pier" })
-        XCTAssertEqual(scene.mapPosition(pier).x, 1150)
-        XCTAssertEqual(scene.mapPosition(pier).y, 380)
+        XCTAssertEqual(try engine.save(), saved)
+        let terrain = try XCTUnwrap(scene.world.childNode(withName: "sheltered-bay"))
+        XCTAssertEqual(terrain.children.filter { $0.name?.hasPrefix("bay-terrain") == true }.count, 6)
+        XCTAssertNil(scene.world.childNode(withName: "landscape-surround"))
+    }
+    func testBayBoatLanesStayInOpenWaterAndRejoinTheCorrectBerth() {
+        for slot in 0..<3 {
+            for progress in stride(from: 0.0, through: 1.0, by: 0.025) {
+                let trip = Boat.Trip(left: (1-progress)*100, duration: 100, route: "quarry", ferry: false)
+                let p = VesselPose.at(slot: slot, trip: trip).position
+                XCTAssertTrue(BayLayout.bounds.contains(p))
+                let x = p.x / 2.5, y = (2560-p.y)/2.5
+                XCTAssertGreaterThan(y, 590); XCTAssertLessThan(y, 975)
+                XCTAssertTrue(y < 730 || x < 1040, "Keep southbound boats west of the lighthouse breakwater")
+            }
+            let done = Boat.Trip(left: 0, duration: 100, route: "quarry", ferry: false)
+            XCTAssertEqual(VesselPose.at(slot: slot, trip: done).position.x, BayLayout.berth(slot).x, accuracy: 0.001)
+            XCTAssertEqual(VesselPose.at(slot: slot, trip: done).position.y, BayLayout.berth(slot).y, accuracy: 0.001)
+        }
     }
     func testPaintedStatesArePackagedDistinctAndTransparent() throws {
         func bytes(_ name: String) throws -> Data { try Data(contentsOf: XCTUnwrap(Bundle.main.url(forResource: name, withExtension: "png"))) }
@@ -120,13 +142,13 @@ import SwiftUI
         scene.focus("all"); let portraitScale = scene.cameraNode.xScale
         scene.size = CGSize(width: 1000, height: 500)
         XCTAssertGreaterThan(scene.cameraNode.xScale, portraitScale)
-        XCTAssertEqual(scene.cameraNode.position.x, 550, accuracy: 0.01, "A wide whole-town view clamps to the registered surround without exposing its edge")
-        XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.x, 1920, accuracy: 0.01, "A wide view stays inside the continuous bay terrain")
+        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.y - scene.size.height * scene.cameraNode.yScale / 2, 0)
         XCTAssertEqual(MapViewport.decode(preferences.data(forKey: "mapViewport"))?.region, "all")
     }
     func testCameraPreferencesRejectUnknownVersionsAndUnsafeCoordinates() throws {
         for value in [
-            MapViewport(version: 4, x: 900, y: 1350, scale: 1, region: nil),
+            MapViewport(version: 5, x: 900, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: -1, y: 1350, scale: 1, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 0, region: nil),
             MapViewport(version: 1, x: 900, y: 1350, scale: 1, region: "unknown")
@@ -139,7 +161,7 @@ import SwiftUI
         let domain = "LittleHarbour.CameraTests." + UUID().uuidString
         let preferences = try XCTUnwrap(UserDefaults(suiteName: domain))
         defer { preferences.removePersistentDomain(forName: domain) }
-        let viewport = MapViewport(version: 1, x: 900, y: 1350, scale: 2, region: nil)
+        let viewport = MapViewport(version: 4, x: 900, y: 1350, scale: 2, region: nil)
         preferences.set(try JSONEncoder().encode(viewport), forKey: "mapViewport")
         let engine = try EngineRuntime(); try engine.call("speed", [0])
         let scene = HarbourScene(size: .zero)
@@ -152,6 +174,20 @@ import SwiftUI
         XCTAssertEqual(announcedScale, 2)
     }
 
+    func testLegacyCameraRecentresByDistrictWithoutChangingTown() throws {
+        let domain = "LittleHarbour.CameraTests." + UUID().uuidString
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: domain))
+        defer { preferences.removePersistentDomain(forName: domain) }
+        let old = MapViewport(version: 3, x: -2000, y: 3000, scale: 3, region: "market")
+        preferences.set(try JSONEncoder().encode(old), forKey: "mapViewport")
+        let engine = try EngineRuntime(), saved = try engine.save()
+        let scene = HarbourScene(size: CGSize(width: 900, height: 600))
+        scene.configureViewport(preferences: preferences); scene.apply(try engine.snapshot(), selected: nil)
+        let migrated = try XCTUnwrap(MapViewport.decode(preferences.data(forKey: "mapViewport")))
+        XCTAssertEqual(migrated.version, 4); XCTAssertEqual(migrated.region, "market")
+        XCTAssertTrue(BayLayout.bounds.contains(scene.cameraNode.position))
+        XCTAssertEqual(try engine.save(), saved)
+    }
     func testSelectedMapLabelWinsCollisionsRegardlessOfEntityOrder() {
         let overlapping = CGRect(x: 0, y: 0, width: 120, height: 40)
         let candidates: [MapLabelLayout.Candidate] = [
@@ -191,13 +227,13 @@ import SwiftUI
         let engine = try EngineRuntime(), before = try engine.save()
         let scene = HarbourScene(size: CGSize(width: 400, height: 700))
         scene.apply(try engine.snapshot(), selected: nil)
-        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2700.01, "Hillside shortcut must not expose a sea strip above the land")
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2560.01, "Hillside shortcut stays inside the authored ground")
         scene.zoom(100)
-        XCTAssertEqual(scene.cameraNode.xScale, 4000 / 700, accuracy: 0.01)
-        XCTAssertEqual(scene.cameraNode.position.y, 1350, accuracy: 0.01)
-        scene.zoom(0.01); scene.pan(by: CGPoint(x: 100000, y: 100000))
-        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.x - scene.size.width * scene.cameraNode.xScale / 2, -2450)
-        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 3350)
+        XCTAssertEqual(scene.cameraNode.xScale, 2560 / 700, accuracy: 0.01)
+        XCTAssertEqual(scene.cameraNode.position.y, 1280, accuracy: 0.01)
+        scene.zoom(0.01); XCTAssertEqual(scene.cameraNode.xScale, 0.5, accuracy: 0.001); scene.pan(by: CGPoint(x: 100000, y: 100000))
+        XCTAssertGreaterThanOrEqual(scene.cameraNode.position.x - scene.size.width * scene.cameraNode.xScale / 2, 0)
+        XCTAssertLessThanOrEqual(scene.cameraNode.position.y + scene.size.height * scene.cameraNode.yScale / 2, 2560)
         XCTAssertEqual(try engine.save(), before)
     }
     func testPeopleFollowTownDevelopmentPauseAndReducedMotion() throws {
@@ -251,7 +287,7 @@ import SwiftUI
             try engine.call("tick", [duration * 0.25]); let outbound = try engine.snapshot()
             scene.apply(outbound, selected: "boat\(slot)")
             let sprite = try XCTUnwrap(scene.world.childNode(withName: "boat\(slot)"))
-            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-outbound") == true)
+            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-homebound") == true)
             let outward = try XCTUnwrap(outbound.boats[slot]?.trip), pose = VesselPose.at(slot: slot, trip: outward)
             XCTAssertEqual(sprite.position.x, pose.position.x, accuracy: 0.001)
             XCTAssertEqual(sprite.position.y, pose.position.y, accuracy: 0.001)
@@ -260,7 +296,7 @@ import SwiftUI
             XCTAssertGreaterThan((movement.x - pose.position.x) * cos(pose.heading) + (movement.y - pose.position.y) * sin(pose.heading), 0)
             XCTAssertEqual(try XCTUnwrap(sprite.childNode(withName: "wake")).zRotation, pose.heading - .pi / 2, accuracy: 0.001)
             try engine.call("tick", [duration * 0.5]); scene.apply(try engine.snapshot(), selected: nil)
-            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-homebound") == true)
+            XCTAssertTrue((sprite.userData?["texture"] as? String)?.hasSuffix("-outbound") == true)
             let back = VesselPose.at(slot: slot, trip: try XCTUnwrap(engine.snapshot().boats[slot]?.trip))
             XCTAssertEqual(back.heading - pose.heading, .pi, accuracy: 0.001)
             XCTAssertEqual(sprite.zRotation, 0, "Directional views keep masts upright; never rotate the painted billboard")

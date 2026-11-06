@@ -68,3 +68,15 @@ for(const[file,hash]of Object.entries(advanced.outputHashes)){
  if(crypto.createHash('sha256').update(png).digest('hex')!==hash)throw Error('Advanced workshop art changed: '+file);
 }
 console.log('Verified 12 advanced workshop textures and their generated source.');
+
+const bay=JSON.parse(fs.readFileSync(new URL('bay-manifest.json',base),'utf8'));
+for(const [file,hash] of Object.entries(bay.hashes))if(crypto.createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex')!==hash)throw Error('Sheltered Bay source changed: '+file);
+const bayNames=[...Array.from({length:2},(_,r)=>Array.from({length:3},(_,c)=>`bay-ground-${c}-${r}`)).flat(),'bay-cargo','bay-nets','bay-bench','bay-timber','bay-paving'].sort();
+if(JSON.stringify(Object.keys(bay.outputHashes).sort())!==JSON.stringify(bayNames))throw Error('Sheltered Bay texture coverage changed');
+for(const name of bayNames){
+ const png=fs.readFileSync(new URL(name+'.png',base));
+ if(crypto.createHash('sha256').update(png).digest('hex')!==bay.outputHashes[name])throw Error('Sheltered Bay output changed: '+name);
+ if(name.startsWith('bay-ground')&&(png.readUInt32BE(16)!==512||png.readUInt32BE(20)!==512))throw Error('Bay tile geometry changed');
+ if(['bay-cargo','bay-nets','bay-bench','bay-timber'].includes(name)&&png[25]!==6)throw Error('Bay props must preserve generated alpha');
+}
+console.log('Verified six adjoining Sheltered Bay ground tiles, four transparent props and close-view paving.');
