@@ -243,7 +243,12 @@ import XCTest
         XCTAssertTrue(businesses.waitForExistence(timeout: 10))
         XCTAssertTrue(reveal(businesses, in: app)); businesses.tap()
         let exchangeOption = app.buttons["Plot 3 · Craft exchange"]
-        XCTAssertTrue(exchangeOption.waitForExistence(timeout: 5)); exchangeOption.tap()
+        XCTAssertTrue(exchangeOption.waitForExistence(timeout: 5))
+        // iOS 18.5 can report an invalid AX activation point for this visible
+        // native menu row. Tap its observed centre rather than invoking AX auto-scroll.
+        XCTAssertGreaterThan(exchangeOption.frame.height, 1)
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(exchangeOption.frame))
+        exchangeOption.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(reveal(app.buttons["market-automation"], in: app))
         XCTAssertTrue(app.buttons["market-automation"].label.contains("Craft exchange"))
         let marketShot = XCTAttachment(screenshot: app.screenshot()); marketShot.name = "Individual market business"; marketShot.lifetime = .keepAlways; add(marketShot)
