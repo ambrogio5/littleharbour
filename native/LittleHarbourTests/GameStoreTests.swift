@@ -11,6 +11,43 @@ import XCTest
         XCTAssertFalse(store.protectedSave, store.message ?? "No error")
         return store
     }
+    func testReviewingOtherWorkPreservesPinAndDoesNotSpend() throws {
+        let store = try taskStore()
+        let request = try XCTUnwrap(store.snapshot?.chronicle.offers.first { $0.kind == 0 })
+        store.pin(request.goal)
+        let before = try XCTUnwrap(store.snapshot)
+        let other = try XCTUnwrap(before.chronicle.offers.first { $0.kind == 1 })
+        store.openGoal(other.goal)
+        XCTAssertEqual(store.nextRequest?.id, other.id)
+        XCTAssertEqual(store.snapshot?.chronicle.pin, request.goal)
+        XCTAssertEqual(store.snapshot?.stock, before.stock)
+        XCTAssertEqual(store.snapshot?.coins, before.coins)
+        XCTAssertFalse(try XCTUnwrap(store.nextRequest).accepted)
+        store.navigate("Production")
+        XCTAssertNil(store.previewGoal)
+        XCTAssertEqual(store.nextGoal, request.goal)
+    }
+    func testSupplyPlanOpensExactRecipeAndClearsFocusWhenBrowsingAway() throws {
+        let store = try taskStore { raw in
+            var c = raw["chronicle"] as! [String: Any], offers = c["offers"] as! [[String: Any]]
+            let i = offers.firstIndex { $0["kind"] as? Int == 0 }!
+            offers[i]["accepted"] = true; c["offers"] = offers; c["pin"] = "year:" + (offers[i]["id"] as! String); raw["chronicle"] = c
+            var town = raw["town"] as! [String: Any], stock = town["stock"] as! [String: Any]
+            stock["planks"] = 0; stock["tiles"] = 0; town["stock"] = stock; raw["town"] = town
+        }
+        let request = try XCTUnwrap(store.nextRequest)
+        let recipe = try XCTUnwrap(store.plan(request.goal)?.recipes.first)
+        let stock = store.snapshot?.stock
+        store.openRecipe(recipe)
+        XCTAssertEqual(store.category, "Production"); XCTAssertEqual(store.preferredRecipe, recipe.key)
+        XCTAssertNotNil(store.selectedSite)
+        XCTAssertEqual(store.snapshot?.stock, stock)
+        XCTAssertEqual(store.snapshot?.chronicle.pin, request.goal)
+        store.navigate("Trade"); XCTAssertNil(store.preferredRecipe)
+        store.openRecipe(recipe); store.select(try XCTUnwrap(store.snapshot?.entities.first { $0.id == "bakery" }))
+        XCTAssertNil(store.preferredRecipe)
+        store.openRecipe(recipe); store.followGuidance(); XCTAssertNil(store.preferredRecipe)
+    }
     func testAcceptConfirmsInlineWithoutCoveringNextTask() throws {
         let store = try taskStore()
         store.perform(try XCTUnwrap(store.requestAction(try XCTUnwrap(store.nextRequest))))

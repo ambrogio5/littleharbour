@@ -45,7 +45,7 @@ struct GoalsPanel: View {
                     if section == "Today", let request = store.nextRequest {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(request.accepted ? "YOUR NEXT TASK" : "SUGGESTED NEXT TASK").font(.caption.bold()).tracking(1).foregroundStyle(HarbourTheme.sea)
-                            if let pin = c.pin, pin != store.nextGoal {
+                            if let pin = c.pin, store.previewGoal == nil, pin != store.nextGoal {
                                 Text("Previous goal finished or unavailable.").font(.caption).foregroundStyle(HarbourTheme.muted)
                             }
                             requestCard(request, focused: true)
@@ -59,6 +59,7 @@ struct GoalsPanel: View {
                         Text("Today").tag("Today"); Text("Projects").tag("Projects"); Text("People").tag("People")
                     }.pickerStyle(.segmented).accessibilityIdentifier("goal-horizon")
                     if section == "Today" {
+                    HarbourNowView()
                     Text("Other requests · \(c.season), year \(c.year)").font(.subheadline.bold())
                     ForEach(c.offers.filter { $0.goal != store.nextRequest?.goal }) { request in
                         requestCard(request)
@@ -130,7 +131,7 @@ struct GoalsPanel: View {
             }
             if r.accepted && store.requestAction(r)?.enabled != true {
                 if r.kind == 1 {
-                    Button("Choose the next boat") { store.chooseRequestBoat(r) }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("task-choose-boat")
+                    Button(store.voyageProgress(r)?.waiting == true ? "View boats underway" : "Choose the next boat") { store.chooseRequestBoat(r) }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("task-choose-boat")
                     Text("\(r.boats) / 2 different boats returned. Only passenger services started after accepting count; cargo and recalls do not.").font(.caption)
                     if (store.snapshot?.boats.compactMap { $0 }.count ?? 0) < 2 { Text("You need a second boat. Choose an empty berth to add one.").font(.caption) }
                 } else if !r.cost.isEmpty {
@@ -143,6 +144,7 @@ struct GoalsPanel: View {
             }.font(.caption)
             if r.accepted {
                 if !r.cost.isEmpty { GoalSupplyChecklist(goal: r.goal) }
+                if let progress = store.voyageProgress(r) { VoyageTaskChecklist(progress: progress) }
                 HStack {
                     Button(store.snapshot?.chronicle.pin == r.goal ? "Unpin goal" : "Pin goal") { store.pin(store.snapshot?.chronicle.pin == r.goal ? nil : r.goal) }.frame(minHeight: 44)
                     Spacer()
@@ -185,6 +187,7 @@ struct GoalsPanel: View {
                 if let goal = p.goal { GoalSupplyChecklist(goal: goal) }
                 if p.stage == 2 {
                     Text("\(p.boats) / 2 boats · \(p.routes) / 2 coasts").font(.caption.bold())
+                    if let progress = store.voyageProgress(p) { VoyageTaskChecklist(progress: progress) }
                     ForEach(p.missions) { mission in
                         VStack(alignment: .leading, spacing: 4) {
                             Label(mission.title, systemImage: mission.complete ? "checkmark.circle.fill" : mission.passengers ? "person.2" : "shippingbox").font(.subheadline.bold())

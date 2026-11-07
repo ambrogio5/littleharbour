@@ -355,6 +355,13 @@ struct InspectorView: View {
             .onChange(of: store.guidanceFocus) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.goalNavigationRevision) { _, _ in reader.scrollTo("panel-top", anchor: .top) }
+            .task(id: store.preferredRecipe) {
+                if let recipe = store.preferredRecipe {
+                    await Task.yield()
+                    guard store.preferredRecipe == recipe else { return }
+                    reader.scrollTo("recipe-" + recipe, anchor: .top)
+                }
+            }
             .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
         .accessibilityHidden(showCelebrations && store.chapterCelebration != nil)
@@ -524,6 +531,8 @@ struct ProjectView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         Label(plan.ready ? "SUPPLIES READY" : "YOUR SUPPLY PLAN", systemImage: plan.ready ? "checkmark.seal" : "list.bullet.clipboard").font(.caption.weight(.bold)).tracking(1).foregroundStyle(HarbourTheme.sea)
                         Text(plan.title).font(.system(.title, design: .serif, weight: .semibold))
+                        Button { store.queuePlan(goal) } label: { Label("Queue available production", systemImage: "play.fill").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(store.protectedSave || !plan.recipes.contains { $0.queueable > 0 }).accessibilityIdentifier("plan-queue-production")
+                        Text(plan.ready ? "Everything is ready. Return to your task to contribute the supplies." : plan.recipes.contains { $0.queueable > 0 } ? "Start the batches that can run now. Finished ingredients are needed before later recipes can start." : "Check the missing ingredients or work already underway below.").font(.caption).foregroundStyle(HarbourTheme.muted)
                         ForEach(plan.requirements) { r in
                             VStack(alignment: .leading, spacing: 10) {
                                 HStack { ResourceIcon(item: r.item, size: 32); Text(goodsNames[r.item] ?? r.item.capitalized); Spacer(); Text("\(r.available) / \(r.required)").monospacedDigit() }.font(.headline)
@@ -541,7 +550,11 @@ struct ProjectView: View {
                             ForEach(plan.recipes) { r in
                                 HStack(alignment: .top, spacing: 12) {
                                     Text("\(r.batches)×").font(.title3.monospacedDigit()).foregroundStyle(HarbourTheme.gold)
-                                    VStack(alignment: .leading, spacing: 4) { Text(r.name).font(.headline); Text("\(Int(r.seconds))s · \(r.queueable) ready to queue").font(.caption).foregroundStyle(HarbourTheme.muted) }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(r.name).font(.headline)
+                                        Text("\(Int(r.seconds)) game seconds · \(r.queueable) ready to queue").font(.caption).foregroundStyle(HarbourTheme.muted)
+                                        Button("Open workshop") { store.openRecipe(r); dismiss() }.frame(minHeight: 44).accessibilityIdentifier("plan-workshop-" + r.key)
+                                    }
                                 }.frame(maxWidth: .infinity, alignment: .leading).harbourCard()
                             }
                         }
@@ -549,7 +562,6 @@ struct ProjectView: View {
                         if plan.blockers.contains(where: { $0.kind == "locked" }) {
                             Button("Open building plans") { store.navigate("Build"); dismiss() }.frame(minHeight: 44)
                         }
-                        Button { store.queuePlan(goal) } label: { Label("Queue available production", systemImage: "play.fill").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).disabled(store.protectedSave || !plan.recipes.contains { $0.queueable > 0 })
                         Button { store.reserve(goal) } label: { Label("Reserve available supplies", systemImage: "archivebox").frame(maxWidth: .infinity, minHeight: 44) }.buttonStyle(.bordered).disabled(store.protectedSave)
                         Text("Reservations keep these supplies aside for this project. Finish the ingredients before starting later steps. Time pauses when you leave the app.").font(.footnote).foregroundStyle(HarbourTheme.muted)
                     }.padding(20)

@@ -100,6 +100,9 @@ struct ProductionPanel: View {
             let recipes = s.actions.filter { $0.invocation?.0 == "start" }
             let keys = recipes.compactMap { $0.invocation?.1.first as? String }
             VStack(alignment: .leading, spacing: 14) {
+                if store.preferredRecipe != nil {
+                    HStack { Text("FROM YOUR SUPPLY PLAN").font(.caption.bold()); Spacer(); Button("All at this workshop") { store.preferredRecipe = nil }.font(.caption).frame(minHeight: 44) }
+                }
                 Picker("Production view", selection: $section) {
                     Text("Make").tag("Make"); Text("Stock targets").tag("Stocks")
                 }.pickerStyle(.segmented).accessibilityIdentifier("production-view")
@@ -130,12 +133,13 @@ struct ProductionPanel: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack { Text("Wheat"); Spacer(); Text("\(s.stock["wheat"] ?? 0)").monospacedDigit().accessibilityIdentifier("stock-count-wheat"); Text("stored").font(.caption) }.font(.headline)
                             ManagementAction(action: harvest)
-                        }
+                        }.id("recipe-field")
                     }
                 }
                 // Catalog order and identity stay fixed across queues, stock and
                 // availability updates. Never sort or filter by readiness here.
                 ForEach(recipes.filter { action in
+                    (store.preferredRecipe == nil || action.invocation?.1.first as? String == store.preferredRecipe) &&
                     (section == "Stocks" || site == nil || !onlySite || action.belongs(to: site)) &&
                     (search.isEmpty || (action.title + " " + action.detail).localizedCaseInsensitiveContains(search))
                 }) { action in
@@ -154,15 +158,20 @@ struct ProductionPanel: View {
                                 DisclosureGroup("Automatic stock · \(workshop.target == 0 ? "Off" : "Keep \(workshop.target)")") { WorkshopAutomation(recipe: key) }
                                     .font(.caption.bold())
                             CrewAssignmentControls(target: "station:" + workshop.station)
-                        }.harbourCard()
+                        }.harbourCard().id("recipe-" + key)
                         }
                     }
                 }
                 if recipes.filter({ search.isEmpty || ($0.title + " " + $0.detail).localizedCaseInsensitiveContains(search) }).isEmpty {
                     Text("No matching products. Clear the search to see all unlocked recipes.").font(.caption)
                 }
-            }
+            }.onAppear { applySupplyFocus() }
+                .onChange(of: store.preferredRecipe) { _, _ in applySupplyFocus() }
+                .onChange(of: section) { _, value in if value == "Stocks" { store.preferredRecipe = nil } }
         }
+    }
+    private func applySupplyFocus() {
+        if store.preferredRecipe != nil { section = "Make"; search = ""; onlySite = true; searchFocused = false }
     }
 }
 
