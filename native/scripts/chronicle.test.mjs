@@ -101,3 +101,9 @@ test('City collections require actual chosen expeditions and reject forged occup
 test('New coasts and town identity preserve the original until explicit replacement',()=>{
  B.reset();const original=B.save();assert(!B.newCoast('unknown','Test'));assert.equal(B.save(),original);assert(B.newCoast('windy','Porto Vento'));assert.equal(snap().chronicle.coast,'windy');assert.equal(snap().story.townName,'Porto Vento');reload();const bytes=B.save();assert.throws(()=>B.identity('', 'teal'));assert.equal(B.save(),bytes);assert(B.identity('Porto Sereno','teal'));reload();
 });
+
+test('Locked city save validation accepts reordered JSON keys but rejects progress',()=>{
+ ready();const raw=save();raw.chronicle.city=Object.fromEntries(Object.entries(raw.chronicle.city).reverse());
+ B.load(JSON.stringify(raw));assert.equal(snap().chronicle.started,true);const before=B.save();
+ raw.chronicle.city.glaze=1;assert.throws(()=>B.load(JSON.stringify(raw)),/Invalid city-port/);assert.equal(B.save(),before);
+});

@@ -15,13 +15,13 @@ struct GoalsPanel: View {
         if let s = store.snapshot {
             let c = s.chronicle
             VStack(alignment: .leading, spacing: 16) {
-                if let title = store.pinnedTitle {
+                if let title = store.pinnedTitle, !c.started || (store.nextRequest == nil && store.nextProject == nil) {
                     HStack {
                         Label(title, systemImage: "pin.fill").font(.headline)
                         Spacer()
                         Button { store.pin(nil) } label: { Image(systemName: "pin.slash").frame(width: 44, height: 44) }.accessibilityLabel("Unpin goal")
                     }
-                    Button("Continue my next step") { store.nextPinnedStep() }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("continue-goal")
+                    Button("Open " + title) { store.nextPinnedStep() }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("continue-goal")
                 }
                 if !c.started {
                     VStack(alignment: .leading, spacing: 10) {
@@ -42,27 +42,32 @@ struct GoalsPanel: View {
                     if s.festival.unlocked { Button("Plan the festival") { store.pin("festival"); store.navigate("Festival") }.frame(minHeight: 44) }
                     DirectionsPanel()
                 } else {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("\(c.season.uppercased()) · YEAR \(c.year)").font(.caption.bold()).tracking(1)
-                            Text("Choose what matters today").font(.system(.title3, design: .serif, weight: .semibold))
+                    if section == "Today", let request = store.nextRequest {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(request.accepted ? "YOUR NEXT TASK" : "SUGGESTED NEXT TASK").font(.caption.bold()).tracking(1).foregroundStyle(HarbourTheme.sea)
+                            if let pin = c.pin, pin != store.nextGoal {
+                                Text("Previous goal finished or unavailable.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                            }
+                            requestCard(request, focused: true)
                         }
-                        Spacer()
-                        Text("\(Int(c.remaining) / 60):\(String(format: "%02d", Int(c.remaining) % 60))").font(.caption.monospacedDigit()).accessibilityLabel("\(Int(c.remaining / 60)) game minutes until next season")
                     }
-                    Text("Only unaccepted offers change next season. Accepted work, contributed supplies and reserved goods stay yours. Time pauses outside the game.").font(.caption).foregroundStyle(HarbourTheme.muted)
+                    if section == "Projects", let project = store.nextProject {
+                        Text("YOUR NEXT TASK · STEP \(max(1, project.stage + 1)) OF 4").font(.caption.bold()).foregroundStyle(HarbourTheme.sea)
+                        projectCard(project)
+                    }
                     Picker("Goal horizon", selection: $section) {
                         Text("Today").tag("Today"); Text("Projects").tag("Projects"); Text("People").tag("People")
                     }.pickerStyle(.segmented).accessibilityIdentifier("goal-horizon")
                     if section == "Today" {
-                    ForEach(c.offers) { request in
+                    Text("Other requests · \(c.season), year \(c.year)").font(.subheadline.bold())
+                    ForEach(c.offers.filter { $0.goal != store.nextRequest?.goal }) { request in
                         requestCard(request)
                     }
                     }
                     if section == "Projects" {
                     Text("Leave something lasting").font(.system(.title3, design: .serif, weight: .semibold))
                     Text("Two possibilities at a time. Choose one project and a branch; its finished place stays in your town.").font(.caption).foregroundStyle(HarbourTheme.muted)
-                    ForEach(c.projects.filter { $0.stage != 4 }) { project in projectCard(project) }
+                    ForEach(c.projects.filter { $0.stage != 4 && $0.id != store.nextProject?.id }) { project in projectCard(project) }
                     if c.households > 0 {
                         DisclosureGroup("Neighbourhood · standing \(c.standing)") {
                             Text("\(c.households) household places, based on built homes and furnishings. Share bread to open the sea wall, bell tower and school projects.").font(.caption).padding(.vertical, 8)
@@ -71,6 +76,10 @@ struct GoalsPanel: View {
                     }
                     CityPortPanel()
                     }
+                    DisclosureGroup("How seasons and tasks work") {
+                        Text("Accept a request, then follow its next action. Accepted tasks never expire. Only unaccepted offers change next season; supplies and progress stay yours. Time pauses outside the game.").font(.caption)
+                        Text("Next season in \(Int(c.remaining) / 60):\(String(format: "%02d", Int(c.remaining) % 60))").font(.caption.monospacedDigit())
+                    }.font(.caption)
                     if section == "People" {
                     CrewOverview()
                     DisclosureGroup("People of Porto Lume", isExpanded: $showPartners) {
@@ -98,32 +107,46 @@ struct GoalsPanel: View {
                     DisclosureGroup("Other ambitions") { DirectionsPanel() }
                     }
                 }
-            }.onAppear { if let desired = store.preferredGoalSection { section = desired } else if store.snapshot?.chronicle.pin?.hasPrefix("chronicle:") == true { section = "Projects" } }
+            }.onAppear { if let desired = store.preferredGoalSection { section = desired } else if store.nextGoal?.hasPrefix("chronicle:") == true { section = "Projects" } }
             .onChange(of: store.preferredGoalSection) { _, desired in if let desired { section = desired } }
+            .onChange(of: store.goalNavigationRevision) { _, _ in section = store.preferredGoalSection ?? "Today" }
             .sheet(isPresented: Binding(get: { selectedPlan != nil }, set: { if !$0 { selectedPlan = nil } })) {
                 if let goal = selectedPlan { ProjectView(goal: goal) }
             }
         }
     }
-    private func requestCard(_ r: ChronicleState.Request) -> some View {
+    private func requestCard(_ r: ChronicleState.Request, focused: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack { Text(r.partner.uppercased()).font(.caption.bold()).foregroundStyle(HarbourTheme.sea); Spacer(); if r.accepted { Label("Accepted · kept", systemImage: "checkmark.seal").font(.caption2) } }
             Text(r.title).font(.system(.headline, design: .serif))
             if let choice = r.choice { Text(choice).font(.subheadline.bold()) }
-            Text(r.body).font(.caption).fixedSize(horizontal: false, vertical: true)
-            if r.accepted && r.kind == 1 {
-                Text("\(r.boats) / 2 different boats have returned").font(.subheadline.bold())
-                if (store.snapshot?.boats.compactMap { $0 }.count ?? 0) < 2 { Text("You need a second boat. Choose an empty berth in Fleet to add one.").font(.caption) }
+            Text(store.requestInstruction(r)).font(.subheadline.bold()).accessibilityIdentifier(focused ? "next-task-instruction" : "task-instruction-" + r.id)
+            // Put the action before descriptive text, so landscape players can start immediately.
+            ForEach(controls(r.accepted ? (r.kind == 2 && r.choice == nil ? "chronicleChoose" : "chronicleDeliver") : "chronicleAccept", r.id).filter { !r.accepted || $0.enabled || r.kind == 2 && r.choice == nil }) { action in
+                if let cost = action.detail.components(separatedBy: "\n").first, !cost.isEmpty { Text(cost).font(.caption).foregroundStyle(HarbourTheme.muted) }
+                Button(action.invocation?.0 == "chronicleAccept" ? "Accept this task" : action.title) { store.perform(action) }
+                    .frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white)
+                    .disabled(store.protectedSave || !action.enabled).accessibilityLabel(action.title).accessibilityIdentifier("action-" + action.id)
             }
-            ForEach(controls("chronicleAdvice", r.id)) { ManagementAction(action: $0) }
-            ForEach(controls(r.accepted ? (r.kind == 2 && r.choice == nil ? "chronicleChoose" : "chronicleDeliver") : "chronicleAccept", r.id)) { ManagementAction(action: $0) }
+            if r.accepted && store.requestAction(r)?.enabled != true {
+                if r.kind == 1 {
+                    Button("Choose the next boat") { store.chooseRequestBoat(r) }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("task-choose-boat")
+                    Text("\(r.boats) / 2 different boats returned. Only passenger services started after accepting count; cargo and recalls do not.").font(.caption)
+                    if (store.snapshot?.boats.compactMap { $0 }.count ?? 0) < 2 { Text("You need a second boat. Choose an empty berth to add one.").font(.caption) }
+                } else if !r.cost.isEmpty {
+                    Button("Find and prepare the supplies") { selectedPlan = r.goal }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white).accessibilityIdentifier("task-prepare-supplies")
+                }
+            }
+            DisclosureGroup("Task details") {
+                Text(r.body).font(.caption).fixedSize(horizontal: false, vertical: true)
+                ForEach(controls("chronicleAdvice", r.id)) { ManagementAction(action: $0) }
+            }.font(.caption)
             if r.accepted {
                 if !r.cost.isEmpty { GoalSupplyChecklist(goal: r.goal) }
                 HStack {
-                    Button("Pin goal") { store.pin(r.goal) }.frame(minHeight: 44)
+                    Button(store.snapshot?.chronicle.pin == r.goal ? "Unpin goal" : "Pin goal") { store.pin(store.snapshot?.chronicle.pin == r.goal ? nil : r.goal) }.frame(minHeight: 44)
                     Spacer()
-                    if r.kind == 1 { Button("Choose a boat") { store.pin(r.goal); store.nextPinnedStep() }.frame(minHeight: 44) }
-                    else if !r.cost.isEmpty { Button("Plan supplies") { selectedPlan = r.goal }.frame(minHeight: 44) }
+                    if !r.cost.isEmpty { Button("Plan supplies") { selectedPlan = r.goal }.frame(minHeight: 44) }
                 }.font(.caption.bold())
             }
         }.harbourCard()
@@ -149,6 +172,11 @@ struct GoalsPanel: View {
                 }
             } else {
                 Text(p.branches[p.branch]).font(.subheadline.bold())
+                if let action = controls("chronicleBuild", p.id).first, action.enabled {
+                    ManagementAction(action: action)
+                } else if p.stage != 2, let goal = p.goal {
+                    Button("Prepare supplies for step \(p.stage + 1)") { selectedPlan = goal }.frame(minHeight: 44).buttonStyle(.borderedProminent).tint(HarbourTheme.action).foregroundStyle(.white)
+                }
                 Text("Complete these steps in order").font(.caption.bold())
                 ForEach(Array(["Foundation materials", "Workshop supplies", "Two boats returning from both coasts", "Opening supplies"].enumerated()), id: \.offset) { index, label in
                     Label("\(index + 1). \(label)\(index == p.stage ? " · next" : "")", systemImage: index < p.stage ? "checkmark.circle.fill" : index == p.stage ? "arrow.right.circle" : "circle")
@@ -165,11 +193,10 @@ struct GoalsPanel: View {
                     }
                     if p.routes == 2 && p.boats < 2 { Text("Both coasts are connected. Use a different boat for either listed mission to complete the crew pairing.").font(.caption) }
                 }
-                ForEach(controls("chronicleBuild", p.id)) { ManagementAction(action: $0) }
                 HStack {
-                    Button("Pin project") { store.pin("chronicle:" + p.id) }.frame(minHeight: 44)
+                    Button(store.snapshot?.chronicle.pin == "chronicle:" + p.id ? "Unpin project" : "Pin project") { store.pin(store.snapshot?.chronicle.pin == "chronicle:" + p.id ? nil : "chronicle:" + p.id) }.frame(minHeight: 44)
                     Spacer()
-                    if p.stage == 2 { Button("Choose a boat") { store.pin("chronicle:" + p.id); store.nextPinnedStep() }.frame(minHeight: 44) }
+                    if p.stage == 2 { Button("Choose a boat") { if let mission = p.missions.first(where: { !$0.complete }) ?? p.missions.first { store.chooseProjectBoat(p, mission: mission) } }.frame(minHeight: 44) }
                     else if let goal = p.goal { Button("Plan supplies") { selectedPlan = goal }.frame(minHeight: 44) }
                 }.font(.caption.bold())
             }

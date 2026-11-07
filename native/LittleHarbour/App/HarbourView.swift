@@ -140,7 +140,7 @@ struct HarbourView: View {
     private var landscapeHeader: some View {
         HStack(spacing: 8) {
             Text(store.snapshot?.story.townName ?? "Porto Lume").font(.system(.headline, design: .serif)).lineLimit(1).minimumScaleFactor(0.8).accessibilityIdentifier("town-name")
-            Button { store.navigate("Goals"); if !hasSideInspector { showInspector = true } } label: { Image(systemName: "list.bullet.clipboard").frame(width: 44, height: 44) }.accessibilityLabel("Goals").accessibilityIdentifier("map-goals")
+            Button { store.openNextTask(); if !hasSideInspector { showInspector = true } } label: { Image(systemName: "list.bullet.clipboard").frame(width: 44, height: 44) }.accessibilityLabel("Goals").accessibilityIdentifier("map-goals")
             cameraControls(wide: true)
             HStack(spacing: 3) { ResourceIcon(item: "coins", size: 22); Text("\(store.snapshot?.coins ?? 0)").font(.subheadline.bold()).monospacedDigit() }
             Button { showSettings = true } label: { Image(systemName: "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
@@ -166,7 +166,7 @@ struct HarbourView: View {
             }
             Spacer(minLength: 0)
             HStack(spacing: 5) { ResourceIcon(item: "coins", size: 26); Text("\(store.snapshot?.coins ?? 0)") }.font(.system(.subheadline, design: .rounded, weight: .bold)).monospacedDigit().padding(.horizontal, 12).padding(.vertical, 8).background(HarbourTheme.gold.opacity(0.12), in: Capsule()).accessibilityLabel("\(store.snapshot?.coins ?? 0) coins")
-            Button { store.navigate("Goals"); if !hasSideInspector { showInspector = true } } label: { Image(systemName: "list.bullet.clipboard").frame(width: 44, height: 44) }.accessibilityLabel("Goals").accessibilityIdentifier("map-goals")
+            Button { store.openNextTask(); if !hasSideInspector { showInspector = true } } label: { Image(systemName: "list.bullet.clipboard").frame(width: 44, height: 44) }.accessibilityLabel("Goals").accessibilityIdentifier("map-goals")
             Button { showSettings = true } label: { Image(systemName: store.protectedSave ? "exclamationmark.shield" : "gearshape").frame(width: 44, height: 44) }.accessibilityLabel("Settings and saves")
         }.foregroundStyle(harbourInk).padding(.horizontal, 16).padding(.vertical, 7).background(harbourPaper).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -202,9 +202,9 @@ struct HarbourView: View {
                 }
                 HStack(spacing: 8) {
                     Button {
-                        if store.pinnedTitle != nil { store.nextPinnedStep() } else if store.snapshot?.chronicle.started == true { store.navigate("Goals") } else { store.followGuidance() }; if !wide { showInspector = true }
+                        if store.snapshot?.chronicle.started == true { store.openNextTask() } else if store.pinnedTitle != nil { store.nextPinnedStep() } else { store.followGuidance() }; if !wide { showInspector = true }
                     } label: {
-                        HStack { if !collapsed { Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 44, height: 48).accessibilityHidden(true) }; VStack(alignment: .leading, spacing: 3) { if !collapsed { Text("NEXT STEP").font(.caption2.weight(.bold)).tracking(1) }; Text(store.pinnedTitle ?? (store.snapshot?.chronicle.started == true ? "Choose a harbour goal" : store.snapshot?.guidance.title ?? objective.title)).font(.system(collapsed ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(collapsed ? 1 : 2) }; Spacer(minLength: 8); Image(systemName: "arrow.right").font(.subheadline) }.frame(minHeight: 44).multilineTextAlignment(.leading)
+                        HStack { if !collapsed { Image(uiImage: HarbourArtwork.image("guide-elena")).resizable().scaledToFit().frame(width: 44, height: 48).accessibilityHidden(true) }; VStack(alignment: .leading, spacing: 3) { if !collapsed { Text("NEXT STEP").font(.caption2.weight(.bold)).tracking(1) }; Text(store.nextTaskTitle ?? (store.snapshot?.chronicle.started == true ? "Choose a harbour goal" : store.snapshot?.guidance.title ?? objective.title)).font(.system(collapsed ? .headline : .title3, design: .serif, weight: .semibold)).lineLimit(collapsed ? 1 : 2) }; Spacer(minLength: 8); Image(systemName: "arrow.right").font(.subheadline) }.frame(minHeight: 44).multilineTextAlignment(.leading)
                     }.accessibilityIdentifier("objective")
                     if !compact {
                         Button { withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { expandedObjective.toggle() } } label: {
@@ -354,6 +354,7 @@ struct InspectorView: View {
             }.scrollDismissesKeyboard(.interactively).background(harbourPaper).foregroundStyle(harbourInk)
             .onChange(of: store.guidanceFocus) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.category) { _, _ in searchFocused = false; query = ""; readyOnly = false; siteOnly = true; reader.scrollTo("panel-top", anchor: .top) }
+            .onChange(of: store.goalNavigationRevision) { _, _ in reader.scrollTo("panel-top", anchor: .top) }
             .onChange(of: store.selectedSite) { _, _ in searchFocused = false; siteOnly = true; readyOnly = false; reader.scrollTo("panel-top", anchor: .top) }
         }
         .accessibilityHidden(showCelebrations && store.chapterCelebration != nil)
