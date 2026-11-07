@@ -83,6 +83,71 @@ import SwiftUI
         XCTAssertEqual(terrain.children.filter { $0.name?.hasPrefix("bay-terrain") == true }.count, 6)
         XCTAssertNil(scene.world.childNode(withName: "landscape-surround"))
     }
+    func testStreetFacingSurvivesConstructionAndBusinessChanges() throws {
+        func plot(_ id: String, kind: String, stage: String, level: Int) -> WorldEntity {
+            WorldEntity(id: id, zone: "neighbourhood", kind: kind, label: "Plot", stage: stage,
+                        x: 270, y: 1030, level: level, ripe: nil, tab: nil, select: nil, artwork: nil)
+        }
+        for id in ["plot0", "plot1", "plot2", "plot3", "plot4", "plot5"] {
+            let empty = plot(id, kind: "home", stage: "unbuilt", level: 0)
+            for kind in ["home", "carpenter", "weaver", "sailmaker", "flaxgarden", "square"] {
+                for (stage, level) in [("building", 0), ("built", 1), ("built", 2)] {
+                    let entity = plot(id, kind: kind, stage: stage, level: level)
+                    XCTAssertEqual(BayLayout.position(entity), BayLayout.position(empty))
+                    XCTAssertEqual(BayLayout.placement(entity), BayLayout.placement(empty))
+                }
+            }
+        }
+        let left = plot("plot0", kind: "home", stage: "built", level: 1)
+        let right = plot("plot2", kind: "home", stage: "built", level: 1)
+        XCTAssertLessThan(BayLayout.placement(left).xScale, 0)
+        XCTAssertGreaterThan(BayLayout.placement(right).xScale, 0)
+        XCTAssertLessThan(BayLayout.groundDetail(left, x: 105, y: 0).x, BayLayout.ground(left).x)
+        XCTAssertGreaterThan(BayLayout.groundDetail(right, x: 105, y: 0).x, BayLayout.ground(right).x)
+        // Clear approach to both stair flights in the painted terrace, in source pixels.
+        for id in ["plot0", "plot1", "plot2", "plot3", "plot4", "plot5"] {
+            let p = try XCTUnwrap(BayLayout.anchors[id])
+            let footprint = CGRect(x: p.x - 48, y: p.y - 16, width: 96, height: 32)
+            XCTAssertFalse(footprint.intersects(CGRect(x: 815, y: 220, width: 115, height: 125)))
+            XCTAssertFalse(footprint.intersects(CGRect(x: 1175, y: 355, width: 100, height: 70)))
+        }
+    }
+    func testMarketSlotKeepsEveryBusinessOnThePavedSquare() throws {
+        var positions = Set<String>()
+        for business in ["fishmonger", "kitchen", "exchange", "provisioner"] {
+            let entity = WorldEntity(id: business, zone: "market", kind: "market", label: business, stage: "built",
+                                     x: 1230, y: 1530, level: 2, ripe: nil, tab: nil, select: nil, artwork: nil)
+            let ground = BayLayout.ground(entity)
+            let source = CGPoint(x: ground.x / BayLayout.units, y: (BayLayout.size.height - ground.y) / BayLayout.units)
+            XCTAssertTrue(CGRect(x: 1000, y: 375, width: 100, height: 50).contains(source), "Market must be below the terrace wall")
+            positions.insert("\(ground.x),\(ground.y)")
+        }
+        XCTAssertEqual(positions.count, 1, "Changing business must not move the market out of its slot")
+    }
+    func testScaledFacadesKeepGroundDepthAndReachableTouchTargets() throws {
+        let engine = try EngineRuntime()
+        try engine.load(Data(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json"))))
+        let saved = try engine.save(), snapshot = try engine.snapshot()
+        let scene = HarbourScene(size: CGSize(width: 900, height: 600))
+        scene.apply(snapshot, selected: "plot0"); scene.zoom(0.1)
+        for entity in snapshot.entities where entity.kind != "boat" {
+            let sprite = try XCTUnwrap(scene.world.childNode(withName: entity.id))
+            XCTAssertEqual(sprite.zRotation, 0, "Walls must remain vertical")
+            XCTAssertGreaterThan(sprite.yScale, 0)
+            XCTAssertEqual(sprite.position.y - BayLayout.groundOffset * sprite.yScale, BayLayout.ground(entity).y, accuracy: 0.001)
+            XCTAssertEqual(sprite.zPosition, BayLayout.size.height - BayLayout.ground(entity).y, accuracy: 0.001)
+            XCTAssertEqual(scene.site(at: sprite.position)?.id, entity.id)
+        }
+        // A mirrored roof remains selectable away from the centre, at close zoom.
+        let house = try XCTUnwrap(scene.world.childNode(withName: "plot0"))
+        XCTAssertLessThan(house.xScale, 0)
+        XCTAssertEqual(scene.site(at: CGPoint(x: house.position.x - 70, y: house.position.y + 50))?.id, "plot0")
+        let boat = try XCTUnwrap(scene.world.childNode(withName: "boat0"))
+        XCTAssertEqual(boat.xScale, 1); XCTAssertEqual(boat.yScale, 1)
+        scene.apply(snapshot, selected: "plot4")
+        XCTAssertEqual(house.xScale, -1, "Repeated snapshots must not toggle the facing")
+        XCTAssertEqual(try engine.save(), saved)
+    }
     func testBayBoatLanesStayInOpenWaterAndRejoinTheCorrectBerth() {
         for slot in 0..<3 {
             for progress in stride(from: 0.0, through: 1.0, by: 0.025) {

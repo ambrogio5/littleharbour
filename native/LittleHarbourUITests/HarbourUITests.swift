@@ -95,10 +95,21 @@ import XCTest
         let app = XCUIApplication(); app.launchArguments = ["--ui-testing"]
         app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json")), encoding: .utf8)
         app.launch(); XCTAssertTrue(app.buttons["Explore"].waitForExistence(timeout: 20))
+        // A cold simulator launch may restore portrait after the pre-launch rotation.
+        XCUIDevice.shared.orientation = .portrait
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let landscape = NSPredicate { _, _ in app.frame.width > app.frame.height }
+        expectation(for: landscape, evaluatedWith: app)
+        waitForExpectations(timeout: 10)
         app.buttons["Simulation speed"].tap(); app.buttons["Pause"].tap()
         if app.buttons["map-expand"].exists { app.buttons["map-expand"].tap() }
         app.buttons["Explore"].tap(); app.buttons["Home harbour"].tap()
         let bay = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); bay.name = "Sheltered Bay working waterfront"; bay.lifetime = .keepAlways; add(bay)
+        app.buttons["Explore"].tap()
+        let neighbourhood = app.buttons["explore-neighbourhood"]
+        if !neighbourhood.exists { app.collectionViews.firstMatch.swipeUp() }
+        XCTAssertTrue(neighbourhood.waitForExistence(timeout: 5)); neighbourhood.tap()
+        let village = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); village.name = "Street facing terrace groups"; village.lifetime = .keepAlways; add(village)
         app.buttons["Sites"].tap()
         let search = app.searchFields.firstMatch; XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Bakery")
         let bakery = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Bakery")).firstMatch

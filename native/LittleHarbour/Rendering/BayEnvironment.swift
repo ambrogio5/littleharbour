@@ -57,13 +57,15 @@ import UIKit
             default: kind = e.id.hasPrefix("plot") && e.kind == "home" ? "bench" : nil
             }
             guard let kind else { continue }
-            let foot = BayLayout.ground(e)
-            prop(kind, at: CGPoint(x: foot.x + 105, y: foot.y - 12), width: e.level > 1 ? 125 : 100)
+            let placement = BayLayout.placement(e)
+            prop(kind, at: BayLayout.groundDetail(e, x: 105, y: -12),
+                 width: (e.level > 1 ? 125 : 100) * placement.scale, mirrored: placement.mirrored)
         }
     }
-    private func prop(_ name: String, at point: CGPoint, width: CGFloat) {
+    private func prop(_ name: String, at point: CGPoint, width: CGFloat, mirrored: Bool) {
         let node = SKSpriteNode(imageNamed: "bay-" + name)
         node.name = "bay-detail-" + name; node.size = CGSize(width: width, height: width)
+        node.xScale = mirrored ? -1 : 1
         node.position = point; node.zPosition = BayLayout.size.height - point.y + 5; details.addChild(node)
     }
     func zoom(_ scale: CGFloat, labels: Bool) {

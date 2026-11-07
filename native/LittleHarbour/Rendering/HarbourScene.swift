@@ -85,6 +85,8 @@ import SwiftUI
             let boat = e.kind == "boat" ? Int(e.id.dropFirst(4)).flatMap { snapshot.boats.indices.contains($0) ? snapshot.boats[$0] : nil } : nil
             let artwork = boat.map { !reduceMotion && $0.trip != nil ? $0.sailingArtwork : $0.artwork } ?? e.texture
             node.size = CGSize(width: boat?.type == "cutter" ? 270 : 320, height: boat?.type == "cutter" ? 270 : 320)
+            let placement = BayLayout.placement(e)
+            node.xScale = placement.xScale; node.yScale = placement.scale; node.zRotation = 0
             if node.userData?["texture"] as? String != artwork { node.texture = texture(artwork); node.userData = ["texture": artwork] }
             // A consistent soft ground contact; purely cosmetic, static under Reduce Motion.
             if e.kind != "boat" && node.childNode(withName: "ground-contact") == nil {
@@ -92,26 +94,30 @@ import SwiftUI
                 for radius in stride(from: 3, through: 0, by: -1) {
                     let ellipse = SKShapeNode(ellipseOf: CGSize(width: 150 + radius * 18, height: 30 + radius * 7))
                     ellipse.fillColor = UIColor(red: 0.18, green: 0.19, blue: 0.12, alpha: 0.045)
-                    ellipse.strokeColor = .clear; ellipse.position = CGPoint(x: 12, y: -110)
+                    ellipse.strokeColor = .clear; ellipse.position = CGPoint(x: 0, y: -BayLayout.groundOffset)
                     shadow.addChild(ellipse)
                 }
                 node.addChild(shadow)
             }
             node.childNode(withName: "ground-contact")?.isHidden = e.stage == "unbuilt"
-            node.position = mapPosition(e); node.zPosition = BayLayout.size.height - mapPosition(e).y
+            node.position = mapPosition(e)
+            node.zPosition = BayLayout.size.height - (e.kind == "boat" ? node.position.y : BayLayout.ground(e).y)
             node.alpha = e.stage == "unbuilt" ? 0.44 : 1
             labels[e.id]?.text = e.displayLabel
-            labels[e.id]?.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 124)
+            labels[e.id]?.position = CGPoint(x: node.position.x, y: node.position.y - (BayLayout.groundOffset + 14) * placement.scale)
             badges[e.id]?.text = e.ripe == true ? "✦" : e.stage == "building" ? "•••" : nil
-            badges[e.id]?.position = CGPoint(x: mapPosition(e).x + 91, y: mapPosition(e).y + 84)
+            badges[e.id]?.position = CGPoint(x: node.position.x + 91 * placement.scale, y: node.position.y + 84 * placement.scale)
             if let badge = badges[e.id] {
                 if !reduceMotion && snapshot.speed > 0 && e.ripe == true {
                     if badge.action(forKey: "ready") == nil { badge.run(.repeatForever(.sequence([.fadeAlpha(to: 0.45, duration: 0.8), .fadeAlpha(to: 1, duration: 0.8)])), withKey: "ready") }
                 } else { badge.removeAllActions(); badge.alpha = 1 }
             }
         }
-        if let selected, let e = entities.first(where: { $0.id == selected }) { selectionRing.position = CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 105); selectionRing.zPosition = BayLayout.size.height - mapPosition(e).y - 0.5; selectionRing.isHidden = false }
-        else { selectionRing.isHidden = true }
+        if let selected, let e = entities.first(where: { $0.id == selected }) {
+            selectionRing.position = e.kind == "boat" ? CGPoint(x: mapPosition(e).x, y: mapPosition(e).y - 105) : BayLayout.ground(e)
+            selectionRing.setScale(BayLayout.placement(e).scale)
+            selectionRing.zPosition = (sprites[e.id]?.zPosition ?? 0) - 0.5; selectionRing.isHidden = false
+        } else { selectionRing.isHidden = true }
         let signature = "\(snapshot.style.oliveDensity)-\(snapshot.style.lanterns)-\(snapshot.style.marketStalls)-\(snapshot.style.tradeTraffic)-\(snapshot.style.repairedFacades)"
         if signature != styleSignature { styleSignature = signature; rebuildOrnaments(snapshot.style) }
         decorateFestival(snapshot.festival)
@@ -163,7 +169,9 @@ import SwiftUI
             guard let entity = snapshot.entities.first(where: { $0.id == sites[partner.id] }) else { continue }
             let art = partner.work >= 4 ? "bay-bench" : "bay-cargo"
             let detail = SKSpriteNode(texture: texture(art), size: CGSize(width: 110, height: 110))
-            let p = mapPosition(entity); detail.position = CGPoint(x: p.x - 105, y: p.y - 60); detail.zPosition = BayLayout.size.height - p.y + 1
+            detail.position = BayLayout.groundDetail(entity, x: -105, y: 40)
+            detail.xScale = BayLayout.placement(entity).xScale; detail.yScale = BayLayout.placement(entity).scale
+            detail.zPosition = BayLayout.size.height - BayLayout.ground(entity).y + 1
             detail.name = "partner-" + partner.id; chronicleDecor.addChild(detail)
         }
     }
@@ -338,9 +346,10 @@ import SwiftUI
         return entities.compactMap { entity -> (WorldEntity, CGFloat)? in
             guard let sprite = sprites[entity.id] else { return nil }
             let dx = abs(point.x - sprite.position.x), dy = abs(point.y - sprite.position.y)
-            let radius = sprite.size.width * 0.43
-            guard dx <= radius + tolerance, dy <= radius + tolerance else { return nil }
-            let score = hypot(dx / (radius + tolerance), dy / (radius + tolerance))
+            let radiusX = sprite.size.width * abs(sprite.xScale) * 0.43 + tolerance
+            let radiusY = sprite.size.height * abs(sprite.yScale) * 0.43 + tolerance
+            guard dx <= radiusX, dy <= radiusY else { return nil }
+            let score = hypot(dx / radiusX, dy / radiusY)
             return score <= 1.15 ? (entity, score) : nil
         }.min { $0.1 < $1.1 }?.0
     }
