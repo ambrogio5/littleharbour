@@ -14,6 +14,7 @@ import Combine
     @Published var preferredFleetMission: String?
     @Published var preferredFleetRoute: String?
     @Published var preferredGoalSection: String?
+    @Published var goalNavigationRevision = 0
     @Published var directionFocus: String?
     @Published private(set) var chapterCelebration: StoryMemory?
     private var knownChapters: Set<String>?
@@ -98,7 +99,9 @@ import Combine
             lastActionAt = now; lastPerformedActionID = action.id
             try refresh(); flush()
             if !protectedSave {
-                message = snapshot?.log.first ?? "Done. Your town is saved."
+                // Acceptance and choices are confirmed in the task card itself.
+                // A bottom toast can cover its next button on compact landscape screens.
+                message = ["chronicleAccept", "chronicleChoose"].contains(action.invocation?.0 ?? "") ? nil : snapshot?.log.first ?? "Done. Your town is saved."
                 feedbackUntil = ProcessInfo.processInfo.systemUptime + 4
                 if UserDefaults.standard.object(forKey: "hapticFeedback") as? Bool ?? true { UINotificationFeedbackGenerator().notificationOccurred(.success) }
             }
@@ -212,31 +215,75 @@ import Combine
         if let d = s.directions.first(where: { "direction:" + $0.id == pin }) { return d.title }
         if let o = s.chronicle.offers.first(where: { $0.goal == pin }) { return o.title }
         if let p = s.chronicle.projects.first(where: { "chronicle:" + $0.id == pin }) { return p.stage == 4 ? p.title + " · completed" : p.title }
-        return "Choose your next goal"
+        return nil
     }
     func pin(_ goal: String?) {
         guard !protectedSave else { return }
         do { try engine?.call("pin", [goal as Any? ?? NSNull()]); try refresh(); flush() } catch { freeze(error) }
     }
+    /// Resolve old/completed pins without rewriting the player's saved intention on a tick.
+    var nextGoal: String? {
+        guard let s = snapshot, s.chronicle.started else { return nil }
+        let c = s.chronicle
+        if let pin = c.pin {
+            if c.offers.contains(where: { $0.goal == pin }) { return pin }
+            if c.projects.contains(where: { "chronicle:" + $0.id == pin && $0.stage < 4 }) { return pin }
+            if pin == "guide" || pin == "festival" || s.directions.contains(where: { "direction:" + $0.id == pin }) { return pin }
+        }
+        if let request = c.offers.first(where: { $0.accepted }) { return request.goal }
+        if let project = c.projects.first(where: { $0.stage >= 0 && $0.stage < 4 }) { return "chronicle:" + project.id }
+        return c.offers.first?.goal
+    }
+    var nextRequest: ChronicleState.Request? { snapshot?.chronicle.offers.first { $0.goal == nextGoal } }
+    var nextProject: ChronicleState.Project? { snapshot?.chronicle.projects.first { "chronicle:" + $0.id == nextGoal } }
+    func requestAction(_ request: ChronicleState.Request) -> HarbourAction? {
+        let name = request.accepted ? "chronicleDeliver" : "chronicleAccept"
+        return snapshot?.actions.first { $0.invocation?.0 == name && $0.invocation?.1.first as? String == request.id }
+    }
+    func requestInstruction(_ request: ChronicleState.Request) -> String {
+        if !request.accepted { return "Accept this request to start" }
+        if request.kind == 2 && request.choice == nil { return "Choose who to welcome" }
+        if requestAction(request)?.enabled == true { return request.kind == 1 ? "Welcome both crews to finish" : "Deliver the supplies to finish" }
+        if request.kind == 1 && request.boats >= 2 { return "Complete a passenger service to the other coast" }
+        if request.kind == 1 { return "Send \(max(0, 2 - request.boats)) more boat\(request.boats == 1 ? "" : "s") on passenger services" }
+        if let plan = plan(request.goal) {
+            if let missing = plan.requirements.first(where: { $0.missing > 0 }) {
+                return "Prepare \(missing.missing) more \((goodsNames[missing.item] ?? missing.item).lowercased())"
+            }
+            if plan.requirements.contains(where: { $0.incoming > 0 }) { return "Wait for the supplies already in production" }
+        }
+        return "Check the supplies for this request"
+    }
+    var nextTaskTitle: String? {
+        if let request = nextRequest { return requestInstruction(request) + " · " + request.title }
+        if let project = nextProject { return project.title + " · " + (project.stage < 0 ? "Choose a project" : "Step \(project.stage + 1) of 4") }
+        return pinnedTitle
+    }
+    /// The map always opens the exact task, never spends goods or accepts work.
+    func openNextTask() {
+        let goal = nextGoal
+        navigate("Goals")
+        preferredGoalSection = goal?.hasPrefix("chronicle:") == true ? "Projects" : "Today"
+        goalNavigationRevision += 1
+    }
     func nextPinnedStep() {
-        guard let s = snapshot, let pin = s.chronicle.pin else { navigate("Goals"); return }
-        if pin == "guide" { followGuidance(); return }
-        if pin == "festival" { navigate("Festival"); return }
-        if let d = s.directions.first(where: { "direction:" + $0.id == pin }) { followDirection(d); return }
-        let request = s.chronicle.offers.first { $0.goal == pin }
-        let project = s.chronicle.projects.first { "chronicle:" + $0.id == pin }
-        if let project, project.stage == 2, let mission = project.missions.first(where: { !$0.complete }) ?? project.missions.first {
-            chooseProjectBoat(project, mission: mission); return
-        }
-        if request?.kind == 1 {
-            selectedBerth = s.boats.indices.first { s.boats[$0] != nil && s.boats[$0]?.trip == nil } ?? selectedBerth
-            navigate(request != nil ? "Ferry" : "Fleet"); return
-        }
-        if let goal = request?.goal ?? project?.goal, let p = plan(goal), !p.ready,
-           let recipe = p.recipes.first(where: { $0.queueable > 0 }) ?? p.recipes.first {
-            navigate("Production")
-            selectedSite = s.entities.first { $0.select == recipe.station || $0.id == recipe.station }?.id
-        } else { navigate("Goals") }
+        guard let s = snapshot else { return }
+        let goal = nextGoal ?? s.chronicle.pin
+        if goal == "guide" { followGuidance(); return }
+        if goal == "festival" { navigate("Festival"); return }
+        if let d = s.directions.first(where: { "direction:" + $0.id == goal }) { followDirection(d); return }
+        // Task actions and their requirements are shown at the top of Goals.
+        openNextTask()
+    }
+    func chooseRequestBoat(_ request: ChronicleState.Request) {
+        guard let s = snapshot, request.accepted else { openNextTask(); return }
+        pin(request.goal)
+        let unused = s.boats.indices.filter { s.boats[$0] != nil && !request.usedBoats.contains($0) }
+        let empty = s.boats.indices.first { s.boats[$0] == nil }
+        selectedBerth = unused.first(where: { s.boats[$0]?.trip == nil }) ?? unused.first ?? empty ?? selectedBerth
+        navigate("Ferry")
+        preferredFleetMission = "Passengers"
+        preferredFleetRoute = s.chronicle.coast == "windy" && request.visitedRoutes.contains("quarry") && !request.visitedRoutes.contains("island") ? "island" : "quarry"
     }
     func followDirection(_ direction: TownDirection) {
         navigate(direction.category); directionFocus = direction.id

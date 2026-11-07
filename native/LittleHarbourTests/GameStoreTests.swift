@@ -2,6 +2,66 @@ import XCTest
 @testable import LittleHarbour
 
 @MainActor final class GameStoreTests: XCTestCase {
+    private func taskStore(_ transform: (inout [String: Any]) -> Void = { _ in }) throws -> GameStore {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "task-ready", withExtension: "json"))
+        var raw = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        transform(&raw)
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: raw), as: UTF8.self)
+        let store = GameStore(arguments: ["--ui-testing"], environment: ["LH_TEST_TOWN": json])
+        XCTAssertFalse(store.protectedSave, store.message ?? "No error")
+        return store
+    }
+    func testAcceptConfirmsInlineWithoutCoveringNextTask() throws {
+        let store = try taskStore()
+        store.perform(try XCTUnwrap(store.requestAction(try XCTUnwrap(store.nextRequest))))
+        XCTAssertTrue(try XCTUnwrap(store.nextRequest).accepted)
+        XCTAssertNil(store.message)
+    }
+    func testCompletedPinResolvesToAnExactTaskWithoutAcceptingOrChangingSave() throws {
+        let store = try taskStore()
+        XCTAssertEqual(store.snapshot?.chronicle.pin, "year:request-1")
+        XCTAssertNil(store.pinnedTitle)
+        XCTAssertEqual(store.nextRequest?.id, "request-2")
+        XCTAssertTrue(store.nextTaskTitle?.contains("Accept") == true)
+        let before = store.snapshot
+        store.openNextTask(); try store.refresh()
+        XCTAssertEqual(store.category, "Goals"); XCTAssertEqual(store.preferredGoalSection, "Today")
+        XCTAssertEqual(store.snapshot?.chronicle.pin, "year:request-1")
+        XCTAssertEqual(store.snapshot?.coins, before?.coins); XCTAssertEqual(store.snapshot?.stock, before?.stock)
+        XCTAssertFalse(try XCTUnwrap(store.nextRequest).accepted)
+        let revision = store.goalNavigationRevision
+        store.nextPinnedStep(); XCTAssertGreaterThan(store.goalNavigationRevision, revision, "Repeated task navigation must return to the top even when already in Goals")
+    }
+    func testPassengerTaskChoosesUnusedBoatAndMissingCoastWithoutDispatching() throws {
+        let store = try taskStore { raw in
+            var c = raw["chronicle"] as! [String: Any]
+            var offers = c["offers"] as! [[String: Any]]
+            offers[0]["accepted"] = true; offers[0]["boats"] = [0]; offers[0]["routes"] = ["quarry"]
+            c["offers"] = offers; c["coast"] = "windy"; raw["chronicle"] = c
+        }
+        let request = try XCTUnwrap(store.nextRequest)
+        XCTAssertEqual(request.usedBoats, [0]); XCTAssertEqual(request.visitedRoutes, ["quarry"])
+        XCTAssertTrue(store.requestInstruction(request).contains("1 more boat"))
+        store.chooseRequestBoat(request)
+        XCTAssertEqual(store.category, "Ferry"); XCTAssertEqual(store.selectedBerth, 1)
+        XCTAssertEqual(store.preferredFleetMission, "Passengers"); XCTAssertEqual(store.preferredFleetRoute, "island")
+        XCTAssertTrue(try XCTUnwrap(store.snapshot).boats.allSatisfy { $0?.trip == nil })
+    }
+    func testAcceptedSuppliesTaskExplainsShortfallAndReadyDelivery() throws {
+        for available in [0, 1000] {
+            let store = try taskStore { raw in
+                var c = raw["chronicle"] as! [String: Any]
+                var offers = c["offers"] as! [[String: Any]]
+                let index = offers.firstIndex { $0["kind"] as? Int == 0 }!
+                offers[index]["accepted"] = true; c["offers"] = offers; c["pin"] = "year:" + (offers[index]["id"] as! String); raw["chronicle"] = c
+                var town = raw["town"] as! [String: Any], stock = town["stock"] as! [String: Any]
+                for key in stock.keys { stock[key] = available }; town["stock"] = stock; raw["town"] = town
+            }
+            let request = try XCTUnwrap(store.nextRequest)
+            XCTAssertEqual(store.requestAction(request)?.enabled, available > 0)
+            XCTAssertTrue(store.requestInstruction(request).contains(available > 0 ? "Deliver" : "Prepare"))
+        }
+    }
     func testCrewAssignmentPersistsAndLinksToActualWorkplaceWithoutSpending() throws {
         try withStore { store, repository in
             let fixture = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "crews-ready", withExtension: "json"))
