@@ -16,7 +16,7 @@ Engine coordinates, site IDs, costs, saves, boat routes and browser rendering ar
 - All 55 native bridge tests and 216 browser tests passed. Art, bundle, earned campaign and progression baseline checks passed in the release script.
 - The landscape map flow checks Explore, the terrace view, site-directory search, opening the Bakery, returning to the expanded map, zoom and overview. Final iPhone 16 Pro and iPad Pro 13-inch M5 / iOS 26.5 runs passed. Screenshots were inspected at overview and close zoom.
 - Signed Release archive/export and strict code-signature verification passed.
-- Build 21 installed and launched on Duo. All 30 save files matched byte-for-byte before and after installation, before launch. No town reset or test fixture was applied to the real device.
+- Build 21 installed and launched on Duo. All 31 save files matched byte-for-byte before and after installation, before launch. No town reset or test fixture was applied to the real device.
 
 The first local UI attempt remained in portrait because the simulator ignored orientation changes; a simulator restart restored rotation. The test now asserts landscape explicitly. The new Explore screenshot step also needed to scroll the short landscape list before selecting Neighbourhood. These setup/navigation issues were corrected before the successful run.
 
