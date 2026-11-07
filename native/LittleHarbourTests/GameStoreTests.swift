@@ -11,6 +11,12 @@ import XCTest
         XCTAssertFalse(store.protectedSave, store.message ?? "No error")
         return store
     }
+    func testAcceptConfirmsInlineWithoutCoveringNextTask() throws {
+        let store = try taskStore()
+        store.perform(try XCTUnwrap(store.requestAction(try XCTUnwrap(store.nextRequest))))
+        XCTAssertTrue(try XCTUnwrap(store.nextRequest).accepted)
+        XCTAssertNil(store.message)
+    }
     func testCompletedPinResolvesToAnExactTaskWithoutAcceptingOrChangingSave() throws {
         let store = try taskStore()
         XCTAssertEqual(store.snapshot?.chronicle.pin, "year:request-1")

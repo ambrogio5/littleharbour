@@ -99,7 +99,9 @@ import Combine
             lastActionAt = now; lastPerformedActionID = action.id
             try refresh(); flush()
             if !protectedSave {
-                message = snapshot?.log.first ?? "Done. Your town is saved."
+                // Acceptance and choices are confirmed in the task card itself.
+                // A bottom toast can cover its next button on compact landscape screens.
+                message = ["chronicleAccept", "chronicleChoose"].contains(action.invocation?.0 ?? "") ? nil : snapshot?.log.first ?? "Done. Your town is saved."
                 feedbackUntil = ProcessInfo.processInfo.systemUptime + 4
                 if UserDefaults.standard.object(forKey: "hapticFeedback") as? Bool ?? true { UINotificationFeedbackGenerator().notificationOccurred(.success) }
             }
