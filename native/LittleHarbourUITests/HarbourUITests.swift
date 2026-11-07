@@ -21,7 +21,16 @@ import XCTest
         let app = try workflowApp(raw)
         let prepare = app.buttons["task-prepare-supplies"]; XCTAssertTrue(reveal(prepare, in: app)); prepare.tap()
         let queue = app.buttons["plan-queue-production"]; XCTAssertTrue(queue.waitForExistence(timeout: 5)); XCTAssertTrue(queue.isHittable); XCTAssertTrue(queue.isEnabled)
-        let workshop = app.buttons["plan-workshop-saw"]; XCTAssertTrue(reveal(workshop, in: app)); workshop.tap()
+        let workshop = app.buttons["plan-workshop-saw"]
+        // On iPad the plan is a centered sheet above the still-visible inspector.
+        // Scroll its own container; touching the inspector can dismiss the sheet.
+        let planScroll = app.scrollViews.containing(.button, identifier: "plan-queue-production").firstMatch
+        XCTAssertTrue(planScroll.waitForExistence(timeout: 5))
+        for _ in 0..<6 {
+            if workshop.exists && workshop.isHittable && planScroll.frame.contains(workshop.frame) { break }
+            planScroll.swipeUp()
+        }
+        XCTAssertTrue(workshop.isHittable); XCTAssertTrue(planScroll.frame.contains(workshop.frame)); workshop.tap()
         XCTAssertTrue(app.buttons["action-[\"start\",[\"saw\"]]"].waitForExistence(timeout: 5))
         let start = app.buttons["action-[\"start\",[\"saw\"]]"]
         let visible = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: start)
