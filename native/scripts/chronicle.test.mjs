@@ -107,3 +107,12 @@ test('Locked city save validation accepts reordered JSON keys but rejects progre
  B.load(JSON.stringify(raw));assert.equal(snap().chronicle.started,true);const before=B.save();
  raw.chronicle.city.glaze=1;assert.throws(()=>B.load(JSON.stringify(raw)),/Invalid city-port/);assert.equal(B.save(),before);
 });
+
+test('Task presentation distinguishes earlier trips, registered journeys, recalls and returns without mutating saves',()=>{
+ ready();assert(act('startFerryService',[0,'quarry']));const o=snap().chronicle.offers.find(o=>o.kind===1);assert(act('chronicleAccept',[o.id]));
+ assert(act('startFerryService',[1,'island']));const bytes=B.save();let r=snap().chronicle.offers.find(r=>r.id===o.id);
+ assert.deepEqual(r.eligibleBoats,[1]);assert.deepEqual(r.usedBoats,[]);assert.equal(B.save(),bytes);
+ assert(act('cancelVoyage',[1]));assert.deepEqual(snap().chronicle.offers.find(r=>r.id===o.id).eligibleBoats,[]);
+ assert(act('startFerryService',[1,'island']));tick(100);r=snap().chronicle.offers.find(r=>r.id===o.id);
+ assert.deepEqual(r.usedBoats,[1]);assert.deepEqual(r.eligibleBoats,[]);assert.deepEqual(r.visitedRoutes,['island']);reload();
+});

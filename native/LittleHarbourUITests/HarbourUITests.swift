@@ -1,6 +1,72 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    private func workflowFixture() throws -> [String: Any] {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "task-ready", withExtension: "json"))
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+    }
+    private func workflowApp(_ raw: [String: Any]) throws -> XCUIApplication {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing", "-ui-test-appearance", "dark"]
+        app.launchEnvironment["LH_TEST_TOWN"] = String(decoding: try JSONSerialization.data(withJSONObject: raw), as: UTF8.self)
+        app.launch(); XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["map-goals"].tap()
+        return app
+    }
+    func testSupplyPlanOpensTheExactWorkshopControl() throws {
+        XCUIDevice.shared.orientation = .portrait
+        var raw = try workflowFixture(), c = raw["chronicle"] as! [String: Any], offers = c["offers"] as! [[String: Any]]
+        let i = offers.firstIndex { $0["kind"] as? Int == 0 }!
+        offers[i]["accepted"] = true; c["offers"] = offers; c["pin"] = "year:" + (offers[i]["id"] as! String); raw["chronicle"] = c
+        var town = raw["town"] as! [String: Any], stock = town["stock"] as! [String: Any]
+        stock["planks"] = 0; stock["tiles"] = 0; town["stock"] = stock; raw["town"] = town
+        let app = try workflowApp(raw)
+        let prepare = app.buttons["task-prepare-supplies"]; XCTAssertTrue(reveal(prepare, in: app)); prepare.tap()
+        let queue = app.buttons["plan-queue-production"]; XCTAssertTrue(queue.waitForExistence(timeout: 5)); XCTAssertTrue(queue.isHittable); XCTAssertTrue(queue.isEnabled)
+        let workshop = app.buttons["plan-workshop-saw"]
+        // On iPad the plan is a centered sheet above the still-visible inspector.
+        // Scroll its own container; touching the inspector can dismiss the sheet.
+        let planScroll = app.scrollViews.containing(.button, identifier: "plan-queue-production").firstMatch
+        XCTAssertTrue(planScroll.waitForExistence(timeout: 5))
+        for _ in 0..<6 {
+            if workshop.exists && workshop.isHittable && planScroll.frame.contains(workshop.frame) { break }
+            planScroll.swipeUp()
+        }
+        XCTAssertTrue(workshop.isHittable); XCTAssertTrue(planScroll.frame.contains(workshop.frame)); workshop.tap()
+        XCTAssertTrue(app.buttons["action-[\"start\",[\"saw\"]]"].waitForExistence(timeout: 5))
+        let start = app.buttons["action-[\"start\",[\"saw\"]]"]
+        let visible = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: start)
+        XCTAssertEqual(XCTWaiter.wait(for: [visible], timeout: 5), .completed, "Workshop link must expose the actual production button without scrolling")
+        XCTAssertTrue(app.staticTexts["FROM YOUR SUPPLY PLAN"].exists)
+        XCTAssertTrue(app.segmentedControls["production-view"].buttons["Make"].isSelected)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Supply plan opens exact workshop"; shot.lifetime = .keepAlways; add(shot)
+        let targets = app.segmentedControls["production-view"].buttons["Stock targets"]; XCTAssertTrue(reveal(targets, in: app)); targets.tap()
+        XCTAssertFalse(app.staticTexts["FROM YOUR SUPPLY PLAN"].exists, "Stock management must show the whole catalog again")
+    }
+    func testHarbourNowReviewsOtherWorkWithoutSpending() throws {
+        XCUIDevice.shared.orientation = .portrait
+        var raw = try workflowFixture(), c = raw["chronicle"] as! [String: Any], offers = c["offers"] as! [[String: Any]]
+        for i in offers.indices where offers[i]["kind"] as? Int != 2 { offers[i]["accepted"] = true }
+        c["offers"] = offers; c["pin"] = "year:request-2"; raw["chronicle"] = c
+        let app = try workflowApp(raw)
+        let overview = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Active tasks & work")).firstMatch
+        XCTAssertTrue(reveal(overview, in: app)); overview.tap()
+        let other = app.buttons["review-task-request-5"]; XCTAssertTrue(reveal(other, in: app)); other.tap()
+        XCTAssertTrue(app.staticTexts["next-task-instruction"].label.contains("Deliver"))
+        let delivery = app.buttons["action-[\"chronicleDeliver\",[\"request-5\"]]"]
+        XCTAssertTrue(delivery.exists); XCTAssertTrue(delivery.isEnabled, "Review must not deliver automatically")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "Review ready work from Harbour now"; shot.lifetime = .keepAlways; add(shot)
+    }
+    func testVoyageChecklistRecognizesTripsAlreadyUnderway() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "task-voyages", withExtension: "json"))
+        let app = try workflowApp(try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]))
+        XCTAssertTrue(app.staticTexts["next-task-instruction"].label.contains("task boats to return"))
+        let status = app.staticTexts["task-boat-status-0"]; XCTAssertTrue(reveal(status, in: app)); XCTAssertTrue(status.label.contains("Counts on return"))
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "Qualifying voyage checklist"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["map-goals"].tap()
+        let view = app.buttons["task-choose-boat"]; XCTAssertTrue(reveal(view, in: app)); XCTAssertEqual(view.label, "View boats underway"); view.tap()
+        XCTAssertTrue(app.staticTexts["voyage-status"].waitForExistence(timeout: 5))
+    }
     func testExactTaskIsVisibleInLandscapeAndOpensPassengerControls() throws {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }

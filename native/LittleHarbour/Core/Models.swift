@@ -344,7 +344,7 @@ struct ChronicleState: Decodable {
         let id, title, partner, body, goal: String
         let accepted: Bool
         let kind, boats: Int
-        let usedBoats: [Int]
+        let usedBoats, eligibleBoats: [Int]
         let visitedRoutes: [String]
         let choice: String?
         let cost: [String: Int]
@@ -366,7 +366,7 @@ struct ChronicleState: Decodable {
         let materials: [[String]]
         let transport: [[String]]
         let missions: [Mission]
-        let usedBoats: [Int]
+        let usedBoats, eligibleBoats: [Int]
         let stage, branch, boats, routes: Int
         let goal: String?
         let needsStanding: Bool

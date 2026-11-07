@@ -14,6 +14,8 @@ import Combine
     @Published var preferredFleetMission: String?
     @Published var preferredFleetRoute: String?
     @Published var preferredGoalSection: String?
+    @Published var previewGoal: String?
+    @Published var preferredRecipe: String?
     @Published var goalNavigationRevision = 0
     @Published var directionFocus: String?
     @Published private(set) var chapterCelebration: StoryMemory?
@@ -225,6 +227,7 @@ import Combine
     var nextGoal: String? {
         guard let s = snapshot, s.chronicle.started else { return nil }
         let c = s.chronicle
+        if let previewGoal, c.offers.contains(where: { $0.goal == previewGoal }) || c.projects.contains(where: { "chronicle:" + $0.id == previewGoal && $0.stage < 4 }) { return previewGoal }
         if let pin = c.pin {
             if c.offers.contains(where: { $0.goal == pin }) { return pin }
             if c.projects.contains(where: { "chronicle:" + $0.id == pin && $0.stage < 4 }) { return pin }
@@ -244,8 +247,11 @@ import Combine
         if !request.accepted { return "Accept this request to start" }
         if request.kind == 2 && request.choice == nil { return "Choose who to welcome" }
         if requestAction(request)?.enabled == true { return request.kind == 1 ? "Welcome both crews to finish" : "Deliver the supplies to finish" }
-        if request.kind == 1 && request.boats >= 2 { return "Complete a passenger service to the other coast" }
-        if request.kind == 1 { return "Send \(max(0, 2 - request.boats)) more boat\(request.boats == 1 ? "" : "s") on passenger services" }
+        if request.kind == 1, let progress = voyageProgress(request) {
+            if progress.waiting { return "Wait for your task boats to return" }
+            if progress.boatsNeeded == 0 { return "Run a passenger service to " + VoyageTaskProgress.destination(progress.preferredRoute) }
+            return "Send \(progress.boatsNeeded) more boat\(progress.boatsNeeded == 1 ? "" : "s") on passenger services"
+        }
         if let plan = plan(request.goal) {
             if let missing = plan.requirements.first(where: { $0.missing > 0 }) {
                 return "Prepare \(missing.missing) more \((goodsNames[missing.item] ?? missing.item).lowercased())"
@@ -262,7 +268,11 @@ import Combine
     /// The map always opens the exact task, never spends goods or accepts work.
     func openNextTask() {
         let goal = nextGoal
+        openGoal(goal)
+    }
+    func openGoal(_ goal: String?) {
         navigate("Goals")
+        previewGoal = goal
         preferredGoalSection = goal?.hasPrefix("chronicle:") == true ? "Projects" : "Today"
         goalNavigationRevision += 1
     }
@@ -276,20 +286,34 @@ import Combine
         openNextTask()
     }
     func chooseRequestBoat(_ request: ChronicleState.Request) {
-        guard let s = snapshot, request.accepted else { openNextTask(); return }
+        guard snapshot != nil, request.accepted else { openNextTask(); return }
         pin(request.goal)
-        let unused = s.boats.indices.filter { s.boats[$0] != nil && !request.usedBoats.contains($0) }
-        let empty = s.boats.indices.first { s.boats[$0] == nil }
-        selectedBerth = unused.first(where: { s.boats[$0]?.trip == nil }) ?? unused.first ?? empty ?? selectedBerth
+        let progress = voyageProgress(request)
+        selectedBerth = progress?.preferredSlot ?? selectedBerth
         navigate("Ferry")
         preferredFleetMission = "Passengers"
-        preferredFleetRoute = s.chronicle.coast == "windy" && request.visitedRoutes.contains("quarry") && !request.visitedRoutes.contains("island") ? "island" : "quarry"
+        preferredFleetRoute = progress?.preferredRoute ?? "quarry"
     }
+    func voyageProgress(_ request: ChronicleState.Request) -> VoyageTaskProgress? {
+        guard let s = snapshot, request.kind == 1 else { return nil }
+        return VoyageTaskProgress(boats: s.boats, used: request.usedBoats, eligible: request.eligibleBoats, visited: request.visitedRoutes,
+                                  missions: [("quarry", true), ("island", true)], requiredRoutes: s.chronicle.coast == "windy" ? ["quarry", "island"] : [])
+    }
+    func voyageProgress(_ project: ChronicleState.Project) -> VoyageTaskProgress? {
+        guard let s = snapshot, project.stage == 2 else { return nil }
+        return VoyageTaskProgress(boats: s.boats, used: project.usedBoats, eligible: project.eligibleBoats,
+                                  visited: project.missions.filter(\.complete).map(\.route), missions: project.missions.map { ($0.route, $0.passengers) }, requiredRoutes: ["quarry", "island"])
+    }
+    func openRecipe(_ recipe: ProjectPlan.Recipe) {
+        let site = snapshot?.entities.first { $0.select == recipe.station || $0.id == recipe.station }
+        navigate("Production"); selectedSite = site?.id; preferredRecipe = recipe.key
+    }
+    func inspectBoat(_ slot: Int) { navigate("Fleet"); selectedBerth = slot }
     func followDirection(_ direction: TownDirection) {
         navigate(direction.category); directionFocus = direction.id
         if let site = direction.siteID { selectedSite = site }
     }
-    func navigate(_ category: String) { directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; preferredFleetRoute = nil; preferredGoalSection = nil; self.category = category }
+    func navigate(_ category: String) { previewGoal = nil; preferredRecipe = nil; directionFocus = nil; guidanceFocus = false; selectedSite = nil; preferredFleetMission = nil; preferredFleetRoute = nil; preferredGoalSection = nil; self.category = category }
     func chooseCityBoat() { navigate("Fleet"); preferredFleetMission = "City" }
     func chooseProjectBoat(_ project: ChronicleState.Project, mission: ChronicleState.Project.Mission) {
         pin("chronicle:" + project.id)
@@ -300,6 +324,6 @@ import Combine
         preferredFleetRoute = mission.route
         preferredFleetMission = mission.passengers ? "Passengers" : "Cargo"
     }
-    func followGuidance() { directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
-    func select(_ entity: WorldEntity) { directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; if entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)) { selectedBerth = slot }; guidanceFocus = false; selectedSite = entity.id; category = entity.category }
+    func followGuidance() { previewGoal = nil; preferredRecipe = nil; directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; guard let next = snapshot?.guidance else { return }; selectedSite = nil; category = next.category; guidanceFocus = true }
+    func select(_ entity: WorldEntity) { previewGoal = nil; preferredRecipe = nil; directionFocus = nil; preferredFleetMission = nil; preferredFleetRoute = nil; if entity.kind == "boat", let slot = Int(entity.id.dropFirst(4)) { selectedBerth = slot }; guidanceFocus = false; selectedSite = entity.id; category = entity.category }
 }
