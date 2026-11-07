@@ -1,6 +1,26 @@
 import XCTest
 
 @MainActor final class HarbourUITests: XCTestCase {
+    func testExactTaskIsVisibleInLandscapeAndOpensPassengerControls() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication(); app.launchArguments = ["--ui-testing", "-ui-test-appearance", "dark"]
+        app.launchEnvironment["LH_TEST_TOWN"] = try String(contentsOf: XCTUnwrap(Bundle(for: Self.self).url(forResource: "task-ready", withExtension: "json")), encoding: .utf8)
+        app.launch(); XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 20)); app.buttons["map-goals"].tap()
+        let accept = app.buttons["action-[\"chronicleAccept\",[\"request-2\"]]"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 5)); XCTAssertTrue(accept.isHittable, "The exact next action must be visible without scrolling")
+        XCTAssertEqual(app.staticTexts["next-task-instruction"].label, "Accept this request to start")
+        let horizon = app.segmentedControls["goal-horizon"]; XCTAssertTrue(reveal(horizon, in: app)); horizon.buttons["People"].tap()
+        app.buttons["map-goals"].tap()
+        XCTAssertTrue(horizon.buttons["Today"].isSelected)
+        XCTAssertTrue(accept.isHittable, "Goals shortcut must return to the exact task from another section")
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "Exact next task in landscape"; shot.lifetime = .keepAlways; add(shot)
+        accept.tap()
+        let choose = app.buttons["task-choose-boat"]; XCTAssertTrue(choose.waitForExistence(timeout: 5)); XCTAssertTrue(choose.isHittable); choose.tap()
+        XCTAssertTrue(app.buttons["boat-selector-0"].waitForExistence(timeout: 5))
+        let mission = app.segmentedControls["mission-type"]; XCTAssertTrue(reveal(mission, in: app)); XCTAssertTrue(mission.buttons["Ferry"].isSelected)
+        XCTAssertTrue(app.buttons["action-[\"startFerryService\",[0,\"quarry\"]]"].exists)
+    }
     func testShelteredBayLandmarksZoomAndSiteInteraction() throws {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
@@ -201,7 +221,7 @@ import XCTest
         XCTAssertTrue(reveal(begin, in: app)); begin.tap()
         let accept = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Accept · Repair the spring landing")).firstMatch
         XCTAssertTrue(reveal(accept, in: app)); let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: accept); XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed); accept.tap()
-        let continueGoal = app.buttons["continue-goal"]
+        let continueGoal = app.staticTexts["next-task-instruction"]
         XCTAssertTrue(reveal(continueGoal, in: app))
         if app.buttons["Map"].exists { app.buttons["Map"].tap() }
         app.buttons["Town"].tap(); XCTAssertTrue(revealTownActivity(app.buttons["Fleet"], in: app)); app.buttons["Fleet"].tap()
@@ -212,8 +232,8 @@ import XCTest
         XCTAssertTrue(app.buttons["map-goals"].waitForExistence(timeout: 10))
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); attachment.name = "Harbour year with retained goal in landscape"; attachment.lifetime = .keepAlways; add(attachment)
         app.buttons["map-goals"].tap()
-        XCTAssertTrue(reveal(app.buttons["continue-goal"], in: app))
-        XCTAssertTrue(app.staticTexts["Choose what matters today"].exists)
+        XCTAssertTrue(reveal(app.staticTexts["next-task-instruction"], in: app))
+        XCTAssertTrue(app.staticTexts["YOUR NEXT TASK"].exists)
     }
 
     func testAdvancedWorkshopsMarketAndThirdBoatRemainReachable() throws {

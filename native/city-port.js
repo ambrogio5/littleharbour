@@ -71,7 +71,7 @@ export function restore(s,c){
  for(let slot=0;slot<3;slot++){const v=y.voyages[slot];if(!v)continue;const b=s.fleet.boats[slot];if(Object.keys(v).sort().join()!=='epoch,expedition,left'||!int(v.epoch,y.serial-1)||!Number.isFinite(v.left)||v.left<=0||v.left>240||v.expedition!==null&&(!int(v.expedition,1)||v.expedition!==y.chapter-1||v.expedition>=y.choices.length||y.explored.includes(v.expedition))||b?.type!=='coaster'||b.upgrade!=='cargo'||b.trip||b.repeat)bad();}
  const expeditions=y.voyages.filter(v=>v?.expedition!==null&&v?.expedition!==undefined).map(v=>v.expedition);if(new Set(expeditions).size!==expeditions.length||y.glaze+6*y.voyages.filter(Boolean).length>1000000)bad();
  if(y.job&&(typeof y.job!=='object'||Array.isArray(y.job)||Object.keys(y.job).join()!=='left'||!Number.isFinite(y.job.left)||y.job.left<=0||y.job.left>30||y.ceramics+2>1000000))bad();
- if(!unlocked(c)&&JSON.stringify(y)!==JSON.stringify(freshCity()))bad();return y;
+ if(!unlocked(c)&&Object.entries(freshCity()).some(([key,value])=>JSON.stringify(y[key])!==JSON.stringify(value)))bad();return y;
 }
 export function view(c){return {unlocked:unlocked(c),glaze:c.city.glaze,ceramics:c.city.ceramics,chapter:c.city.chapter,jobLeft:(c.city.job?.left||0)/R.rate(c,'bench'),jobDuration:30/R.rate(c,'bench'),choices:c.city.choices.map((choice,stage)=>EXPEDITIONS[stage][choice]),explored:c.city.explored,activeVoyages:c.city.voyages.filter(Boolean).length};}
 export function boats(s,c){return s.fleet.boats.map((b,i)=>{if(!b)return b;const rate=R.rate(c,'boat:'+i),v=c?.city.voyages[i],trip=v?{route:'city',duration:240,left:v.left,ferry:false}:b.trip;return trip?{...b,trip:{...trip,duration:trip.duration/rate,left:trip.left/rate}}:b;});}

@@ -12,7 +12,7 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: '1.0.0'
-    CURRENT_PROJECT_VERSION: 18
+    CURRENT_PROJECT_VERSION: 19
     HARBOUR_BUNDLE_IDENTIFIER: com.littleharbour.game
     HARBOUR_DISPLAY_NAME: Little Harbour
 targets:
@@ -64,6 +64,8 @@ targets:
       - path: LittleHarbourTests/city-ready.json
         buildPhase: resources
       - path: LittleHarbourTests/crews-ready.json
+        buildPhase: resources
+      - path: LittleHarbourTests/task-ready.json
         buildPhase: resources
     dependencies:
       - target: LittleHarbour
